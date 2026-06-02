@@ -43,8 +43,9 @@
    ┌──────▼──────┐ ┌──────▼──────┐ ┌──────▼──────┐
    │ 桌宠渲染进程  │ │ 壁纸渲染进程 │ │ 软件渲染进程  │
    │ (Vue 3 App) │ │ (Vue 3 App) │ │ (Vue 3 App) │
-   │ 透明无边框    │ │ 全屏半透明   │ │ 独立窗口     │
-   │             │ │             │ │ 1280×800    │
+   │ 角色本体窗口  │ │ 全屏半透明   │ │ 独立窗口     │
+   │ ~120×120px  │ │             │ │ 1280×800    │
+   │ 浮层交互     │ │             │ │             │
    └─────────────┘ └─────────────┘ └─────────────┘
           │               │               │
           └───────────────┼───────────────┘
@@ -147,14 +148,14 @@
 |------|------|
 | **所属进程** | 主进程 |
 | **核心文件** | `src/main/llm-service.js` |
-| **职责** | DeepSeek API 适配（OpenAI 兼容格式）；System Prompt 组装（注入角色设定、世界背景、关系阶段、用户风格）；对话历史管理（最近 20 条上下文窗口）；流式输出（SSE 解析，逐块推送渲染进程）；任务转化（解析 AI 返回的结构化 JSON，识别 `/task` 意图） |
+| **职责** | DeepSeek API 适配（OpenAI 兼容格式）；System Prompt 组装（注入角色设定、世界背景、关系阶段、用户风格）；对话历史管理（最近 20 条上下文窗口）；流式输出（SSE 解析，逐块推送渲染进程）；意图解析（解析 AI 返回的结构化 JSON，识别 `create_task` 任务转化意图和 `switch_mode` 模式切换意图） |
 
 **依赖**: 数据层（读取角色/历史/世界状态）、世界书模块（读取角色设定和世界规则）
 
 **对外接口（内部调用）**:
 - `chat(sessionId, characterId, message, context)` → 流式 Response
 - `buildSystemPrompt(character, world, relStage, userStyle)` → string
-- `parseTaskFromResponse(content)` → Task | null（解析 AI 结构化输出）
+- `parseIntentsFromResponse(content)` → `{ intent: 'create_task'|'switch_mode'|null, taskPayload?: object, switchTarget?: string }`（解析 AI 结构化输出中的意图）
 
 ---
 
@@ -184,7 +185,7 @@
 |------|------|
 | **所属进程** | 主进程 |
 | **核心文件** | `src/main/pomodoro-service.js` |
-| **职责** | 番茄钟倒计时管理（启动/停止/暂停）；定时 tick 推送（每秒更新剩余时间）；时间到回调通知；原型阶段仅支持单次倒计时，预留自动循环和延长时间接口 |
+| **职责** | 番茄钟倒计时管理（启动/停止/暂停）；定时 tick 推送（每秒更新剩余时间）；时间到回调通知；原型阶段支持手动确认延长（渲染进程重新调用 start），预留自动循环接口 |
 
 **依赖**: 无（独立定时器，使用 `setInterval`）
 
@@ -260,7 +261,7 @@
 |------|------|
 | **所属进程** | 渲染进程 |
 | **核心文件** | `src/renderer/pet/App.vue`, `src/renderer/pet/components/` |
-| **职责** | 透明无边框宠物窗口 UI；角色展示区域（点击触发对话）；对话气泡交互（单行输入 + 发送）；迷你任务面板（右键展开）；模式切换入口 |
+| **职责** | 窗口即角色本体（约 120×120），可拖动，置顶；左键点击角色弹出对话浮层（纯闲聊）；右键弹出功能菜单（发布任务、切换模式等）；对话中识别用户模式切换意图，主动询问确认后切换 |
 
 **依赖**: 共享 UI 组件（CharacterRenderer, DialogueBubble, TaskCard）、Pinia Stores
 
@@ -272,7 +273,7 @@
 |------|------|
 | **所属进程** | 渲染进程 |
 | **核心文件** | `src/renderer/wallpaper/App.vue`, `src/renderer/wallpaper/components/` |
-| **职责** | 全屏半透明覆盖层；大尺寸角色陪伴展示；番茄钟 UI（时间显示、启动/停止按钮）；白噪音控制面板（切换音效、调音量）；侧边对话栏（点击角色滑入）；低打扰进度条（P2 优先级）；退出按钮 |
+| **职责** | 全屏半透明覆盖层；大尺寸角色陪伴展示；番茄钟 UI（时间显示、启动/停止按钮）；白噪音控制面板（切换音效、调音量）；侧边对话栏（点击角色滑入）；低打扰进度条（P2 优先级）；退出按钮（触发任务进度询问：完成→勾选子任务/未完成→询问延长时间→同意重启番茄钟/拒绝记录进度→返回桌宠） |
 
 **依赖**: 共享 UI 组件（CharacterRenderer, DialogueBubble）、Pinia Stores
 
@@ -488,17 +489,24 @@
       │                         │                          │
       │◄── chat:stream-done ────│                          │
       │   (fullMessage,         │                          │
-      │    parsedTask | null)   │                          │
+      │    parsedIntent | null) │                          │
       │                         │                          │
-      │  若 parsedTask 非空:     │                          │
+      │  若 intent='create_task':│                          │
       │── task:create ─────────►│                          │
       │                         │── db.addTask()           │
       │◄── task:updated ────────│ (broadcast 三窗口)        │
+      │                         │                          │
+      │  若 intent='switch_mode':│                         │
+      │── app:switch-mode ─────►│                          │
+      │                         │── windowManager.switch() │
+      │◄── mode:activated ──────│                          │
 ```
 
 **关键点**:
 - 流式输出通过多次 `chat:stream-chunk` 推送，渲染进程实时更新 UI
-- 消息完成后解析 AI 返回的 JSON，若含 `intent: "create_task"` 则自动触发任务创建
+- 消息完成后解析 AI 返回的 JSON，根据 `intent` 字段分发：
+  - `intent: "create_task"` → 仅右键"发布任务"流程中触发，自动创建任务；左键闲聊中不注入任务转化指令
+  - `intent: "switch_mode"` → 自动切换到目标模式（仅在用户已明确同意时才会返回）
 - 解析失败时回退为纯文本，不阻塞对话
 
 ### 6.2. 任务创建与转化流程
@@ -513,6 +521,10 @@
 3. 若仍失败，回退为纯文本消息，不创建任务
 
 ### 6.3. 模式切换流程
+
+模式切换有两种入口：**手动切换**（右键菜单/按钮）和**智能切换**（对话中 AI 识别意图）。
+
+#### 手动切换
 
 ```
 用户（右键菜单/按钮）
@@ -530,6 +542,29 @@
       │  渲染进程更新 Pinia       │
       │  useAppStore.mode        │
 ```
+
+#### 智能切换（对话意图识别）
+
+```
+用户在桌宠模式闲聊
+      │ "想开始专注了"
+      │── conversation:send ─────► 主进程
+      │                          │── LLM 识别 mode_switch 意图
+      │                          │   (System Prompt 注入模式切换指令)
+      │                          │
+      │◄── conversation:chunk ───│ "旅者，要我展开星幕陪你专注吗？"
+      │    (角色询问确认)         │
+      │                          │
+      │ "好的"                    │
+      │── conversation:send ─────► 主进程
+      │                          │── LLM 返回 intent: "switch_mode"
+      │                          │   {"intent":"switch_mode","mode":"wallpaper"}
+      │                          │
+      │                          │── windowManager.switchMode("wallpaper")
+      │◄── 壁纸模式激活            │
+```
+
+> **关键规则**：AI 必须在用户明确同意后才能返回切换 JSON。角色的询问确认和实际切换分两轮对话完成。
 
 **窗口显隐规则**:
 
@@ -583,11 +618,14 @@
       │                          │
       │  壁纸模式:                │
       │  显示时间到弹窗           │
-      │  角色语音气泡："专注时间  │
-      │  结束了，旅者完成了目标吗 │
-      │   ？"                   │
+      │  角色："专注时间结束了，  │
+      │  旅者完成了目标吗？"     │
       │                          │
-      │  用户点击 [完成] [未完成]  │
+      │  ┌─ [完成了] → 勾选子任务 → 结算叙事 → 返回桌宠
+      │  │
+      │  └─ [还没] → "要再延25分钟吗？"
+      │        ├─ [是] → 重启番茄钟 → 继续专注（回到循环起点）
+      │        └─ [否] → 记录进度 → 返回桌宠
 ```
 
 ---
@@ -601,7 +639,7 @@
 | 1 | 角色渲染（图标 → Live2D） | 共享 UI 组件 | `CharacterRenderer` 组件 `modelType` 属性切换 |
 | 2 | 主动交互（手动 → 4 种触发源） | 主动交互模块 | `ProactiveTrigger` 类 `registerSource()` 注册检查器 |
 | 3 | 任务后续追问 | 任务系统 | Task 数据模型已预留 `followUp*` 字段 + IPC 通道 |
-| 4 | 番茄钟循环（单次 → AI 对话循环） | 番茄钟模块 | `PomodoroService` 扩展方法 + 预留 IPC |
+| 4 | 番茄钟循环（手动确认延长 → 自动循环开关） | 番茄钟模块 | `PomodoroService.setAutoCycle()` 方法已预留 |
 | 5 | 世界地图（静态 → 交互式） | 软件模式 UI | `WorldMap` 组件数据驱动 props |
 | 6 | 用户风格学习 | AI 对话引擎 | `UserStyleAnalyzer` 独立模块 + 预留 IPC |
 | 7 | 关系阶段阈值（硬编码 → 配置化） | 角色与关系 | 世界书 JSON 已预留 `relationshipsStageThresholds` |

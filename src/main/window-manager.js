@@ -4,8 +4,8 @@ const path = require("node:path");
 /** @type {Record<string, Electron.BrowserWindowConstructorOptions>} */
 const WINDOW_CONFIG = {
 	pet: {
-		width: 300,
-		height: 400,
+		width: 140,
+		height: 160,
 		transparent: true,
 		frame: false,
 		alwaysOnTop: true,

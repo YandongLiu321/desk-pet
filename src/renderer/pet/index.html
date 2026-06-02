@@ -103,14 +103,16 @@
 <div class="pet-conv-container" id="convContainer"></div>
 
 <div class="pet-context-menu" id="contextMenu">
-  <div class="pet-context-menu-item" data-action="wallpaper">🎵 壁纸模式</div>
-  <div class="pet-context-menu-item" data-action="software">⚔️ 软件模式</div>
+  <div class="pet-context-menu-item" data-action="create-task">发布任务</div>
+  <div class="pet-context-menu-item" data-action="wallpaper">壁纸模式</div>
+  <div class="pet-context-menu-item" data-action="software">软件模式</div>
   <div class="pet-context-menu-item" data-action="tasks">📋 任务列表</div>
   <div class="pet-context-menu-item" data-action="quit">🚪 退出</div>
 </div>
 
 <div class="pet-task-panel" id="taskPanel"></div>
 
+<script src="../../shared/constants.js"></script>
 <script src="../shared/ipc-client.js"></script>
 <script src="../shared/dom-utils.js"></script>
 <script src="../shared/state-manager.js"></script>
@@ -120,7 +122,9 @@
 <script>
 (() => {
   const { IpcClient, CharacterRenderer, ConversationPanel, TaskPanel } = window;
+  const { INTENT, MODE } = window;
   const ipc = new IpcClient();
+  let isTaskMode = false;
 
   // Character
   const charRenderer = new CharacterRenderer(document.getElementById("charArea"), { mode: "pet", size: 120 });
@@ -144,8 +148,11 @@
         convPanel.hideTyping();
         unsubChunk();
         unsubDone();
-        if (data.intent === "create_task") {
+        if (data.intent === INTENT.CREATE_TASK) {
           ipc.createTask(data.taskPayload).catch(() => {});
+        } else if (data.intent === INTENT.SWITCH_MODE && data.switchTarget) {
+          convContainer.classList.remove("open");
+          ipc.switchMode(data.switchTarget).catch(() => {});
         }
       });
       const unsubError = ipc.onError((err) => {
@@ -155,7 +162,7 @@
         unsubError();
         convPanel.showError(err);
       });
-      await ipc.sendMessage(text);
+      await ipc.sendMessage(text, isTaskMode);
     },
   });
   convPanel.mount();
@@ -177,6 +184,7 @@
   // Click character → toggle conversation
   const charArea = document.getElementById("charArea");
   charArea.addEventListener("click", (_e) => {
+    isTaskMode = false;
     convContainer.classList.toggle("open");
     charRenderer.setMotion("bounce");
     setTimeout(() => charRenderer.setMotion("idle"), 300);
@@ -197,7 +205,10 @@
   ctxMenu.querySelectorAll(".pet-context-menu-item").forEach((item) => {
     item.addEventListener("click", async () => {
       const action = item.dataset.action;
-      if (action === "wallpaper" || action === "software") {
+      if (action === "create-task") {
+        isTaskMode = true;
+        convContainer.classList.add("open");
+      } else if (action === MODE.WALLPAPER || action === MODE.SOFTWARE) {
         await ipc.switchMode(action);
       } else if (action === "tasks") {
         taskPanelContainer.classList.toggle("open");
@@ -213,6 +224,7 @@
     if (e.key === "Escape") {
       convContainer.classList.remove("open");
       taskPanelContainer.classList.remove("open");
+      isTaskMode = false;
     }
   });
 })();

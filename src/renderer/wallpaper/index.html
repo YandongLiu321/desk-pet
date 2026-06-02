@@ -112,6 +112,85 @@
     color: var(--color-text-muted);
     opacity: 0.5;
   }
+
+  .wallpaper-exit-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 45;
+  }
+  .wallpaper-exit-overlay.open { display: block; }
+
+  .wallpaper-exit-panel {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--color-bg-dark);
+    border: 1px solid var(--color-bg-light);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    box-shadow: var(--shadow-lg);
+    z-index: 50;
+    max-width: 360px;
+    width: 90%;
+    text-align: center;
+  }
+  .wallpaper-exit-panel.open { display: block; }
+
+  .wallpaper-exit-panel p {
+    color: var(--color-text-primary);
+    font-size: var(--font-base);
+    margin: 0 0 var(--space-md);
+  }
+
+  .wallpaper-exit-panel button {
+    margin: var(--space-xs);
+    padding: var(--space-sm) var(--space-md);
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: var(--font-sm);
+  }
+  .wallpaper-exit-btn-primary {
+    background: var(--color-primary);
+    color: #fff;
+  }
+  .wallpaper-exit-btn-secondary {
+    background: var(--color-bg-light);
+    color: var(--color-text-primary);
+  }
+
+  .wallpaper-exit-subtask-list {
+    text-align: left;
+    max-height: 200px;
+    overflow-y: auto;
+    margin: var(--space-sm) 0;
+  }
+  .wallpaper-exit-subtask-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-xs) 0;
+    font-size: var(--font-sm);
+    color: var(--color-text-secondary);
+  }
+
+  .wallpaper-exit-textarea {
+    width: 100%;
+    height: 80px;
+    background: var(--color-bg-medium);
+    border: 1px solid var(--color-bg-light);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-primary);
+    padding: var(--space-sm);
+    font-size: var(--font-sm);
+    resize: none;
+    margin: var(--space-sm) 0;
+    box-sizing: border-box;
+  }
 </style>
 </head>
 <body>
@@ -139,6 +218,35 @@
 
 <div class="wallpaper-esc-hint">按 ESC 退出壁纸模式</div>
 
+<div class="wallpaper-exit-overlay" id="exitOverlay"></div>
+<div class="wallpaper-exit-panel" id="exitPanel">
+  <!-- State 1: initial inquiry -->
+  <div id="exitStateInquiry">
+    <p>专注时间结束了，旅者完成了目标吗？</p>
+    <button class="wallpaper-exit-btn-primary" id="exitCompletedBtn">完成了</button>
+    <button class="wallpaper-exit-btn-secondary" id="exitNotYetBtn">还没</button>
+  </div>
+  <!-- State 2: subtask checklist -->
+  <div id="exitStateSubtasks" style="display:none">
+    <p>勾选已完成的子任务：</p>
+    <div class="wallpaper-exit-subtask-list" id="exitSubtaskList"></div>
+    <button class="wallpaper-exit-btn-primary" id="exitSubtaskConfirmBtn">确认返回</button>
+  </div>
+  <!-- State 3: extend confirmation -->
+  <div id="exitStateExtend" style="display:none">
+    <p>要再延 25 分钟继续吗？</p>
+    <button class="wallpaper-exit-btn-primary" id="exitExtendYesBtn">是，继续专注</button>
+    <button class="wallpaper-exit-btn-secondary" id="exitExtendNoBtn">否，记录进度</button>
+  </div>
+  <!-- State 4: progress note -->
+  <div id="exitStateNote" style="display:none">
+    <p>记录一下进度吧~</p>
+    <textarea class="wallpaper-exit-textarea" id="exitProgressInput" placeholder="输入你的进度..."></textarea>
+    <button class="wallpaper-exit-btn-primary" id="exitProgressSaveBtn">保存并返回</button>
+  </div>
+</div>
+
+<script src="../../shared/constants.js"></script>
 <script src="../shared/ipc-client.js"></script>
 <script src="../shared/dom-utils.js"></script>
 <script src="../shared/character-renderer.js"></script>
@@ -147,27 +255,35 @@
 <script>
 (() => {
   const { IpcClient, CharacterRenderer, ConversationPanel, PomodoroTimer } = window;
+  const { INTENT, MODE } = window;
   const ipc = new IpcClient();
+  let currentPomodoroTaskId = null;
+  let isExitingWithTask = false;
 
   // Character
   const charRenderer = new CharacterRenderer(document.getElementById("charArea"), { mode: "wallpaper", size: 200 });
   charRenderer.mount();
 
+  // Pomodoro helpers
+  async function startPomodoroFlow(durationMinutes, taskId) {
+    ipc.removePomodoroListeners();
+    const res = await ipc.startPomodoro(durationMinutes, taskId);
+    if (!res.ok) return;
+    pomodoroTimer.start(durationMinutes * 60);
+    currentPomodoroTaskId = taskId || null;
+    const unsubTick = ipc.onPomodoroTick((data) => {
+      if (data.remaining >= 0) pomodoroTimer.update(data.remaining);
+    });
+    const unsubEnd = ipc.onPomodoroEnd(() => {
+      pomodoroTimer.stop();
+      unsubTick();
+      unsubEnd();
+    });
+  }
+
   // Pomodoro timer
   const pomodoroTimer = new PomodoroTimer(document.getElementById("pomodoroArea"), {
-    onStart: async () => {
-      const res = await ipc.startPomodoro(25);
-      if (res.ok) {
-        pomodoroTimer.start(25 * 60);
-        const unsub = ipc.onPomodoroTick((data) => {
-          if (data.remaining >= 0) pomodoroTimer.update(data.remaining);
-        });
-        ipc.onPomodoroEnd(() => {
-          pomodoroTimer.stop();
-          unsub();
-        });
-      }
-    },
+    onStart: () => startPomodoroFlow(25),
     onStop: async () => {
       await ipc.stopPomodoro();
       ipc.removePomodoroListeners();
@@ -189,10 +305,19 @@
         const last = msgs[msgs.length - 1];
         if (last) last.textContent += chunk;
       });
-      const unsubDone = ipc.onDone(() => {
+      const unsubDone = ipc.onDone(async (data) => {
         convPanel.hideTyping();
         unsubChunk();
         unsubDone();
+        if (data.intent === INTENT.SWITCH_MODE && data.switchTarget) {
+          sidebar.classList.remove("open");
+          const statusRes = await ipc.getPomodoroStatus();
+          if (statusRes.ok && statusRes.data.taskId) {
+            showExitPanel(statusRes.data.taskId);
+          } else {
+            await ipc.switchMode(data.switchTarget);
+          }
+        }
       });
       const unsubError = ipc.onError((err) => {
         convPanel.hideTyping();
@@ -214,12 +339,114 @@
     sidebar.classList.remove("open");
   });
 
-  document.addEventListener("keydown", (e) => {
+  // ── Exit panel logic ──
+  const exitOverlay = document.getElementById("exitOverlay");
+  const exitPanel = document.getElementById("exitPanel");
+  const exitStateInquiry = document.getElementById("exitStateInquiry");
+  const exitStateSubtasks = document.getElementById("exitStateSubtasks");
+  const exitStateExtend = document.getElementById("exitStateExtend");
+  const exitStateNote = document.getElementById("exitStateNote");
+  const exitSubtaskList = document.getElementById("exitSubtaskList");
+  const exitProgressInput = document.getElementById("exitProgressInput");
+
+  function showExitPanel(taskId) {
+    isExitingWithTask = true;
+    showState("inquiry");
+    exitOverlay.classList.add("open");
+    exitPanel.classList.add("open");
+    window._exitTaskId = taskId;
+  }
+
+  function hideExitPanel() {
+    isExitingWithTask = false;
+    exitOverlay.classList.remove("open");
+    exitPanel.classList.remove("open");
+    window._exitTaskId = null;
+  }
+
+  function showState(name) {
+    exitStateInquiry.style.display = name === "inquiry" ? "" : "none";
+    exitStateSubtasks.style.display = name === "subtasks" ? "" : "none";
+    exitStateExtend.style.display = name === "extend" ? "" : "none";
+    exitStateNote.style.display = name === "note" ? "" : "none";
+  }
+
+  document.getElementById("exitCompletedBtn").addEventListener("click", async () => {
+    const taskId = window._exitTaskId;
+    if (!taskId) return;
+    const res = await ipc.getTaskById(taskId);
+    if (!res.ok || !res.data) { hideExitPanel(); await ipc.switchMode(MODE.PET); return; }
+    const task = res.data;
+    exitSubtaskList.innerHTML = "";
+    for (const sub of (task.subtasks || [])) {
+      const row = document.createElement("div");
+      row.className = "wallpaper-exit-subtask-item";
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = sub.completed;
+      cb.addEventListener("change", () => ipc.toggleSubtask(taskId, sub.id));
+      row.appendChild(cb);
+      row.appendChild(document.createTextNode(sub.rpgDesc || sub.realDesc));
+      exitSubtaskList.appendChild(row);
+    }
+    showState("subtasks");
+  });
+
+  document.getElementById("exitSubtaskConfirmBtn").addEventListener("click", async () => {
+    const taskId = window._exitTaskId;
+    if (taskId) {
+      const res = await ipc.getTaskById(taskId);
+      if (res.ok && res.data) {
+        const allDone = (res.data.subtasks || []).every((s) => s.completed);
+        if (allDone) await ipc.completeTask(taskId);
+      }
+    }
+    hideExitPanel();
+    await ipc.switchMode(MODE.PET);
+  });
+
+  document.getElementById("exitNotYetBtn").addEventListener("click", () => {
+    showState("extend");
+  });
+
+  document.getElementById("exitExtendYesBtn").addEventListener("click", async () => {
+    hideExitPanel();
+    await startPomodoroFlow(25, window._exitTaskId);
+  });
+
+  document.getElementById("exitExtendNoBtn").addEventListener("click", () => {
+    showState("note");
+  });
+
+  document.getElementById("exitProgressSaveBtn").addEventListener("click", async () => {
+    const note = exitProgressInput.value.trim();
+    exitProgressInput.value = "";
+    hideExitPanel();
+    if (note) {
+      convPanel.addMessage("user", note);
+      await ipc.sendMessage(note);
+    }
+    await ipc.switchMode(MODE.PET);
+  });
+
+  exitOverlay.addEventListener("click", () => hideExitPanel());
+
+  // ── Keyboard ──
+  document.addEventListener("keydown", async (e) => {
     if (e.key === "Escape") {
+      if (isExitingWithTask) {
+        hideExitPanel();
+        return;
+      }
       if (sidebar.classList.contains("open")) {
         sidebar.classList.remove("open");
+        return;
+      }
+      const statusRes = await ipc.getPomodoroStatus();
+      if (statusRes.ok && statusRes.data.taskId) {
+        showExitPanel(statusRes.data.taskId);
       } else {
-        ipc.switchMode("pet");
+        await ipc.switchMode(MODE.PET);
       }
     }
   });

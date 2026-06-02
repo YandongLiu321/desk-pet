@@ -4,6 +4,8 @@ function errorResponse(err) {
 	return { ok: false, error: { code: "INTERNAL", message: msg } };
 }
 
+const { IPC, MODE } = require("../shared/constants.js");
+
 /**
  * @param {object} services
  * @param {import('./database').Database} services.db
@@ -23,25 +25,25 @@ function registerIpcHandlers(services, deps) {
 		services;
 
 	// ── Conversation ──
-	ipcMain.handle("conversation:send", async (event, { message }) => {
+	ipcMain.handle(IPC.CONVERSATION_SEND, async (event, { message, enableTaskCreation }) => {
 		try {
 			const win = BrowserWindow.fromWebContents(event.sender);
 			llmService.chat(
-				{ message },
+				{ message, enableTaskCreation },
 				(chunk) => {
 					if (!win.isDestroyed())
-						win.webContents.send("conversation:chunk", { chunk });
+						win.webContents.send(IPC.CONVERSATION_CHUNK, { chunk });
 				},
 				(fullText, metadata) => {
 					if (!win.isDestroyed())
-						win.webContents.send("conversation:done", {
+						win.webContents.send(IPC.CONVERSATION_DONE, {
 							fullText,
 							...metadata,
 						});
 				},
 				(err) => {
 					if (!win.isDestroyed())
-						win.webContents.send("conversation:error", {
+						win.webContents.send(IPC.CONVERSATION_ERROR, {
 							code: err.type === "network" ? "LLM_NETWORK" : "LLM_API",
 							message: err.message,
 						});
@@ -53,7 +55,7 @@ function registerIpcHandlers(services, deps) {
 		}
 	});
 
-	ipcMain.handle("conversation:get-history", () => {
+	ipcMain.handle(IPC.CONVERSATION_GET_HISTORY, () => {
 		try {
 			const conv = db.getActiveConversation();
 			return { ok: true, data: { messages: conv.messages } };
@@ -62,7 +64,7 @@ function registerIpcHandlers(services, deps) {
 		}
 	});
 
-	ipcMain.handle("conversation:abort", () => {
+	ipcMain.handle(IPC.CONVERSATION_ABORT, () => {
 		try {
 			llmService.abort();
 			return { ok: true, data: null };
@@ -72,7 +74,7 @@ function registerIpcHandlers(services, deps) {
 	});
 
 	// ── Tasks ──
-	ipcMain.handle("task:get-all", (_event, { status } = {}) => {
+	ipcMain.handle(IPC.TASK_GET_ALL, (_event, { status } = {}) => {
 		try {
 			const tasks = status
 				? taskService.getActiveTasks()
@@ -83,7 +85,7 @@ function registerIpcHandlers(services, deps) {
 		}
 	});
 
-	ipcMain.handle("task:get-by-id", (_event, { taskId }) => {
+	ipcMain.handle(IPC.TASK_GET_BY_ID, (_event, { taskId }) => {
 		try {
 			const task = taskService.getTaskById(taskId);
 			if (!task)
@@ -100,7 +102,7 @@ function registerIpcHandlers(services, deps) {
 		}
 	});
 
-	ipcMain.handle("task:create", (_event, { data }) => {
+	ipcMain.handle(IPC.TASK_CREATE, (_event, { data }) => {
 		try {
 			if (!data?.realTitle || !data.rpgTitle) {
 				return {
@@ -118,7 +120,7 @@ function registerIpcHandlers(services, deps) {
 		}
 	});
 
-	ipcMain.handle("task:update", (_event, { taskId, partial }) => {
+	ipcMain.handle(IPC.TASK_UPDATE, (_event, { taskId, partial }) => {
 		try {
 			const task = taskService.updateTask(taskId, partial);
 			return { ok: true, data: task };
@@ -133,7 +135,7 @@ function registerIpcHandlers(services, deps) {
 		}
 	});
 
-	ipcMain.handle("task:toggle-subtask", (_event, { taskId, subtaskId }) => {
+	ipcMain.handle(IPC.TASK_TOGGLE_SUBTASK, (_event, { taskId, subtaskId }) => {
 		try {
 			const task = taskService.toggleSubtask(taskId, subtaskId);
 			return { ok: true, data: task };
@@ -148,7 +150,7 @@ function registerIpcHandlers(services, deps) {
 		}
 	});
 
-	ipcMain.handle("task:complete", (_event, { taskId }) => {
+	ipcMain.handle(IPC.TASK_COMPLETE, (_event, { taskId }) => {
 		try {
 			const result = taskService.completeTask(taskId);
 			relationshipService.incrementStat("tasksCompleted");
@@ -165,7 +167,7 @@ function registerIpcHandlers(services, deps) {
 		}
 	});
 
-	ipcMain.handle("task:delete", (_event, { taskId }) => {
+	ipcMain.handle(IPC.TASK_DELETE, (_event, { taskId }) => {
 		try {
 			taskService.deleteTask(taskId);
 			return { ok: true, data: null };
@@ -175,19 +177,22 @@ function registerIpcHandlers(services, deps) {
 	});
 
 	// ── App / Mode ──
-	ipcMain.handle("app:switch-mode", (_event, { mode }) => {
+	ipcMain.handle(IPC.APP_SWITCH_MODE, (_event, { mode }) => {
 		try {
-			if (!["pet", "wallpaper", "software"].includes(mode)) {
+			if (![MODE.PET, MODE.WALLPAPER, MODE.SOFTWARE].includes(mode)) {
 				return {
 					ok: false,
 					error: { code: "MODE_INVALID", message: `Invalid mode: ${mode}` },
 				};
 			}
+			if (services.pomodoroService?.isRunning()) {
+				services.pomodoroService.stop();
+			}
 			windowManager.switchMode(mode);
 			db.updateAppState({ currentMode: mode });
 			const win = windowManager.getCurrentWindow();
 			if (win && !win.isDestroyed()) {
-				win.webContents.send("mode:activated", mode);
+				win.webContents.send(IPC.MODE_ACTIVATED, mode);
 			}
 			return { ok: true, data: { mode } };
 		} catch (e) {
@@ -195,7 +200,7 @@ function registerIpcHandlers(services, deps) {
 		}
 	});
 
-	ipcMain.handle("app:get-state", () => {
+	ipcMain.handle(IPC.APP_GET_STATE, () => {
 		try {
 			return { ok: true, data: db.getAppState() };
 		} catch (e) {
@@ -203,7 +208,7 @@ function registerIpcHandlers(services, deps) {
 		}
 	});
 
-	ipcMain.handle("app:get-character", () => {
+	ipcMain.handle(IPC.APP_GET_CHARACTER, () => {
 		try {
 			return { ok: true, data: db.getCharacter() };
 		} catch (e) {
@@ -211,7 +216,7 @@ function registerIpcHandlers(services, deps) {
 		}
 	});
 
-	ipcMain.handle("app:get-relationship", () => {
+	ipcMain.handle(IPC.APP_GET_RELATIONSHIP, () => {
 		try {
 			return { ok: true, data: db.getRelationship() };
 		} catch (e) {
@@ -220,7 +225,7 @@ function registerIpcHandlers(services, deps) {
 	});
 
 	// ── Pomodoro ──
-	ipcMain.handle("pomodoro:start", (event, { duration, taskId } = {}) => {
+	ipcMain.handle(IPC.POMODORO_START, (event, { duration, taskId } = {}) => {
 		try {
 			if (!services.pomodoroService) {
 				return {
@@ -236,11 +241,11 @@ function registerIpcHandlers(services, deps) {
 				taskId,
 				onTick(remaining) {
 					if (win && !win.isDestroyed())
-						win.webContents.send("pomodoro:tick", { remaining });
+						win.webContents.send(IPC.POMODORO_TICK, { remaining });
 				},
 				onEnd() {
 					if (win && !win.isDestroyed())
-						win.webContents.send("pomodoro:end", {});
+						win.webContents.send(IPC.POMODORO_END, {});
 					if (taskId) relationshipService.incrementStat("pomodoros");
 					relationshipService.checkAndUpgrade();
 				},
@@ -252,7 +257,7 @@ function registerIpcHandlers(services, deps) {
 		}
 	});
 
-	ipcMain.handle("pomodoro:stop", () => {
+	ipcMain.handle(IPC.POMODORO_STOP, () => {
 		try {
 			if (services.pomodoroService) {
 				services.pomodoroService.stop();
@@ -263,7 +268,7 @@ function registerIpcHandlers(services, deps) {
 		}
 	});
 
-	ipcMain.handle("pomodoro:get-status", () => {
+	ipcMain.handle(IPC.POMODORO_GET_STATUS, () => {
 		try {
 			if (!services.pomodoroService) {
 				return { ok: true, data: { running: false, remaining: null } };
@@ -282,7 +287,7 @@ function registerIpcHandlers(services, deps) {
 	});
 
 	// ── Settings ──
-	ipcMain.handle("settings:get-api-key", () => {
+	ipcMain.handle(IPC.SETTINGS_GET_API_KEY, () => {
 		try {
 			return { ok: true, data: { apiKey: db.getApiKey() } };
 		} catch (e) {
@@ -290,7 +295,7 @@ function registerIpcHandlers(services, deps) {
 		}
 	});
 
-	ipcMain.handle("settings:set-api-key", (_event, { key }) => {
+	ipcMain.handle(IPC.SETTINGS_SET_API_KEY, (_event, { key }) => {
 		try {
 			db.setApiKey(key);
 			return { ok: true, data: null };
@@ -299,7 +304,7 @@ function registerIpcHandlers(services, deps) {
 		}
 	});
 
-	ipcMain.handle("settings:get-wallpaper", () => {
+	ipcMain.handle(IPC.SETTINGS_GET_WALLPAPER, () => {
 		try {
 			return { ok: true, data: db.getAppState().wallpaperSettings };
 		} catch (e) {
@@ -307,7 +312,7 @@ function registerIpcHandlers(services, deps) {
 		}
 	});
 
-	ipcMain.handle("settings:update-wallpaper", (_event, { partial }) => {
+	ipcMain.handle(IPC.SETTINGS_UPDATE_WALLPAPER, (_event, { partial }) => {
 		try {
 			const state = db.getAppState();
 			Object.assign(state.wallpaperSettings, partial);
@@ -319,7 +324,7 @@ function registerIpcHandlers(services, deps) {
 	});
 
 	// ── Window ──
-	ipcMain.handle("window:hide", () => {
+	ipcMain.handle(IPC.WINDOW_HIDE, () => {
 		try {
 			const win = windowManager.getCurrentWindow();
 			if (win) win.hide();
@@ -329,7 +334,7 @@ function registerIpcHandlers(services, deps) {
 		}
 	});
 
-	ipcMain.handle("window:close-mode", () => {
+	ipcMain.handle(IPC.WINDOW_CLOSE_MODE, () => {
 		try {
 			const win = windowManager.getCurrentWindow();
 			if (win) win.hide();

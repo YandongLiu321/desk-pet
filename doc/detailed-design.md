@@ -231,7 +231,7 @@ class WindowManager {
 ```js
 const WINDOW_CONFIG = {
   pet: {
-    width: 300, height: 400,
+    width: 140, height: 160,
     transparent: true, frame: false,
     alwaysOnTop: true, resizable: false,
     skipTaskbar: true
@@ -279,13 +279,15 @@ class LLMService {
   //      message — 用户输入文本
   // onChunk(chunk: string) — 每收到一个 token 时调用
   // onDone(fullText: string, metadata: object) — 流完成时调用
-  //      metadata.intent — 若有任务转化意图则为 'create_task'，否则为 null
-  //      metadata.taskPayload — 若 intent 为 create_task 则含结构化任务 JSON
+  //      metadata.intent — 'create_task' | 'switch_mode' | null
+  //      metadata.taskPayload — 若 intent='create_task' 则含结构化任务 JSON
+  //      metadata.switchTarget — 若 intent='switch_mode' 则为 'wallpaper' | 'software'
   // onError(error: LLMError) — 出错时调用
   //      LLMError: { type: 'network'|'api'|'timeout'|'parse', message: string, retried: boolean }
 
   // 组装 System Prompt（也可供其他模块调用）
-  buildSystemPrompt(context) // context: { currentMode, activeTask? } → string
+  buildSystemPrompt(context) // context: { currentMode, activeTask?, enableTaskCreation? } → string
+  // enableTaskCreation — 左键闲聊为 false，右键发布任务为 true
 
   // 释放当前活跃的请求（用于取消对话等场景）
   abort()                    // → void
@@ -295,12 +297,14 @@ class LLMService {
 **System Prompt 组装逻辑**（`buildSystemPrompt`）：
 
 ```
-输入：context { currentMode, activeTask }
+输入：context { currentMode, activeTask, enableTaskCreation? }
 步骤：
   1. 从 db 读取 character、relationship、recentMessages(20)
   2. 从 worldBook 读取 world、currentChapter 信息
   3. 按照提案 5.2 模板填充，返回完整 system prompt 字符串
-  4. 任务转化指令始终追加在末尾（见提案 5.3）
+  4. 若 context.enableTaskCreation === true，追加任务转化指令（见提案 5.3）；
+     若为 false（左键闲聊），不注入任务转化指令
+  5. 模式切换意图识别指令始终追加（在所有对话场景中可用）
 ```
 
 **错误处理流程**：
@@ -586,12 +590,17 @@ class IPCHandlers {
 |--------|------|----------|----------|
 | `conversation:send` | renderer→main | `{ message: string }` | 流式：main 通过 `conversation:chunk` 逐块推送 |
 | `conversation:chunk` | main→renderer | `{ chunk: string }` | — |
-| `conversation:done` | main→renderer | `{ fullText: string, intent?: string, taskPayload?: object }` | — |
+| `conversation:done` | main→renderer | `{ fullText: string, intent?: 'create_task'\|'switch_mode', taskPayload?: object, switchTarget?: 'wallpaper'\|'software' }` | — |
 | `conversation:error` | main→renderer | `{ code: string, message: string }` | — |
 | `conversation:get-history` | renderer→main | — | `{ ok: true, data: Message[] }` |
 | `conversation:abort` | renderer→main | — | — |
 
 **注**：`conversation:send` 不是标准的 request/response 模式。渲染进程通过 `ipcRenderer.invoke('conversation:send', { message })` 发起，主进程通过 `window.webContents.send('conversation:chunk', ...)` 推送流。渲染进程需要同时监听 `conversation:chunk`、`conversation:done`、`conversation:error` 三个事件。
+
+`conversation:done` 中的 `intent` 字段决定后续行为：
+- `'create_task'` → 渲染进程调用 `task:create` 创建任务
+- `'switch_mode'` → 渲染进程调用 `app:switch-mode` 切换到 `switchTarget` 指定模式
+- 无 intent → 纯闲聊，无后续动作
 
 **任务**：
 
@@ -901,31 +910,38 @@ fetchStatus()              // 查询当前状态
 
 ### 4.3. 桌宠模式 (`renderer/pet/`)
 
+窗口即角色本体（约 140×160，仅容纳 Q 版角色图标），对话面板和任务面板均为从角色旁浮出的覆盖层，不常驻显示。
+
 #### 组件树
 
 ```
 App.vue
-├── CharacterRenderer.vue          # 角色展示（图标 + 呼吸动画）
-├── ConversationPanel.vue           # 对话气泡（点击角色弹出）
+├── CharacterRenderer.vue          # 角色展示（图标 + 呼吸/眨眼/弹跳动画），填充窗口
+├── ConversationPanel.vue           # 对话浮层（左键点击角色弹出/收回）
 │   ├── ChatBubble.vue（*n）        # 单条消息
 │   └── MessageInput.vue            # 单行输入框 + 发送按钮
-├── MiniTaskPanel.vue               # 右键菜单展开的迷你任务面板
-│   └── TaskCard.vue（*n）          # 任务卡片（可勾选子任务）
-└── TrayContextMenu.vue             # 右键上下文菜单（模式切换）
+├── ContextMenu.vue                 # 右键上下文菜单（发布任务、切换模式、退出）
+└── MiniTaskPanel.vue               # 迷你任务面板（右键菜单入口展开）
+    └── TaskCard.vue（*n）          # 任务卡片（可勾选子任务）
 ```
 
 #### 交互流程
 
-1. **对话**：点击角色 → 弹出 ConversationPanel → 输入文字 → 回车发送 → 流式显示回复
-2. **任务发布**：在对话中自然表达待办 → AI 返回 `intent: create_task` → 自动创建任务 → 显示提示
-3. **迷你任务面板**：右键角色 → 面板展开 → 查看任务 → 勾选子任务
-4. **模式切换**：右键角色 → 菜单 → 选择壁纸/软件模式 → appStore.switchMode()
+1. **闲聊（左键）**：点击角色 → 对话浮层弹出 → 输入文字 → 回车发送 → 流式显示回复。此为纯闲聊通道，不混入任务转化逻辑。
+2. **功能菜单（右键）**：右键角色 → 弹出上下文菜单，包含：
+   - **发布任务**：进入任务发布流程，用户表达待办 → AI 返回 `intent: create_task` → 创建任务 → 显示提示
+   - **切换壁纸/软件模式**：手动切换入口
+   - **查看任务列表**：展开迷你任务面板
+   - **退出**：关闭应用
+3. **迷你任务面板**：右键菜单中触发 → 面板展开 → 查看任务 → 勾选子任务
+4. **智能模式切换（对话）**：闲聊中用户表达"想开始专注/干活"等意图 → AI 识别后以角色口吻询问确认（如"旅者，要我展开星幕陪你专注吗？"） → 用户同意 → AI 返回 `intent: switch_mode` → 自动切换到目标模式
 
 #### 特殊窗口行为
 
-- 透明无边框，窗口始终置顶
+- 透明无边框，窗口仅容纳角色本体
 - 角色区域可拖动（通过 `-webkit-app-region: drag` + 主进程 `setIgnoreMouseEvents` 配合）
-- 点击角色触发交互，非角色区域鼠标事件穿透到桌面
+- 非角色区域鼠标事件穿透到桌面
+- 对话浮层、菜单、任务面板为覆盖层，点击面板外区域或按 ESC 关闭
 
 ### 4.4. 壁纸模式 (`renderer/wallpaper/`)
 
@@ -950,11 +966,17 @@ App.vue
 2. **番茄钟**：点击开始 → 倒计时 → 边缘进度条同步 → 时间到 → 角色弹出问题 → 用户选择完成/未完成 → 叙事反馈
 3. **白噪音**：原型阶段为占位 UI。组件接口已预留（音源选择、音量控制），`assets/audio/` 目录已创建，后续加入音频文件即生效
 4. **对话**：点击角色 → 侧边滑入对话栏 → 交互方式与桌宠一致
-5. **退出**：ESC 或按钮 → `appStore.switchMode('pet')`
+5. **退出（含任务进度询问与番茄钟循环）**：ESC 或按钮 → 角色弹出询问"这次的专注任务完成得怎么样？"：
+   - **完成了** → 展示关联任务，用户勾选已完成的子任务 → 子任务全完成则触发结算叙事 → 返回桌宠
+   - **还没完成** → 角色询问"需要再延 25 分钟继续吗？"：
+     - **同意** → 番茄钟重新开始倒计时 → 用户继续专注 → 时间到后再次询问
+     - **拒绝（坚持退出）** → 角色询问"那记录一下进度吧~" → 用户输入进度描述 → 记录到任务备注 → 返回桌宠
+   - 若无关联任务 → 直接返回桌宠
 
 #### 特殊行为
 - 番茄钟 running 时，窗口 `skipTaskbar` 为 true（不打扰）
 - 切换到其他模式时，番茄钟自动 stop
+- 退出壁纸时角色必须询问任务进度（番茄钟关联了 taskId 时），不可直接闪切。未完成时可延长番茄钟进入下一轮循环
 - 默认 25 分钟专注 + 5 分钟休息（从 worldbook 读取 `pomodoroDefaults`）
 
 #### WhiteNoiseControl 预留接口
@@ -1082,7 +1104,7 @@ emits: ['start', 'stop']
 
 ## 5. 时序图
 
-### 5.1. 对话流程（含任务转化）
+### 5.1. 对话流程（含意图识别）
 
 ```
 用户          渲染进程(桌宠)        Preload             主进程(IPC)         LLM Service       Database
@@ -1114,15 +1136,20 @@ emits: ['start', 'stop']
  │<───────────────│                   │                    │                   │              │
  │                │                   │                    │                   │              │
  │                │  conversation:done (fullText, intent,   │                   │              │
- │                │       taskPayload)                      │                   │              │
+ │                │       taskPayload, switchTarget)        │                   │              │
  │                │<───────────────────(webContents.send)───│<──onDone(text)───│              │
  │                │                   │                    │                   │              │
- │                │                   │                    │ [若 intent=create_task]           │
- │                │                   │                    │   taskService.createFromAIResp()  │
- │                │                   │                    │   → db.createTask()              │
- │                │                   │                    │──────────────────────────────────>│
- │                │                   │                    │<──── newTask ────────────────────│
- │ "任务已生成"   │                   │                    │                   │              │
+ │       ┌─ intent=create_task:       │                    │                   │              │
+ │       │   task:create ──────────────────────────────────>│                   │              │
+ │       │                          │                    │── taskService.createFromAIResp()   │
+ │       │                          │                    │──────────────────────────────────>│
+ │       │                          │                    │<──── newTask ────────────────────│
+ │       │  "任务已生成"             │                    │                   │              │
+ │       │                          │                    │                   │              │
+ │       └─ intent=switch_mode:      │                    │                   │              │
+ │           app:switch-mode ──────────────────────────────>│                   │              │
+ │                          │                    │── windowManager.switchMode(target)       │
+ │ "已切换到壁纸/软件"   │                   │                    │                   │              │
  │<───────────────│                   │                    │                   │              │
 ```
 

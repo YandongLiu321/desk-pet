@@ -33,8 +33,8 @@ class IpcClient {
 	}
 
 	// Conversation
-	async sendMessage(message) {
-		return this._call("conversation.send", message);
+	async sendMessage(message, enableTaskCreation) {
+		return this._call("conversation.send", message, enableTaskCreation);
 	}
 	async getHistory() {
 		return this._call("conversation.getHistory");

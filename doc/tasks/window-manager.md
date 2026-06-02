@@ -9,7 +9,7 @@
 - [ ] **wm-01** 定义 `WINDOW_CONFIG` 常量（pet/wallpaper/software 三种窗口配置）
 - [ ] **wm-02** 实现 `constructor(preloadPath)`，初始化窗口 Map
 - [ ] **wm-03** 实现 `getOrCreateWindow(mode)` → 创建或返回缓存的 BrowserWindow
-  - pet: 300×400, transparent, frame:false, alwaysOnTop
+  - pet: 140×160, transparent, frame:false, alwaysOnTop（窗口仅容纳角色本体，对话/菜单为浮层）
   - wallpaper: fullscreen, transparent, frame:false
   - software: 1280×800, frame:true, resizable
 

@@ -59,7 +59,7 @@
 
 开发一个 Windows 桌面 AI 陪伴应用，覆盖三大场景：
 
-- **桌宠模式**：常驻桌面的透明无边框宠物窗口，支持自然语言对话和任务发布
+- **桌宠模式**：桌面悬浮的 Q 版角色（窗口即角色本体，约 120×120）。左键点击进行自然语言闲聊，右键菜单发布任务与切换模式。对话中能识别用户模式切换意图并主动询问确认后切换
 - **壁纸模式**：全屏覆盖的专注陪伴层，含番茄钟和白噪音
 - **软件模式**：RPG 风格的游戏化主界面，任务结算与剧情推进
 
@@ -137,8 +137,9 @@
 │ (纯 HTML/    │ │ (纯 HTML/    │ │ (纯 HTML/    │
 │  CSS/JS)     │ │  CSS/JS)     │ │  CSS/JS)     │
 │              │ │              │ │              │
-│ 300×400px    │ │ 全屏覆盖      │ │ 1280×800px   │
+│ ~140×160px   │ │ 全屏覆盖      │ │ 1280×800px   │
 │ 透明无边框    │ │ 半透明        │ │ 独立窗口      │
+│ 浮层交互      │ │              │ │              │
 └──────────────┘ └──────────────┘ └──────────────┘
 ```
 
@@ -217,7 +218,7 @@ desk-pet/
 {
   "appState": {
     "currentMode": "pet",
-    "petWindowBounds": { "x": 1000, "y": 600, "width": 300, "height": 400 },
+    "petWindowBounds": { "x": 1000, "y": 600, "width": 140, "height": 160 },
     "wallpaperSettings": { "opacity": 0.85, "characterPosition": "right", "soundVolume": 0.5 },
     "pomodoro": null
   },
@@ -304,7 +305,7 @@ class Database {
 
 ```js
 const WINDOW_CONFIG = {
-  pet:       { width: 300, height: 400, transparent: true, frame: false, alwaysOnTop: true,  resizable: false, skipTaskbar: true },
+  pet:       { width: 140, height: 160, transparent: true, frame: false, alwaysOnTop: true,  resizable: false, skipTaskbar: true },
   wallpaper: { fullscreen: true,          transparent: true, frame: false, alwaysOnTop: false, resizable: false, skipTaskbar: true },
   software:  { width: 1280, height: 800, transparent: false, frame: true, alwaysOnTop: false, resizable: true,  skipTaskbar: false }
 }
@@ -325,12 +326,14 @@ class WindowManager {
 ```js
 class LLMService {
   constructor(config)  // config: { apiKey, db, worldBook }
-  buildSystemPrompt(context)  // context: { currentMode, activeTask? } → string
+  buildSystemPrompt(context)  // context: { currentMode, activeTask?, enableTaskCreation? } → string
+  // enableTaskCreation — 左键闲聊=false（不注入任务转化指令），右键发布任务=true
 
   async chat(options, onChunk, onDone, onError) {}
-  // options: { message }
+  // options: { message, enableTaskCreation? }
   // onChunk(text: string) — 每收到一个 token
-  // onDone(fullText, metadata) — 流完成。metadata: { intent?, taskPayload? }
+  // onDone(fullText, metadata) — 流完成。metadata: { intent?, taskPayload?, switchTarget? }
+  //   intent: 'create_task' | 'switch_mode' | null
   // onError(error: { type: 'network'|'api'|'timeout'|'parse', message, retried })
 
   abort()  // → void
@@ -561,8 +564,8 @@ window:        hide(), closeMode()
   --font-mono: "Cascadia Code", "Fira Code", "Consolas", monospace;
 
   /* 窗口尺寸（禁止在 JS 中硬编码，必须从此处或 WINDOW_CONFIG 读取） */
-  --win-pet-width: 300px;
-  --win-pet-height: 400px;
+  --win-pet-width: 140px;
+  --win-pet-height: 160px;
   --win-software-width: 1280px;
   --win-software-height: 800px;
 
@@ -623,19 +626,29 @@ window:        hide(), closeMode()
 #### 桌宠模式 (`renderer/pet/index.html`)
 
 ```
-布局：全窗口 300×400，透明背景
-├── 角色区域（居中 120×120px，可拖动，点击打开对话）
-├── 对话面板（底部弹出，position='bottom'）
+布局：窗口即角色本体（约 140×160），透明无边框，始终置顶
+├── 角色区域（填充窗口 ~120×120px，可拖动）
+│   ├── 呼吸/眨眼/弹跳动画
+│   ├── 左键点击 → 打开对话浮层（闲聊）
+│   └── 右键点击 → 弹出功能菜单
+├── 对话浮层（position='bottom'，左键触发出现在角色下方）
 │   ├── 消息列表
 │   └── 输入框 + 发送按钮
-├── 迷你任务面板（右键弹出，浮动面板，最大300px高）
-└── 右键菜单（壁纸模式/软件模式/退出）
+├── 右键菜单（发布任务 / 壁纸模式 / 软件模式 / 任务列表 / 退出）
+└── 迷你任务面板（右键菜单→任务列表 触发的浮动面板，最大300px高）
 ```
+
+交互规则：
+- **左键**：纯闲聊。点击角色弹出对话浮层，输入文字聊天天。该通道不处理任务转化。
+- **右键**：功能菜单。含"发布任务"入口（进入任务发布流程，AI 识别待办并转化）和模式切换入口。
+- **智能模式切换**：闲聊中用户表达"想专注/干活/看剧情"等意图时，AI 先以角色口吻询问确认，用户同意后自动切换。
+- 对话框和菜单点击外部区域或按 ESC 关闭。
 
 特殊行为：
 - 透明无边框，始终置顶
-- 角色区域外鼠标穿透（`setIgnoreMouseEvents`）
+- 非角色区域鼠标穿透（`setIgnoreMouseEvents`）
 - 角色区域 CSS `-webkit-app-region: drag`
+- 对话浮层和菜单为覆盖层，面板打开时不鼠标穿透
 
 #### 壁纸模式 (`renderer/wallpaper/index.html`)
 
@@ -647,7 +660,14 @@ window:        hide(), closeMode()
 ├── 白噪音占位（禁用下拉框 + 提示文字）
 ├── 侧边对话栏（position='side'，点击角色滑入）
 ├── 底部进度条（番茄钟运行时显示，极细条）
-└── 退出按钮（ESC 或点击）
+├── 退出按钮（ESC 或点击，触发任务进度询问）
+└── 退出确认浮层（关联任务时弹出：完成→勾选子任务 / 未完成→输入进度备注）
+```
+
+退出行为：ESC 或点击退出→若番茄钟关联了任务，角色先问"这次的任务完成得怎么样？"→
+- "完成" → 展开子任务勾选 → 返回桌宠
+- "还没" → 角色问"要再延25分钟继续吗？" → 同意则重启番茄钟继续专注 / 拒绝则输入进度备注 → 返回桌宠
+- 无关联任务则直接返回。
 ```
 
 #### 软件模式 (`renderer/software/index.html`)
@@ -806,12 +826,23 @@ POST https://api.deepseek.com/v1/chat/completions
 
 [行为指令]
 - 回复控制在 50-100 字
-- 若对话中包含待办事项，使用 /task 指令触发任务转化
 - 在主动互动时，保持简短（不超过 50 字）
+- 识别用户切换模式的意图，但**必须在用户明确同意后才输出模式切换 JSON**：
+  - 用户说"想开始专注/干活/执行任务/开始番茄钟"等 → 先以角色口吻询问"要进入壁纸模式吗？"
+  - 用户说"想看剧情/进度/结算/进入软件模式"等 → 先以角色口吻询问"要打开星之书查看进度吗？"
+  - 用户同意（"好""嗯""可以""是的"）后，才输出切换 JSON
 
-[任务转化]
+[任务转化]（仅右键"发布任务"流程注入，左键闲聊模式下不包含此段）
 当检测到用户待办事项时，返回以下 JSON（不要包含其他文字）：
 {"intent":"create_task","realTask":"...","rpgTitle":"...","rpgDescription":"...","estimatedPomodoros":2,"estimatedMinutes":50,"subtasks":[{"realDesc":"...","rpgDesc":"..."}]}
+
+[模式切换]
+当用户明确同意切换模式后，返回以下 JSON（不要包含其他文字）：
+{"intent":"switch_mode","mode":"wallpaper"} 或 {"intent":"switch_mode","mode":"software"}
+
+> **Prompt 组装规则**：`buildSystemPrompt(context)` 接收 `context.enableTaskCreation` 参数。
+> - 左键闲聊：enableTaskCreation=false → 注入 [角色设定]~[模式切换]（不含[任务转化]段）
+> - 右键发布任务：enableTaskCreation=true → 注入全部段落（含[任务转化]段）
 ```
 
 ### 9.3 流式输出处理
@@ -926,11 +957,12 @@ POST https://api.deepseek.com/v1/chat/completions
 - 不得修改 `package.json`、`biome.json`、`tsconfig.json`、`.gitignore`
 - 如需改依赖或配置，输出建议，由用户手动执行
 
-**4. 代码复杂度上限**
+**4. 代码复杂度与重复上限**
 - 单个函数不超过 50 行
-- 单个文件不超过 150 行
+- 单个 JS 文件不超过 300 行（HTML 页面含内嵌样式与脚本可放宽至 500 行）
 - 超过必须拆分成多个文件或函数
 - 禁止嵌套超过 3 层的回调/条件
+- **禁止跨文件复制粘贴**：相同或高度相似的业务逻辑（>10行）出现在2个及以上文件中时，必须提取到 `shared/` 共享模块；子 Agent 交付前自查新增代码是否与已有文件逻辑重复
 
 **5. 禁止引入新依赖**
 - 不得 `npm install` 任何新包
@@ -951,10 +983,12 @@ POST https://api.deepseek.com/v1/chat/completions
 - 不得回头修改已验收通过的模块（如 shared、database 等）
 - 如需修改，必须说明理由并等待用户确认
 
-**9. Electron 安全约束**
-- 主进程（main.js）禁止写同步阻塞代码（如 `fs.readFileSync` 大文件）
+**9. Electron 安全与健壮性约束**
+- 主进程禁止写同步阻塞代码（如 `fs.readFileSync` 大文件；小型 JSON 配置文件除外）
 - 渲染进程禁止直接调用 Node.js API（必须通过 IPC）
-- 禁止硬编码窗口尺寸、颜色值，必须提取为常量
+- **禁止在渲染进程中使用 innerHTML 拼接动态内容**（用户输入、LLM 输出、API 返回值等）。动态文本必须通过 `textContent` 设置或经 `escapeHtml()` 转义后插入；仅静态模板结构可使用 innerHTML
+- **IPC channel 名必须定义在单一常量文件中**（如 `src/shared/constants.js`），preload 与 ipc-handlers 共同引用同一常量对象，禁止裸写 channel 字符串——杜绝两处拼写不一致导致的静默失败
+- **跨文件引用的字符串必须集中为常量**：API URL、模型名、角色名、关系阶段映射等展示文案，不得在多个文件中各自手写同一字符串字面量
 
 **10. 资源占位策略**
 - 立绘/背景图未到位时，用 CSS 纯色块 + 文字标签占位
@@ -1002,7 +1036,7 @@ tests/database.test.js, task-service.test.js, relationship-service.test.js,
 
 - [ ] `npm start` — 应用启动，桌宠窗口出现，托盘图标可见
 - [ ] 三模式任意切换不闪退
-- [ ] 桌宠模式：对话 + 任务发布流程跑通
+- [ ] 桌宠模式：左键闲聊流程跑通 + 右键菜单发布任务流程跑通 + 对话智能模式切换跑通
 - [ ] 壁纸模式：番茄钟启动/停止/倒计时正常
 - [ ] 软件模式：任务结算 + 叙事反馈流程跑通
 - [ ] `npx tsc --noEmit` — 类型检查通过

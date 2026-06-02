@@ -1,129 +1,130 @@
 const { contextBridge, ipcRenderer } = require("electron");
+const { IPC } = require("./shared/constants.js");
 
 contextBridge.exposeInMainWorld("electronAPI", {
 	conversation: {
-		send(message) {
-			return ipcRenderer.invoke("conversation:send", { message });
+		send(message, enableTaskCreation) {
+			return ipcRenderer.invoke(IPC.CONVERSATION_SEND, { message, enableTaskCreation });
 		},
 		getHistory() {
-			return ipcRenderer.invoke("conversation:get-history");
+			return ipcRenderer.invoke(IPC.CONVERSATION_GET_HISTORY);
 		},
 		abort() {
-			return ipcRenderer.invoke("conversation:abort");
+			return ipcRenderer.invoke(IPC.CONVERSATION_ABORT);
 		},
 		onChunk(cb) {
 			const handler = (_event, data) => cb(data.chunk);
-			ipcRenderer.on("conversation:chunk", handler);
-			return () => ipcRenderer.removeListener("conversation:chunk", handler);
+			ipcRenderer.on(IPC.CONVERSATION_CHUNK, handler);
+			return () => ipcRenderer.removeListener(IPC.CONVERSATION_CHUNK, handler);
 		},
 		onDone(cb) {
 			const handler = (_event, data) => cb(data);
-			ipcRenderer.on("conversation:done", handler);
-			return () => ipcRenderer.removeListener("conversation:done", handler);
+			ipcRenderer.on(IPC.CONVERSATION_DONE, handler);
+			return () => ipcRenderer.removeListener(IPC.CONVERSATION_DONE, handler);
 		},
 		onError(cb) {
 			const handler = (_event, data) => cb(data);
-			ipcRenderer.on("conversation:error", handler);
-			return () => ipcRenderer.removeListener("conversation:error", handler);
+			ipcRenderer.on(IPC.CONVERSATION_ERROR, handler);
+			return () => ipcRenderer.removeListener(IPC.CONVERSATION_ERROR, handler);
 		},
 		removeAllListeners() {
-			ipcRenderer.removeAllListeners("conversation:chunk");
-			ipcRenderer.removeAllListeners("conversation:done");
-			ipcRenderer.removeAllListeners("conversation:error");
+			ipcRenderer.removeAllListeners(IPC.CONVERSATION_CHUNK);
+			ipcRenderer.removeAllListeners(IPC.CONVERSATION_DONE);
+			ipcRenderer.removeAllListeners(IPC.CONVERSATION_ERROR);
 		},
 	},
 
 	task: {
 		getAll(status) {
-			return ipcRenderer.invoke("task:get-all", { status });
+			return ipcRenderer.invoke(IPC.TASK_GET_ALL, { status });
 		},
 		getById(taskId) {
-			return ipcRenderer.invoke("task:get-by-id", { taskId });
+			return ipcRenderer.invoke(IPC.TASK_GET_BY_ID, { taskId });
 		},
 		create(data) {
-			return ipcRenderer.invoke("task:create", { data });
+			return ipcRenderer.invoke(IPC.TASK_CREATE, { data });
 		},
 		update(taskId, partial) {
-			return ipcRenderer.invoke("task:update", { taskId, partial });
+			return ipcRenderer.invoke(IPC.TASK_UPDATE, { taskId, partial });
 		},
 		toggleSubtask(taskId, subtaskId) {
-			return ipcRenderer.invoke("task:toggle-subtask", { taskId, subtaskId });
+			return ipcRenderer.invoke(IPC.TASK_TOGGLE_SUBTASK, { taskId, subtaskId });
 		},
 		complete(taskId) {
-			return ipcRenderer.invoke("task:complete", { taskId });
+			return ipcRenderer.invoke(IPC.TASK_COMPLETE, { taskId });
 		},
 		delete(taskId) {
-			return ipcRenderer.invoke("task:delete", { taskId });
+			return ipcRenderer.invoke(IPC.TASK_DELETE, { taskId });
 		},
 	},
 
 	app: {
 		switchMode(mode) {
-			return ipcRenderer.invoke("app:switch-mode", { mode });
+			return ipcRenderer.invoke(IPC.APP_SWITCH_MODE, { mode });
 		},
 		getState() {
-			return ipcRenderer.invoke("app:get-state");
+			return ipcRenderer.invoke(IPC.APP_GET_STATE);
 		},
 		getCharacter() {
-			return ipcRenderer.invoke("app:get-character");
+			return ipcRenderer.invoke(IPC.APP_GET_CHARACTER);
 		},
 		getRelationship() {
-			return ipcRenderer.invoke("app:get-relationship");
+			return ipcRenderer.invoke(IPC.APP_GET_RELATIONSHIP);
 		},
 		onModeActivated(cb) {
 			const handler = (_event, mode) => cb(mode);
-			ipcRenderer.on("mode:activated", handler);
-			return () => ipcRenderer.removeListener("mode:activated", handler);
+			ipcRenderer.on(IPC.MODE_ACTIVATED, handler);
+			return () => ipcRenderer.removeListener(IPC.MODE_ACTIVATED, handler);
 		},
 	},
 
 	pomodoro: {
 		start(duration, taskId) {
-			return ipcRenderer.invoke("pomodoro:start", { duration, taskId });
+			return ipcRenderer.invoke(IPC.POMODORO_START, { duration, taskId });
 		},
 		stop() {
-			return ipcRenderer.invoke("pomodoro:stop");
+			return ipcRenderer.invoke(IPC.POMODORO_STOP);
 		},
 		getStatus() {
-			return ipcRenderer.invoke("pomodoro:get-status");
+			return ipcRenderer.invoke(IPC.POMODORO_GET_STATUS);
 		},
 		onTick(cb) {
 			const handler = (_event, data) => cb(data);
-			ipcRenderer.on("pomodoro:tick", handler);
-			return () => ipcRenderer.removeListener("pomodoro:tick", handler);
+			ipcRenderer.on(IPC.POMODORO_TICK, handler);
+			return () => ipcRenderer.removeListener(IPC.POMODORO_TICK, handler);
 		},
 		onEnd(cb) {
 			const handler = (_event, data) => cb(data);
-			ipcRenderer.on("pomodoro:end", handler);
-			return () => ipcRenderer.removeListener("pomodoro:end", handler);
+			ipcRenderer.on(IPC.POMODORO_END, handler);
+			return () => ipcRenderer.removeListener(IPC.POMODORO_END, handler);
 		},
 		removeAllListeners() {
-			ipcRenderer.removeAllListeners("pomodoro:tick");
-			ipcRenderer.removeAllListeners("pomodoro:end");
+			ipcRenderer.removeAllListeners(IPC.POMODORO_TICK);
+			ipcRenderer.removeAllListeners(IPC.POMODORO_END);
 		},
 	},
 
 	settings: {
 		getApiKey() {
-			return ipcRenderer.invoke("settings:get-api-key");
+			return ipcRenderer.invoke(IPC.SETTINGS_GET_API_KEY);
 		},
 		setApiKey(key) {
-			return ipcRenderer.invoke("settings:set-api-key", { key });
+			return ipcRenderer.invoke(IPC.SETTINGS_SET_API_KEY, { key });
 		},
 		getWallpaper() {
-			return ipcRenderer.invoke("settings:get-wallpaper");
+			return ipcRenderer.invoke(IPC.SETTINGS_GET_WALLPAPER);
 		},
 		updateWallpaper(partial) {
-			return ipcRenderer.invoke("settings:update-wallpaper", { partial });
+			return ipcRenderer.invoke(IPC.SETTINGS_UPDATE_WALLPAPER, { partial });
 		},
 	},
 
 	window: {
 		hide() {
-			return ipcRenderer.invoke("window:hide");
+			return ipcRenderer.invoke(IPC.WINDOW_HIDE);
 		},
 		closeMode() {
-			return ipcRenderer.invoke("window:close-mode");
+			return ipcRenderer.invoke(IPC.WINDOW_CLOSE_MODE);
 		},
 	},
 });

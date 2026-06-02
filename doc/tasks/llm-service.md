@@ -8,10 +8,12 @@
 
 - [ ] **llm-01** 实现 `constructor(config)`，接收 `{ apiKey, db, worldBook }`
 - [ ] **llm-02** 实现 `buildSystemPrompt(context)` 方法
+  - context: `{ currentMode, activeTask?, enableTaskCreation? }`
   - 从 db 读取 character、relationship、recentMessages(20)
   - 从 worldBook 读取 world、currentChapter 信息
   - 按提案 5.2 模板填充返回完整 system prompt 字符串
-  - 末尾追加任务转化指令（提案 5.3）
+  - 若 `enableTaskCreation === true` 则追加任务转化指令（右鍵发布任务流）；否则不注入（左键闲聊流）
+  - 始终追加模式切换意图识别指令
 
 ### API 调用
 
@@ -21,8 +23,10 @@
   - model: `deepseek-chat`, temperature: 0.8, max_tokens: 500, stream: true
 - [ ] **llm-04** 实现流式 SSE 解析：逐 token 回调 `onChunk(chunk)`
 - [ ] **llm-05** 流完成时回调 `onDone(fullText, metadata)`
-  - 检测 AI 返回中是否包含 `intent: create_task` 的结构化 JSON
-  - 有则 `metadata.intent = 'create_task'`, `metadata.taskPayload = {...}`
+  - 解析 AI 返回中是否包含识别意图的结构化 JSON
+  - `intent: 'create_task'` → `metadata.intent = 'create_task'`, `metadata.taskPayload = {...}`
+  - `intent: 'switch_mode'` → `metadata.intent = 'switch_mode'`, `metadata.switchTarget = 'wallpaper'|'software'`
+  - 无意图 → `metadata.intent = null`
 - [ ] **llm-06** 实现 `abort()` → 取消当前活跃的 fetch 请求
 
 ### 错误处理
