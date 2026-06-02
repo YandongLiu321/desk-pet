@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>壁纸模式 — 露娜·月语</title>
+<link rel="stylesheet" href="../shared/styles/base.css">
+<style>
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background: linear-gradient(135deg, var(--color-bg-darkest), var(--color-bg-dark));
+    overflow: hidden;
+    position: relative;
+  }
+
+  .wallpaper-bg-layer {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, rgba(107,92,231,0.15) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .wallpaper-char-area {
+    width: var(--char-wallpaper-size);
+    height: var(--char-wallpaper-size);
+    margin-bottom: var(--space-xl);
+    cursor: pointer;
+  }
+
+  .wallpaper-pomodoro-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+  }
+
+  .wallpaper-chat-sidebar {
+    position: fixed;
+    right: 0;
+    top: 0;
+    width: 320px;
+    height: 100%;
+    background: var(--color-bg-dark);
+    border-left: 1px solid var(--color-bg-light);
+    transform: translateX(100%);
+    transition: transform var(--transition-normal);
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .wallpaper-chat-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .wallpaper-chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-md);
+    border-bottom: 1px solid var(--color-bg-light);
+  }
+
+  .wallpaper-chat-header span {
+    font-size: var(--font-lg);
+    color: var(--color-text-primary);
+  }
+
+  .wallpaper-chat-close {
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    font-size: var(--font-xl);
+  }
+
+  .wallpaper-chat-content {
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .wallpaper-audio-placeholder {
+    margin-top: var(--space-md);
+    opacity: 0.5;
+  }
+
+  .wallpaper-audio-placeholder select {
+    background: var(--color-bg-medium);
+    color: var(--color-text-muted);
+    border: 1px solid var(--color-bg-light);
+    border-radius: var(--radius-sm);
+    padding: var(--space-sm);
+    font-size: var(--font-sm);
+  }
+
+  .wallpaper-audio-placeholder span {
+    font-size: var(--font-xs);
+    color: var(--color-text-muted);
+  }
+
+  .wallpaper-esc-hint {
+    position: fixed;
+    bottom: var(--space-md);
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: var(--font-xs);
+    color: var(--color-text-muted);
+    opacity: 0.5;
+  }
+</style>
+</head>
+<body>
+
+<div class="wallpaper-bg-layer"></div>
+
+<div class="wallpaper-char-area" id="charArea" title="点击露娜打开对话"></div>
+
+<div class="wallpaper-pomodoro-area" id="pomodoroArea"></div>
+
+<div class="wallpaper-audio-placeholder">
+  <select disabled>
+    <option>白噪音（即将推出）</option>
+  </select>
+  <br><span>白噪音功能开发中，敬请期待~</span>
+</div>
+
+<div class="wallpaper-chat-sidebar" id="chatSidebar">
+  <div class="wallpaper-chat-header">
+    <span>露娜·月语</span>
+    <button class="wallpaper-chat-close" id="chatCloseBtn">×</button>
+  </div>
+  <div class="wallpaper-chat-content" id="chatContent"></div>
+</div>
+
+<div class="wallpaper-esc-hint">按 ESC 退出壁纸模式</div>
+
+<script src="../shared/ipc-client.js"></script>
+<script src="../shared/dom-utils.js"></script>
+<script src="../shared/character-renderer.js"></script>
+<script src="../shared/conversation-panel.js"></script>
+<script src="../shared/pomodoro-timer.js"></script>
+<script>
+(() => {
+  const { IpcClient, CharacterRenderer, ConversationPanel, PomodoroTimer } = window;
+  const ipc = new IpcClient();
+
+  // Character
+  const charRenderer = new CharacterRenderer(document.getElementById("charArea"), { mode: "wallpaper", size: 200 });
+  charRenderer.mount();
+
+  // Pomodoro timer
+  const pomodoroTimer = new PomodoroTimer(document.getElementById("pomodoroArea"), {
+    onStart: async () => {
+      const res = await ipc.startPomodoro(25);
+      if (res.ok) {
+        pomodoroTimer.start(25 * 60);
+        const unsub = ipc.onPomodoroTick((data) => {
+          if (data.remaining >= 0) pomodoroTimer.update(data.remaining);
+        });
+        ipc.onPomodoroEnd(() => {
+          pomodoroTimer.stop();
+          unsub();
+        });
+      }
+    },
+    onStop: async () => {
+      await ipc.stopPomodoro();
+      ipc.removePomodoroListeners();
+    },
+  });
+  pomodoroTimer.mount();
+
+  // Conversation sidebar
+  const sidebar = document.getElementById("chatSidebar");
+  const chatContent = document.getElementById("chatContent");
+  const convPanel = new ConversationPanel(chatContent, {
+    position: "side",
+    onSend: async (text) => {
+      convPanel.showTyping();
+      let started = false;
+      const unsubChunk = ipc.onChunk((chunk) => {
+        if (!started) { started = true; convPanel.addMessage("assistant", ""); }
+        const msgs = chatContent.querySelectorAll(".conv-msg--assistant");
+        const last = msgs[msgs.length - 1];
+        if (last) last.textContent += chunk;
+      });
+      const unsubDone = ipc.onDone(() => {
+        convPanel.hideTyping();
+        unsubChunk();
+        unsubDone();
+      });
+      const unsubError = ipc.onError((err) => {
+        convPanel.hideTyping();
+        unsubChunk();
+        unsubDone();
+        unsubError();
+        convPanel.showError(err);
+      });
+      await ipc.sendMessage(text);
+    },
+  });
+  convPanel.mount();
+
+  document.getElementById("charArea").addEventListener("click", () => {
+    sidebar.classList.toggle("open");
+  });
+
+  document.getElementById("chatCloseBtn").addEventListener("click", () => {
+    sidebar.classList.remove("open");
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      if (sidebar.classList.contains("open")) {
+        sidebar.classList.remove("open");
+      } else {
+        ipc.switchMode("pet");
+      }
+    }
+  });
+})();
+</script>
+</body>
+</html>

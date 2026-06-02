@@ -1,0 +1,27 @@
+{
+	"name": "desk-pet",
+	"version": "1.0.0",
+	"description": "",
+	"main": "src/main/main.js",
+	"type": "commonjs",
+	"scripts": {
+		"start": "electron .",
+		"test": "vitest",
+		"lint": "biome check .",
+		"lint:fix": "biome check --write .",
+		"typecheck": "tsc --noEmit"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"dependencies": {
+		"electron": "^42.3.0",
+		"lowdb": "^7.0.1"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^1.9.4",
+		"@types/node": "^25.9.1",
+		"typescript": "^6.0.3",
+		"vitest": "^4.1.7"
+	}
+}

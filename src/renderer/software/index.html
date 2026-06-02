@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>软件模式 — 埃瑟利亚大陆</title>
+<link rel="stylesheet" href="../shared/styles/base.css">
+<style>
+  body {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background: var(--color-bg-darkest);
+    overflow: hidden;
+  }
+
+  .soft-titlebar {
+    display: flex;
+    align-items: center;
+    padding: var(--space-sm) var(--space-md);
+    background: var(--color-bg-dark);
+    border-bottom: 1px solid var(--color-bg-light);
+    -webkit-app-region: drag;
+    user-select: none;
+  }
+
+  .soft-titlebar h1 {
+    font-size: var(--font-lg);
+    color: var(--color-accent);
+    margin: 0;
+  }
+
+  .soft-main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .soft-sidebar {
+    width: 60px;
+    background: var(--color-bg-dark);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: var(--space-md);
+    gap: var(--space-xs);
+    border-right: 1px solid var(--color-bg-light);
+  }
+
+  .soft-sidebar-btn {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: var(--font-xl);
+    color: var(--color-text-muted);
+    transition: all var(--transition-fast);
+  }
+
+  .soft-sidebar-btn:hover {
+    background: var(--color-bg-medium);
+    color: var(--color-text-primary);
+  }
+
+  .soft-sidebar-btn.active {
+    background: var(--color-primary);
+    color: white;
+  }
+
+  .soft-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--space-md);
+  }
+
+  .soft-right-panel {
+    width: 280px;
+    background: var(--color-bg-dark);
+    border-left: 1px solid var(--color-bg-light);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .soft-char-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--space-md);
+    border-bottom: 1px solid var(--color-bg-light);
+  }
+
+  .soft-char-display .char-img {
+    width: var(--char-software-size);
+    height: var(--char-software-size);
+  }
+
+  .soft-char-name {
+    margin-top: var(--space-sm);
+    font-size: var(--font-lg);
+    color: var(--color-text-primary);
+  }
+
+  .soft-char-stage {
+    font-size: var(--font-sm);
+    color: var(--color-text-secondary);
+    margin-top: var(--space-xs);
+  }
+
+  .soft-conv-panel {
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* Tab content styles */
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .task-detail {
+    background: var(--color-bg-medium);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    margin-top: var(--space-md);
+  }
+
+  .task-detail h3 {
+    color: var(--color-accent);
+    margin-bottom: var(--space-sm);
+  }
+
+  .task-detail p {
+    font-size: var(--font-sm);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-xs);
+  }
+
+  .btn {
+    padding: var(--space-sm) var(--space-md);
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: var(--font-base);
+    transition: background var(--transition-fast);
+  }
+
+  .btn-primary {
+    background: var(--color-primary);
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background: var(--color-primary-light);
+  }
+
+  .btn-danger {
+    background: var(--color-danger);
+    color: white;
+  }
+
+  .map-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 400px;
+    background: var(--color-bg-dark);
+    border-radius: var(--radius-lg);
+    border: 2px dashed var(--color-bg-light);
+    color: var(--color-text-muted);
+  }
+
+  .map-placeholder .chapter-title {
+    font-size: var(--font-xl);
+    color: var(--color-accent);
+    margin-bottom: var(--space-sm);
+  }
+
+  .map-placeholder .chapter-goal {
+    font-size: var(--font-sm);
+  }
+
+  .char-lore {
+    font-size: var(--font-sm);
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+  }
+
+  .char-lore h3 {
+    color: var(--color-accent);
+    margin: var(--space-md) 0 var(--space-sm);
+  }
+
+  .timeline-item {
+    display: flex;
+    gap: var(--space-sm);
+    padding: var(--space-sm) 0;
+    border-bottom: 1px solid var(--color-bg-light);
+    font-size: var(--font-sm);
+  }
+
+  .timeline-date {
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+    width: 100px;
+  }
+
+  .timeline-text {
+    color: var(--color-text-secondary);
+  }
+</style>
+</head>
+<body>
+
+<div class="soft-titlebar">
+  <h1>⚔️ 埃瑟利亚大陆 — 冒险笔记</h1>
+</div>
+
+<div class="soft-main">
+  <div class="soft-sidebar">
+    <button class="soft-sidebar-btn active" data-tab="tasks" title="任务">📋</button>
+    <button class="soft-sidebar-btn" data-tab="map" title="地图">🗺️</button>
+    <button class="soft-sidebar-btn" data-tab="character" title="角色">👤</button>
+    <div style="flex:1"></div>
+    <button class="soft-sidebar-btn" id="btnPetMode" title="返回桌宠">🐱</button>
+  </div>
+
+  <div class="soft-content" id="mainContent">
+    <!-- Tasks tab -->
+    <div class="tab-content active" id="tabTasks">
+      <div id="taskList"></div>
+      <div class="task-detail" id="taskDetail" style="display:none"></div>
+    </div>
+
+    <!-- Map tab -->
+    <div class="tab-content" id="tabMap">
+      <div class="map-placeholder">
+        <div class="chapter-title" id="chapterTitle">第一章 · 觉醒的星辰</div>
+        <div class="chapter-goal" id="chapterGoal">目标：修复破碎的引导之星</div>
+        <p style="margin-top:24px;opacity:0.5">🗺️ 埃瑟利亚大陆地图（开发中）</p>
+        <div style="margin-top:16px;width:120px;height:4px;background:var(--color-bg-light);border-radius:2px;">
+          <div id="chapterProgress" style="width:0%;height:100%;background:var(--color-primary);border-radius:2px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Character tab -->
+    <div class="tab-content" id="tabCharacter">
+      <div class="char-lore">
+        <h3>角色背景</h3>
+        <p>露娜·月语是最后一支星语者部族的幸存者。星语者能通过星辰的排列预言未来，引导他人修复破碎的世界。她温柔而坚强，虽然偶尔有些迷糊，但始终坚定不移地陪伴在你身边。</p>
+        <h3>共同记忆</h3>
+        <div id="timeline">
+          <div class="timeline-item">
+            <span class="timeline-date">今天</span>
+            <span class="timeline-text">你们的旅程刚刚开始…</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="soft-right-panel">
+    <div class="soft-char-display">
+      <div class="char-img" id="charDisplay"></div>
+      <div class="soft-char-name">露娜·月语</div>
+      <div class="soft-char-stage" id="charStage">关系：熟人</div>
+    </div>
+    <div class="soft-conv-panel" id="convPanel"></div>
+  </div>
+</div>
+
+<script src="../shared/ipc-client.js"></script>
+<script src="../shared/dom-utils.js"></script>
+<script src="../shared/character-renderer.js"></script>
+<script src="../shared/conversation-panel.js"></script>
+<script src="../shared/task-panel.js"></script>
+<script>
+(() => {
+  const { IpcClient, CharacterRenderer, ConversationPanel, TaskPanel } = window;
+  const ipc = new IpcClient();
+
+  // Character display
+  const charRenderer = new CharacterRenderer(document.getElementById("charDisplay"), { mode: "software", size: 160 });
+  charRenderer.mount();
+
+  // Load character info
+  ipc.getCharacter().then((res) => {
+    if (res.ok && res.data) {
+      document.querySelector(".soft-char-name").textContent = res.data.id === "luna_moonwhisper" ? "露娜·月语" : res.data.id;
+    }
+  });
+  ipc.getRelationship().then((res) => {
+    if (res.ok && res.data) {
+      const stageNames = { stranger: "陌生人", acquaintance: "熟人", familiar: "朋友", close: "挚友", soulmate: "灵魂伴侣" };
+      document.getElementById("charStage").textContent = `关系：${stageNames[res.data.stage] || res.data.stage}`;
+    }
+  });
+
+  // Conversation panel (right sidebar)
+  const convPanel = new ConversationPanel(document.getElementById("convPanel"), {
+    position: "side",
+    onSend: async (text) => {
+      convPanel.showTyping();
+      let started = false;
+      const unsubChunk = ipc.onChunk((chunk) => {
+        if (!started) { started = true; convPanel.addMessage("assistant", ""); }
+        const panel = document.getElementById("convPanel");
+        const msgs = panel.querySelectorAll(".conv-msg--assistant");
+        const last = msgs[msgs.length - 1];
+        if (last) last.textContent += chunk;
+      });
+      const unsubDone = ipc.onDone((data) => {
+        convPanel.hideTyping();
+        unsubChunk();
+        unsubDone();
+        if (data.intent === "create_task") {
+          ipc.createTask(data.taskPayload).then(() => loadTasks());
+        }
+      });
+      const unsubError = ipc.onError((err) => {
+        convPanel.hideTyping();
+        unsubChunk();
+        unsubDone();
+        unsubError();
+        convPanel.showError(err);
+      });
+      await ipc.sendMessage(text);
+    },
+  });
+  convPanel.mount();
+
+  // Task panel (main content area)
+  let selectedTaskId = null;
+  const taskPanel = new TaskPanel(document.getElementById("taskList"), {
+    compact: false,
+    onToggle: async (taskId, subId) => {
+      await ipc.toggleSubtask(taskId, subId);
+      loadTasks();
+      if (selectedTaskId === taskId) showTaskDetail(taskId);
+    },
+    onViewDetail: (taskId) => showTaskDetail(taskId),
+  });
+  taskPanel.mount();
+
+  async function loadTasks() {
+    const res = await ipc.getTasks();
+    if (res.ok) taskPanel.setTasks(res.data);
+  }
+
+  async function showTaskDetail(taskId) {
+    selectedTaskId = taskId;
+    const res = await ipc.getTaskById(taskId);
+    if (!res.ok) return;
+
+    const task = res.data;
+    const detail = document.getElementById("taskDetail");
+    detail.style.display = "block";
+    detail.innerHTML = `
+      <h3>${task.rpgTitle}</h3>
+      <p>📝 ${task.realTitle}</p>
+      <p>📖 ${task.rpgDescription || "无描述"}</p>
+      <p>⏱️ 预计番茄数：${task.estimatedPomodoros} · 预计时间：${task.estimatedMinutes}分钟</p>
+      <p>📅 截止：${task.deadline || "无截止日期"}</p>
+      <p>📊 状态：${task.status === "completed" ? "✅ 已完成" : "⏳ 进行中"}</p>
+      <div style="margin-top:var(--space-md);display:flex;gap:var(--space-sm);">
+        ${task.status !== "completed" ? `<button class="btn btn-primary" id="btnComplete">✨ 完成任务</button>` : ""}
+        <button class="btn btn-danger" id="btnDelete">🗑️ 删除</button>
+      </div>
+    `;
+
+    const btnComplete = document.getElementById("btnComplete");
+    if (btnComplete) {
+      btnComplete.addEventListener("click", async () => {
+        const compRes = await ipc.completeTask(taskId);
+        if (compRes.ok) {
+          if (compRes.data.relationshipUpgrade?.upgraded) {
+            convPanel.addMessage("assistant", `✨ 你们的关系升级了！从 ${compRes.data.relationshipUpgrade.from} 到 ${compRes.data.relationshipUpgrade.to}`);
+          }
+          loadTasks();
+          showTaskDetail(taskId);
+        }
+      });
+    }
+
+    document.getElementById("btnDelete").addEventListener("click", async () => {
+      await ipc.deleteTask(taskId);
+      detail.style.display = "none";
+      selectedTaskId = null;
+      loadTasks();
+    });
+  }
+
+  // Tab switching
+  document.querySelectorAll(".soft-sidebar-btn[data-tab]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".soft-sidebar-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+
+      document.querySelectorAll(".tab-content").forEach((tab) => tab.classList.remove("active"));
+      const tabId = `tab${btn.dataset.tab.charAt(0).toUpperCase()}${btn.dataset.tab.slice(1)}`;
+      document.getElementById(tabId).classList.add("active");
+
+      if (btn.dataset.tab === "tasks") loadTasks();
+    });
+  });
+
+  // Pet mode button
+  document.getElementById("btnPetMode").addEventListener("click", () => ipc.switchMode("pet"));
+
+  loadTasks();
+})();
+</script>
+</body>
+</html>

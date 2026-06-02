@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>桌宠 — 露娜·月语</title>
+<link rel="stylesheet" href="../shared/styles/base.css">
+<style>
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background: transparent;
+    overflow: hidden;
+  }
+
+  .pet-char-area {
+    width: var(--char-pet-size);
+    height: var(--char-pet-size);
+    cursor: grab;
+    -webkit-app-region: drag;
+    position: relative;
+    z-index: 10;
+  }
+
+  .pet-char-area:active {
+    cursor: grabbing;
+  }
+
+  .pet-conv-container {
+    display: none;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 280px;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+    z-index: 20;
+    background: var(--color-bg-dark);
+  }
+
+  .pet-conv-container.open {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .pet-context-menu {
+    display: none;
+    position: fixed;
+    background: var(--color-bg-medium);
+    border: 1px solid var(--color-bg-light);
+    border-radius: var(--radius-sm);
+    padding: var(--space-xs) 0;
+    z-index: 100;
+    min-width: 140px;
+    box-shadow: var(--shadow-md);
+  }
+
+  .pet-context-menu.open {
+    display: block;
+  }
+
+  .pet-context-menu-item {
+    padding: var(--space-sm) var(--space-md);
+    font-size: var(--font-sm);
+    color: var(--color-text-primary);
+    cursor: pointer;
+  }
+
+  .pet-context-menu-item:hover {
+    background: var(--color-bg-light);
+  }
+
+  .pet-task-panel {
+    display: none;
+    position: fixed;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 240px;
+    max-height: 300px;
+    background: var(--color-bg-dark);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    z-index: 30;
+    overflow: hidden;
+  }
+
+  .pet-task-panel.open {
+    display: flex;
+    flex-direction: column;
+  }
+</style>
+</head>
+<body>
+
+<div class="pet-char-area" id="charArea" title="点击与露娜对话"></div>
+
+<div class="pet-conv-container" id="convContainer"></div>
+
+<div class="pet-context-menu" id="contextMenu">
+  <div class="pet-context-menu-item" data-action="wallpaper">🎵 壁纸模式</div>
+  <div class="pet-context-menu-item" data-action="software">⚔️ 软件模式</div>
+  <div class="pet-context-menu-item" data-action="tasks">📋 任务列表</div>
+  <div class="pet-context-menu-item" data-action="quit">🚪 退出</div>
+</div>
+
+<div class="pet-task-panel" id="taskPanel"></div>
+
+<script src="../shared/ipc-client.js"></script>
+<script src="../shared/dom-utils.js"></script>
+<script src="../shared/state-manager.js"></script>
+<script src="../shared/character-renderer.js"></script>
+<script src="../shared/conversation-panel.js"></script>
+<script src="../shared/task-panel.js"></script>
+<script>
+(() => {
+  const { IpcClient, CharacterRenderer, ConversationPanel, TaskPanel } = window;
+  const ipc = new IpcClient();
+
+  // Character
+  const charRenderer = new CharacterRenderer(document.getElementById("charArea"), { mode: "pet", size: 120 });
+  charRenderer.mount();
+
+  // Conversation panel
+  const convContainer = document.getElementById("convContainer");
+  const convPanel = new ConversationPanel(convContainer, {
+    position: "bottom",
+    onSend: async (text) => {
+      convPanel.showTyping();
+      // prepare streaming
+      let currentMsg = null;
+      const unsubChunk = ipc.onChunk((chunk) => {
+        if (!currentMsg) { currentMsg = true; convPanel.addMessage("assistant", ""); }
+        const msgs = convPanel._msgList.querySelectorAll(".conv-msg--assistant");
+        const last = msgs[msgs.length - 1];
+        if (last) last.textContent += chunk;
+      });
+      const unsubDone = ipc.onDone((data) => {
+        convPanel.hideTyping();
+        unsubChunk();
+        unsubDone();
+        if (data.intent === "create_task") {
+          ipc.createTask(data.taskPayload).catch(() => {});
+        }
+      });
+      const unsubError = ipc.onError((err) => {
+        convPanel.hideTyping();
+        unsubChunk();
+        unsubDone();
+        unsubError();
+        convPanel.showError(err);
+      });
+      await ipc.sendMessage(text);
+    },
+  });
+  convPanel.mount();
+
+  // Task panel
+  const taskPanelContainer = document.getElementById("taskPanel");
+  const taskPanel = new TaskPanel(taskPanelContainer, {
+    compact: true,
+    onToggle: (taskId, subId) => ipc.toggleSubtask(taskId, subId).then(() => loadTasks()),
+    onViewDetail: () => {},
+  });
+  taskPanel.mount();
+
+  async function loadTasks() {
+    const res = await ipc.getTasks("active");
+    if (res.ok) taskPanel.setTasks(res.data);
+  }
+
+  // Click character → toggle conversation
+  const charArea = document.getElementById("charArea");
+  charArea.addEventListener("click", (_e) => {
+    convContainer.classList.toggle("open");
+    charRenderer.setMotion("bounce");
+    setTimeout(() => charRenderer.setMotion("idle"), 300);
+    loadTasks();
+  });
+
+  // Context menu
+  const ctxMenu = document.getElementById("contextMenu");
+  charArea.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+    ctxMenu.style.left = `${e.clientX}px`;
+    ctxMenu.style.top = `${e.clientY}px`;
+    ctxMenu.classList.add("open");
+  });
+
+  document.addEventListener("click", () => ctxMenu.classList.remove("open"));
+
+  ctxMenu.querySelectorAll(".pet-context-menu-item").forEach((item) => {
+    item.addEventListener("click", async () => {
+      const action = item.dataset.action;
+      if (action === "wallpaper" || action === "software") {
+        await ipc.switchMode(action);
+      } else if (action === "tasks") {
+        taskPanelContainer.classList.toggle("open");
+      } else if (action === "quit") {
+        window.close();
+      }
+      ctxMenu.classList.remove("open");
+    });
+  });
+
+  // Keyboard shortcuts
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      convContainer.classList.remove("open");
+      taskPanelContainer.classList.remove("open");
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+	"compilerOptions": {
+		"target": "ES2022",
+		"module": "Node16",
+		"moduleResolution": "Node16",
+		"checkJs": true,
+		"noEmit": true,
+		"strict": false,
+		"skipLibCheck": true
+	},
+	"include": ["src/main/**/*", "src/preload.js"]
+}

@@ -1,0 +1,62 @@
+:root {
+	/* 色板 — 暗色星空主题 */
+	--color-primary: #6b5ce7;
+	--color-primary-light: #8b7cf0;
+	--color-accent: #f0c060;
+	--color-bg-darkest: #0d0d1a;
+	--color-bg-dark: #1a1a2e;
+	--color-bg-medium: #252540;
+	--color-bg-light: #333355;
+	--color-text-primary: #e8e8f0;
+	--color-text-secondary: #a0a0c0;
+	--color-text-muted: #606080;
+	--color-success: #4ecdc4;
+	--color-warning: #f0c060;
+	--color-danger: #e05555;
+
+	/* 字号 */
+	--font-xs: 10px;
+	--font-sm: 12px;
+	--font-base: 14px;
+	--font-lg: 16px;
+	--font-xl: 20px;
+	--font-2xl: 28px;
+
+	/* 间距 */
+	--space-xs: 4px;
+	--space-sm: 8px;
+	--space-md: 16px;
+	--space-lg: 24px;
+	--space-xl: 32px;
+
+	/* 圆角 */
+	--radius-sm: 4px;
+	--radius-md: 8px;
+	--radius-lg: 16px;
+	--radius-round: 50%;
+
+	/* 阴影 */
+	--shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+	--shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+	--shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+
+	/* 过渡 */
+	--transition-fast: 0.15s ease;
+	--transition-normal: 0.3s ease;
+	--transition-slow: 0.5s ease;
+
+	/* 字体 */
+	--font-main: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+	--font-mono: "Cascadia Code", "Fira Code", "Consolas", monospace;
+
+	/* 窗口尺寸 */
+	--win-pet-width: 300px;
+	--win-pet-height: 400px;
+	--win-software-width: 1280px;
+	--win-software-height: 800px;
+
+	/* 角色尺寸 */
+	--char-pet-size: 120px;
+	--char-wallpaper-size: 200px;
+	--char-software-size: 160px;
+}
