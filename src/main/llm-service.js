@@ -88,7 +88,6 @@ class LLMService {
 	}
 
 	async _doChat(options, onChunk, onDone, onError) {
-		const _char = this.db.getCharacter();
 		const appState = this.db.getAppState();
 		const activeTask = this.db.getTasks({ status: "active" })[0];
 
@@ -99,7 +98,7 @@ class LLMService {
 		});
 
 		const conv = this.db.getActiveConversation();
-		const history = this.db.getRecentMessages(conv.id, 10);
+		const history = this.db.getRecentMessages(conv.id, 20);
 		const messages = [
 			{ role: "system", content: systemPrompt },
 			...history.map((m) => ({ role: m.role, content: m.content })),
@@ -124,17 +123,10 @@ class LLMService {
 			});
 
 			if (!response.ok) {
-				const errType = response.status >= 500 ? "network" : "api";
-				if (errType === "network" && !this._retried) {
-					this._retried = true;
-					await this._sleep(1000);
-					await this._doChat(options, onChunk, onDone, onError);
-					return;
-				}
 				onError({
 					type: "api",
 					message: `API error: ${response.status}`,
-					retried: this._retried,
+					retried: false,
 				});
 				return;
 			}
@@ -172,6 +164,7 @@ class LLMService {
 			}
 
 			const metadata = this._extractIntent(fullText);
+			metadata.displayText = this._cleanDisplayText(fullText);
 			this.db.addMessage(conv.id, { role: "user", content: options.message });
 			this.db.addMessage(conv.id, { role: "assistant", content: fullText });
 			this.db.updateCharacter({ lastInteractionAt: new Date().toISOString() });
@@ -247,6 +240,35 @@ class LLMService {
 			// JSON parse failure → return as plain text
 		}
 		return {};
+	}
+
+	/** @param {string} text */
+	_cleanDisplayText(text) {
+		let cleaned = text;
+		for (const pattern of [
+			/\{"intent"\s*:\s*"create_task"[\s\S]*\}/,
+			/\{"intent"\s*:\s*"switch_mode"[\s\S]*\}/,
+		]) {
+			const match = cleaned.match(pattern);
+			if (match) {
+				try {
+					JSON.parse(match[0]);
+					cleaned = cleaned.replace(match[0], "");
+				} catch {
+					// brace-counting fallback for unbalanced JSON
+					const start = match.index;
+					let depth = 0;
+					let end = start;
+					for (let i = start; i < cleaned.length; i++) {
+						if (cleaned[i] === "{") depth++;
+						if (cleaned[i] === "}") depth--;
+						if (depth === 0) { end = i + 1; break; }
+					}
+					if (end > start) cleaned = cleaned.slice(0, start) + cleaned.slice(end);
+				}
+			}
+		}
+		return cleaned.trim();
 	}
 
 	_sleep(ms) {

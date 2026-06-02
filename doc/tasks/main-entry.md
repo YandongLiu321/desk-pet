@@ -6,7 +6,7 @@
 
 ### 依赖组装
 
-- [ ] **ent-01** 实现模块初始化顺序：Database → WindowManager → LLMService → TaskService → RelationshipService → PomodoroService → NarrativeEngine → ProactiveTrigger → UserStyleAnalyzer
+- [ ] **ent-01** 实现模块初始化顺序：Database → WindowManager → LLMService → TaskService({ db, worldBook }) → RelationshipService → PomodoroService → NarrativeEngine → ProactiveTrigger → UserStyleAnalyzer
 - [ ] **ent-02** 创建 IPCHandlers 实例，传入所有服务依赖，调用 `registerAll()`
 
 ### 系统托盘
@@ -16,7 +16,7 @@
   - 显示桌宠 / 进入壁纸模式 / 进入软件模式
   - 分隔线
   - 退出应用
-- [ ] **ent-05** 托盘菜单点击"显示桌宠" → windowManager.switchMode('pet')
+- [ ] **ent-05** 托盘菜单点击"显示桌宠/进入壁纸模式/进入软件模式" → 统一通过 IPC `app:switch-mode` 切换（复用 ipc-handlers 中的番茄钟拦截和壁纸退出询问逻辑），**禁止**直接调用 `windowManager.switchMode()`
 - [ ] **ent-06** 托盘菜单点击"退出" → windowManager.closeAll() + app.quit()
 
 ### 启动流程
@@ -27,8 +27,8 @@
 
 ### 窗口事件
 
-- [ ] **ent-10** 软件模式窗口关闭按钮 → 隐藏窗口而非退出（回到桌宠）
-- [ ] **ent-11** 壁纸模式窗口关闭按钮 → 返回桌宠
+- [ ] **ent-10** 软件模式窗口关闭按钮 → 调用 `windowManager.switchMode('pet')` 返回桌宠（而非仅 hide，避免 `appState.currentMode` 停留在 software）
+- [ ] **ent-11** 壁纸模式窗口关闭按钮 → 先触发退出进度询问流程（见 wallpaper-mode wal-09/wal-10），确认后返回桌宠。关闭/切换前调用 `llmService.abort()` 中止未完成的流式对话
 
 ### 验证
 

@@ -15,6 +15,7 @@ const { IPC, MODE } = require("../shared/constants.js");
  * @param {import('./relationship-service').RelationshipService} services.relationshipService
  * @param {import('./pomodoro-service').PomodoroService} [services.pomodoroService]
  * @param {import('./narrative-engine').NarrativeEngine} [services.narrativeEngine]
+ * @param {(mode: string) => void} services.switchModeWithCleanup
  * @param {object} deps
  * @param {Electron.IpcMain} deps.ipcMain
  * @param {typeof Electron.BrowserWindow} deps.BrowserWindow
@@ -77,7 +78,7 @@ function registerIpcHandlers(services, deps) {
 	ipcMain.handle(IPC.TASK_GET_ALL, (_event, { status } = {}) => {
 		try {
 			const tasks = status
-				? taskService.getActiveTasks()
+				? db.getTasks({ status })
 				: taskService.getAllTasks();
 			return { ok: true, data: tasks };
 		} catch (e) {
@@ -185,15 +186,7 @@ function registerIpcHandlers(services, deps) {
 					error: { code: "MODE_INVALID", message: `Invalid mode: ${mode}` },
 				};
 			}
-			if (services.pomodoroService?.isRunning()) {
-				services.pomodoroService.stop();
-			}
-			windowManager.switchMode(mode);
-			db.updateAppState({ currentMode: mode });
-			const win = windowManager.getCurrentWindow();
-			if (win && !win.isDestroyed()) {
-				win.webContents.send(IPC.MODE_ACTIVATED, mode);
-			}
+			services.switchModeWithCleanup(mode);
 			return { ok: true, data: { mode } };
 		} catch (e) {
 			return errorResponse(e);
@@ -260,7 +253,7 @@ function registerIpcHandlers(services, deps) {
 	ipcMain.handle(IPC.POMODORO_STOP, () => {
 		try {
 			if (services.pomodoroService) {
-				services.pomodoroService.stop();
+				services.pomodoroService.cancel();
 			}
 			return { ok: true, data: null };
 		} catch (e) {
@@ -336,8 +329,7 @@ function registerIpcHandlers(services, deps) {
 
 	ipcMain.handle(IPC.WINDOW_CLOSE_MODE, () => {
 		try {
-			const win = windowManager.getCurrentWindow();
-			if (win) win.hide();
+			services.switchModeWithCleanup("pet");
 			return { ok: true, data: null };
 		} catch (e) {
 			return errorResponse(e);

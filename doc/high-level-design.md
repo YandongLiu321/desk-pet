@@ -4,7 +4,7 @@
 
 ### 1.1. 项目背景
 
-桌面 AI 陪伴应用是一个 Windows 桌面应用，覆盖桌宠、壁纸、软件三种使用模式，共享同一角色、数据和对话引擎。技术栈为 Electron 42 + Vue 3 + Vite + lowdb 7 + DeepSeek API。
+桌面 AI 陪伴应用是一个 Windows 桌面应用，覆盖桌宠、壁纸、软件三种使用模式，共享同一角色、数据和对话引擎。技术栈为 Electron 42 + 纯 HTML/CSS/JS + lowdb 7 + DeepSeek API。
 
 ### 1.2. 设计目标
 
@@ -42,21 +42,22 @@
           │               │               │
    ┌──────▼──────┐ ┌──────▼──────┐ ┌──────▼──────┐
    │ 桌宠渲染进程  │ │ 壁纸渲染进程 │ │ 软件渲染进程  │
-   │ (Vue 3 App) │ │ (Vue 3 App) │ │ (Vue 3 App) │
-   │ 角色本体窗口  │ │ 全屏半透明   │ │ 独立窗口     │
-   │ ~120×120px  │ │             │ │ 1280×800    │
-   │ 浮层交互     │ │             │ │             │
+   │ (纯 HTML/JS) │ │ (纯 HTML/JS) │ │ (纯 HTML/JS) │
+   │ 500×500透明  │ │ 全屏半透明   │ │ 独立窗口     │
+   │ 角色偏右120  │ │             │ │ 1280×800    │
+   │ 左侧对话框   │ │             │ │             │
+   │ 右侧菜单/气泡│ │             │ │             │
    └─────────────┘ └─────────────┘ └─────────────┘
           │               │               │
           └───────────────┼───────────────┘
                           │
           ┌───────────────▼───────────────┐
-          │     共享 UI 组件 + Pinia      │
+          │     共享 JS 模块 + CSS       │
           │     (src/renderer/shared/)    │
           └───────────────────────────────┘
 ```
 
-三种模式各为一个独立的 BrowserWindow + Vue 应用，通过主进程 IPC 共享状态。渲染进程之间不直接通信，所有共享状态经由主进程中转。
+三种模式各为一个独立的 BrowserWindow + 纯 HTML/CSS/JS 应用，通过主进程 IPC 共享状态。渲染进程之间不直接通信，所有共享状态经由主进程中转。桌宠模式采用 500×500 透明大窗口，角色 120×120 偏右放置；对话面板左侧浮出，右键菜单右侧弹出，主动气泡从角色头顶浮现；透明区域默认 `pointer-events: none`（仅角色区域可交互），浮层打开时通过 `.interactive` CSS class 切换为全窗口可交互。
 
 ### 2.2. 技术栈
 
@@ -64,10 +65,10 @@
 |----|------|------|
 | 桌面框架 | Electron 42 | 窗口管理、系统托盘、IPC |
 | 主进程语言 | CommonJS (.js) | Electron 原生模块系统 |
-| 渲染进程框架 | Vue 3 + Vite (ESM) | 组件化、热更新、多页面构建 |
+| 渲染进程框架 | 纯 HTML/CSS/JS | 无前端框架，轻量级，单文件页面 |
 | AI 服务 | DeepSeek API | OpenAI 兼容格式，流式输出 |
 | 数据存储 | lowdb 7 | 本地 JSON 文件数据库 |
-| 状态管理 | Pinia | 渲染进程内状态管理 |
+| 状态管理 | state-manager.js | 发布订阅模式，共享 JS 模块 |
 | 类型检查 | TypeScript (tsc) | 仅类型检查，不编译 |
 
 ---
@@ -89,9 +90,12 @@
 **依赖**: 无（最底层模块）
 
 **对外接口（内部调用）**:
-- `createPetWindow()` / `createWallpaperWindow()` / `createSoftwareWindow()`
+- `getOrCreateWindow(mode)` — 创建或返回缓存的 BrowserWindow
 - `switchMode(targetMode)` — 协调三窗口显隐
-- `getWindowState()` — 返回当前各窗口状态
+- `getCurrentMode()` — 返回当前活跃模式
+- `getCurrentWindow()` — 返回当前活跃窗口
+- `getWindow(mode)` — 获取指定模式窗口（不创建）
+- `closeAll()` — 销毁所有窗口
 
 ---
 
@@ -128,12 +132,12 @@
 | 项目 | 内容 |
 |------|------|
 | **所属进程** | 主进程 |
-| **核心文件** | `src/main/worldbook.js`（提案中未显式列出，由 llm-service 和 narrative-engine 引用） |
+| **核心文件** | 原型阶段世界书 JSON 由 `main.js` 使用 `fs.readFileSync` 直接加载并注入到 `llm-service`；后续可抽取为独立 `worldbook.js` 模块 |
 | **职责** | 加载和解析 `assets/worldbooks/default.json`；提供角色设定、章节信息、世界规则、关系阈值配置的结构化读取 |
 
 **依赖**: 无（仅依赖文件系统）
 
-**对外接口（内部调用）**:
+**对外接口（内部调用）**（后续抽取为独立模块时）:
 - `loadWorldbook(path?)` → 完整世界书对象
 - `getCharacterConfig()` → 角色设定
 - `getCurrentChapter()` → 当前章节信息
@@ -172,7 +176,7 @@
 **对外接口（内部调用）**:
 - `createTask(taskData)` → Task
 - `updateTask(id, partial)` → Task
-- `completeTask(id)` → Task（含结算叙事结果）
+- `completeTask(id)` → Task（含结算叙事结果 + 里程碑进度更新：任务完成后为对应 milestone.progress += 1，若 milestone 全部完成则推进章节）
 - `toggleSubtask(taskId, subtaskId)` → Task
 - `getActiveTasks()` → Task[]
 - `checkOverdue()` → Task[]（检查逾期任务）
@@ -229,29 +233,20 @@
 | 项目 | 内容 |
 |------|------|
 | **所属进程** | 渲染进程（被三个模式共用） |
-| **核心文件** | `src/renderer/shared/components/`, `src/renderer/shared/stores/`, `src/renderer/shared/utils/` |
-| **职责** | 提供跨模式复用的 Vue 组件、Pinia stores 和工具函数 |
+| **核心文件** | `src/renderer/shared/*.js`, `src/renderer/shared/styles/*.css` |
+| **职责** | 提供跨模式复用的纯 JS 模块和 CSS 样式 |
 
-**组件清单**:
+**共享 JS 模块清单**:
 
-| 组件 | 文件 | 功能 |
+| 模块 | 文件 | 功能 |
 |------|------|------|
-| CharacterRenderer | `CharacterRenderer.vue` | 角色渲染容器，支持 `icon`/`live2d` 两种模式切换 |
-| DialogueBubble | `DialogueBubble.vue` | 对话气泡组件，支持流式文字逐字显示 |
-| TaskCard | `TaskCard.vue` | 任务卡片组件，展示任务信息与子任务勾选 |
-| TaskList | `TaskList.vue` | 任务列表组件 |
-
-**Pinia Stores**:
-
-| Store | 文件 | 管理的状态 |
-|-------|------|-----------|
-| useChatStore | `chat.js` | 当前对话消息列表、流式接收状态、发送中标记 |
-| useTaskStore | `task.js` | 任务列表、当前查看的任务 |
-| useCharacterStore | `character.js` | 角色信息、关系阶段、表情 |
-| usePomodoroStore | `pomodoro.js` | 番茄钟剩余时间、运行状态 |
-| useAppStore | `app.js` | 当前模式、窗口状态、全局设置 |
-
-**IPC 工具**: `src/renderer/shared/utils/ipc.js` — 封装 `window.electronAPI` 调用，提供类型安全的 Promise 化接口。
+| IpcClient | `ipc-client.js` | IPC 调用封装，统一错误处理 |
+| CharacterRenderer | `character-renderer.js` | 角色渲染器，支持 `css`/`image`/`live2d` 三种模式切换 |
+| ConversationPanel | `conversation-panel.js` | 对话面板组件，含消息列表+输入框+流式显示 |
+| TaskPanel | `task-panel.js` | 任务面板组件，支持紧凑模式和子任务勾选 |
+| PomodoroTimer | `pomodoro-timer.js` | 番茄钟圆形进度环 + 倒计时显示 |
+| state-manager | `state-manager.js` | 简易发布订阅状态管理 |
+| dom-utils | `dom-utils.js` | DOM 操作工具函数 |
 
 ---
 
@@ -260,10 +255,10 @@
 | 项目 | 内容 |
 |------|------|
 | **所属进程** | 渲染进程 |
-| **核心文件** | `src/renderer/pet/App.vue`, `src/renderer/pet/components/` |
-| **职责** | 窗口即角色本体（约 120×120），可拖动，置顶；左键点击角色弹出对话浮层（纯闲聊）；右键弹出功能菜单（发布任务、切换模式等）；对话中识别用户模式切换意图，主动询问确认后切换 |
+| **核心文件** | `src/renderer/pet/index.html` |
+| **职责** | 500×500 透明无边框窗口，角色 120×120 偏右放置（x:240, y:20），始终置顶；左键点击角色在左侧弹出对话面板（纯闲聊，240×400）；右键点击角色在右侧弹出功能菜单（min-width:130px，含发布任务/切换模式/查看任务/隐藏）；主动气泡从角色头顶浮现，数秒后自动消失，点击可展开对话面板；迷你任务面板与对话面板互斥（均在左侧）；对话中识别用户模式切换意图，主动询问确认后切换 |
 
-**依赖**: 共享 UI 组件（CharacterRenderer, DialogueBubble, TaskCard）、Pinia Stores
+**依赖**: 共享 JS 模块（IpcClient, CharacterRenderer, ConversationPanel, TaskPanel, state-manager）
 
 ---
 
@@ -272,10 +267,10 @@
 | 项目 | 内容 |
 |------|------|
 | **所属进程** | 渲染进程 |
-| **核心文件** | `src/renderer/wallpaper/App.vue`, `src/renderer/wallpaper/components/` |
+| **核心文件** | `src/renderer/wallpaper/index.html` |
 | **职责** | 全屏半透明覆盖层；大尺寸角色陪伴展示；番茄钟 UI（时间显示、启动/停止按钮）；白噪音控制面板（切换音效、调音量）；侧边对话栏（点击角色滑入）；低打扰进度条（P2 优先级）；退出按钮（触发任务进度询问：完成→勾选子任务/未完成→询问延长时间→同意重启番茄钟/拒绝记录进度→返回桌宠） |
 
-**依赖**: 共享 UI 组件（CharacterRenderer, DialogueBubble）、Pinia Stores
+**依赖**: 共享 JS 模块（IpcClient, CharacterRenderer, ConversationPanel, PomodoroTimer）
 
 ---
 
@@ -284,19 +279,10 @@
 | 项目 | 内容 |
 |------|------|
 | **所属进程** | 渲染进程 |
-| **核心文件** | `src/renderer/software/App.vue`, `src/renderer/software/components/` |
+| **核心文件** | `src/renderer/software/index.html` |
 | **职责** | RPG 风格主界面（左侧导航 + 内容区 + 右侧角色区）；任务面板（列表/详情/子任务勾选）；任务结算展示（叙事文本 + 状态变化）；世界地图（原型阶段为静态图 + 文字标注）；角色档案（背景故事 + 记忆时间线）；底部对话面板 |
 
-**子组件**:
-
-| 组件 | 文件 | 功能 |
-|------|------|------|
-| WorldMap | `WorldMap.vue` | 世界地图，数据驱动区域状态，原型阶段静态 |
-| CharacterProfile | `CharacterProfile.vue` | 角色档案页 |
-| TaskPanel | `TaskPanel.vue` | 任务面板，含详情和结算 |
-| NavigationSidebar | `NavigationSidebar.vue` | 左侧导航栏 |
-
-**依赖**: 共享 UI 组件（CharacterRenderer, DialogueBubble, TaskCard, TaskList）、Pinia Stores
+**依赖**: 共享 JS 模块（IpcClient, CharacterRenderer, ConversationPanel, TaskPanel, PomodoroTimer）
 
 ---
 
@@ -352,7 +338,7 @@
           └──────────────┼──────────────┘
                          │
           ┌──────────────▼──────────────┐
-          │     共享 UI 组件 + Pinia     │
+          │     共享 JS 模块 + CSS       │
           └─────────────────────────────┘
 
           ┌──────────────────────────────┐
@@ -384,12 +370,12 @@
 
 | IPC 通道 | 方向 | 用途 |
 |----------|------|------|
-| `chat:send` | 渲染 → 主 | 发送用户消息，触发 AI 对话 |
-| `chat:stream-chunk` | 主 → 渲染 | 流式响应文本块推送 |
-| `chat:stream-done` | 主 → 渲染 | 流式响应完成通知 |
-| `chat:stream-error` | 主 → 渲染 | 流式响应出错通知 |
-| `chat:get-history` | 渲染 → 主 | 获取指定对话的历史消息 |
-| `chat:list-conversations` | 渲染 → 主 | 获取对话列表 |
+| `conversation:send` | 渲染 → 主 | 发送用户消息，触发 AI 对话（流式） |
+| `conversation:chunk` | 主 → 渲染 | 流式响应文本块推送 |
+| `conversation:done` | 主 → 渲染 | 流式响应完成通知（含 intent 解析结果） |
+| `conversation:error` | 主 → 渲染 | 流式响应出错通知 |
+| `conversation:get-history` | 渲染 → 主 | 获取指定对话的历史消息 |
+| `conversation:abort` | 渲染 → 主 | 中止当前流式对话 |
 
 ### 5.2. 任务域
 
@@ -398,10 +384,10 @@
 | `task:create` | 渲染 → 主 | 创建任务（含 AI 转化的结构化数据） |
 | `task:update` | 渲染 → 主 | 更新任务信息 |
 | `task:delete` | 渲染 → 主 | 删除任务 |
-| `task:list` | 渲染 → 主 | 获取任务列表（支持状态筛选） |
-| `task:get` | 渲染 → 主 | 获取单个任务详情 |
+| `task:get-all` | 渲染 → 主 | 获取任务列表（支持状态筛选） |
+| `task:get-by-id` | 渲染 → 主 | 获取单个任务详情 |
 | `task:toggle-subtask` | 渲染 → 主 | 切换子任务完成状态 |
-| `task:complete` | 渲染 → 主 | 完成任务（触发结算叙事） |
+| `task:complete` | 渲染 → 主 | 完成任务（触发结算叙事 + 里程碑推进） |
 | `task:updated` | 主 → 渲染 | 任务变更广播（所有渲染进程） |
 | `task:get-pending-followups` | 渲染 → 主 | [预留] 获取待追问任务列表 |
 | `task:submit-followup` | 渲染 → 主 | [预留] 提交追问回答 |
@@ -412,6 +398,7 @@
 |----------|------|------|
 | `pomodoro:start` | 渲染 → 主 | 启动番茄钟（含任务 ID 和时长） |
 | `pomodoro:stop` | 渲染 → 主 | 停止番茄钟 |
+| `pomodoro:get-status` | 渲染 → 主 | 获取当前番茄钟状态（剩余时间、是否运行、关联 taskId） |
 | `pomodoro:tick` | 主 → 渲染 | 每秒推送剩余秒数 |
 | `pomodoro:end` | 主 → 渲染 | 番茄钟时间到通知 |
 | `pomodoro:extend` | 渲染 → 主 | [预留] 延长当前番茄钟 |
@@ -422,27 +409,33 @@
 
 | IPC 通道 | 方向 | 用途 |
 |----------|------|------|
-| `character:get` | 渲染 → 主 | 获取角色信息 |
+| `app:get-character` | 渲染 → 主 | 获取角色信息 |
+| `app:get-relationship` | 渲染 → 主 | 获取关系阶段和统计数据 |
 | `character:updated` | 主 → 渲染 | 角色状态变更广播 |
-| `relationship:get` | 渲染 → 主 | 获取关系阶段和统计数据 |
 | `relationship:updated` | 主 → 渲染 | 关系阶段变更广播 |
 
 ### 5.5. 世界状态域
 
+> 世界状态（`worldState`）包含在 `app:get-state` 返回的 AppState 中，无独立获取通道。以下为状态变更广播通道。
+
 | IPC 通道 | 方向 | 用途 |
 |----------|------|------|
-| `world:get-state` | 渲染 → 主 | 获取世界状态变量与章节信息 |
-| `world:state-updated` | 主 → 渲染 | 世界状态变更广播 |
+| `world:state-updated` | 主 → 渲染 | 世界状态变更广播（章节推进、世界变量变化等） |
 
 ### 5.6. 窗口与设置域
 
 | IPC 通道 | 方向 | 用途 |
 |----------|------|------|
-| `window:switch-mode` | 渲染 → 主 | 切换显示模式（pet/wallpaper/software） |
-| `window:mode-changed` | 主 → 渲染 | 模式变更广播 |
-| `settings:get` | 渲染 → 主 | 获取应用设置 |
-| `settings:update` | 渲染 → 主 | 更新应用设置 |
+| `app:switch-mode` | 渲染 → 主 | 切换显示模式（pet/wallpaper/software） |
+| `mode:activated` | 主 → 渲染 | 模式切换完成通知（目标渲染进程收到后拉取最新数据） |
+| `app:get-state` | 渲染 → 主 | 获取应用全局状态（AppState） |
+| `settings:get-api-key` | 渲染 → 主 | 获取 API Key |
+| `settings:set-api-key` | 渲染 → 主 | 设置 API Key |
+| `settings:get-wallpaper` | 渲染 → 主 | 获取壁纸设置 |
+| `settings:update-wallpaper` | 渲染 → 主 | 更新壁纸设置 |
 | `settings:updateQuietHours` | 渲染 → 主 | [预留] 更新勿扰时段 |
+| `window:hide` | 渲染 → 主 | 最小化当前窗口到托盘 |
+| `window:close-mode` | 渲染 → 主 | 关闭当前模式窗口，返回桌宠模式 |
 
 ### 5.7. 主动交互域（原型仅预留通道）
 
@@ -462,6 +455,17 @@
 
 > 注：白噪音播放可由主进程或渲染进程实现。若音频文件较小，可在渲染进程直接用 Web Audio API 播放，无需经过主进程。此处预留 IPC 通道以便后续调整。
 
+### 5.9. 窗口交互域（桌宠模式专用）
+
+桌宠模式 500×500 透明窗口的交互控制使用**纯 CSS 方案**，无需 IPC 通道，主进程不参与：
+
+- `body` 默认 `pointer-events: none` — 透明区域不接收鼠标事件
+- 角色区域（120×120）`pointer-events: auto` — 始终可交互
+- 任一浮层（对话面板/右键菜单/主动气泡/任务面板）打开时 → 渲染进程给 `body` 添加 `.interactive` class → `pointer-events: auto` → 全窗口可交互
+- 所有浮层关闭时 → 移除 `.interactive` class → 恢复默认
+- 角色区域 CSS `-webkit-app-region: drag` 支持窗口拖动（内部可点击元素用 `-webkit-app-region: no-drag` 覆盖）
+- 原型阶段接受 500×500 窗口不穿透桌面（`alwaysOnTop: true` 下桌面图标本就在下层）
+
 ---
 
 ## 6. 关键流程
@@ -471,7 +475,7 @@
 ```
 用户（渲染进程）                主进程                    DeepSeek API
       │                         │                          │
-      │── chat:send ───────────►│                          │
+      │── conversation:send ───►│                          │
       │   (message, sessionId)  │                          │
       │                         │── db.getCharacter()      │
       │                         │── db.getRecentMsgs()     │
@@ -483,11 +487,11 @@
       │                         │                          │
       │                         │◄── SSE data chunks ──────│
       │                         │                          │
-      │◄── chat:stream-chunk ───│                          │
+      │◄── conversation:chunk ──│                          │
       │   (delta text)          │                          │
       │      ... (循环)          │                          │
       │                         │                          │
-      │◄── chat:stream-done ────│                          │
+      │◄── conversation:done ───│                          │
       │   (fullMessage,         │                          │
       │    parsedIntent | null) │                          │
       │                         │                          │
@@ -529,17 +533,17 @@
 ```
 用户（右键菜单/按钮）
       │
-      │── window:switch-mode ──► 主进程
+      │── app:switch-mode ──────► 主进程
       │    (targetMode)          │
       │                          │── windowManager.switchMode(targetMode)
       │                          │   ├─ 隐藏当前窗口
       │                          │   ├─ 创建/显示目标窗口
       │                          │   └─ 更新 db.appState.currentMode
       │                          │
-      │◄── window:mode-changed ──│ (broadcast 所有渲染进程)
+      │◄── mode:activated ───────│ (通知目标渲染进程)
       │    (newMode)             │
       │                          │
-      │  渲染进程更新 Pinia       │
+      │  渲染进程通过 IPC 拉取数据  │
       │  useAppStore.mode        │
 ```
 
@@ -589,10 +593,14 @@
       │                          │── narrative.generateFeedback(task)
       │                          │   └─ 调用 LLM 生成叙事文本
       │                          │── narrative.updateWorldState()
+      │                          │── 检查当前章节 milestones：
+      │                          │   若任务关联 milestone → progress+1
+      │                          │   若 milestone.progress >= required → 标记完成
+      │                          │   若全部 milestones 完成 → currentChapter+1
       │                          │
       │◄── task:updated ─────────│ (broadcast)
       │◄── relationship:updated ─│ (若阶段变化)
-      │◄── world:state-updated ──│ (若世界变量变化)
+      │◄── world:state-updated ──│ (若世界变量/章节变化)
       │                          │
       │  软件模式展示结算动画     │
       │  - 叙事文本逐字显示       │
@@ -657,13 +665,16 @@
 | 纯本地 | 无在线同步、无多设备支持，所有数据存本地 JSON |
 | 无语音 | 仅文本交互，不含语音输入/输出 |
 | 流式依赖 | 对话体验强依赖 DeepSeek API 流式输出的稳定性 |
+| 无商店/礼物/CG | MVP 不包含礼物系统、商店系统、CG 解锁、显式好感度数值，关系深化通过叙事自然体现 |
+| 无社交 | 无好友、排行榜、社区等功能 |
+| 无世界编辑器 | 世界书通过 JSON 文件手动编辑，不开放用户自定义编辑器 |
 
 ### 8.2. 关键风险
 
 | 风险 | 缓解措施 |
 |------|----------|
-| 透明窗口鼠标穿透 | `setIgnoreMouseEvents` + 角色区域 `hitTest` 动态计算 |
-| 三窗口状态同步延迟 | IPC broadcast + Pinia watch，变更即同步 |
+| 透明窗口鼠标穿透 | 纯 CSS `pointer-events` 方案（原型阶段接受不穿透桌面） |
+| 三窗口状态同步延迟 | IPC broadcast，每个渲染进程启动时从主进程拉取最新状态 |
 | 流式格式兼容性 | 标准 OpenAI SSE 格式，切换 endpoint 仅改 URL |
 | LLM 任务解析不稳定 | 多层容错：JSON.parse → 正则提取 → 纯文本回退 |
 

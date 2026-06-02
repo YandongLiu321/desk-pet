@@ -4,8 +4,8 @@ const path = require("node:path");
 /** @type {Record<string, Electron.BrowserWindowConstructorOptions>} */
 const WINDOW_CONFIG = {
 	pet: {
-		width: 140,
-		height: 160,
+		width: 500,
+		height: 500,
 		transparent: true,
 		frame: false,
 		alwaysOnTop: true,
@@ -34,12 +34,15 @@ const WINDOW_CONFIG = {
 class WindowManager {
 	/**
 	 * @param {string} preloadPath - absolute path to preload.js
+	 * @param {(mode: string) => void} onSwitchToPet - callback for close handlers (cleanup + switch)
 	 */
-	constructor(preloadPath) {
+	constructor(preloadPath, onSwitchToPet) {
 		this.preloadPath = preloadPath;
+		this._onSwitchToPet = onSwitchToPet || (() => {});
 		/** @type {Map<string, BrowserWindow>} */
 		this._windows = new Map();
 		this._currentMode = null;
+		this._switching = false;
 	}
 
 	/**
@@ -68,20 +71,29 @@ class WindowManager {
 		if (mode === "pet") {
 			win.setAlwaysOnTop(true, "screen-saver");
 			win.setVisibleOnAllWorkspaces(true);
-			const { x, y } = config;
-			if (x !== undefined && y !== undefined) {
-				win.setIgnoreMouseEvents(true, { forward: true });
-			}
+			win.setIgnoreMouseEvents(false);
 		}
 
 		if (mode === "wallpaper") {
 			win.setAlwaysOnTop(false);
 		}
 
-		win.on("close", (e) => {
-			e.preventDefault();
-			win.hide();
-		});
+		// Close handlers
+		if (mode === "pet") {
+			win.on("close", (e) => {
+				e.preventDefault();
+				win.hide();
+			});
+		} else {
+			// software / wallpaper: close → return to pet mode with cleanup
+			win.on("close", (e) => {
+				e.preventDefault();
+				if (this._switching) return;
+				this._switching = true;
+				this._onSwitchToPet("pet");
+				this._switching = false;
+			});
+		}
 
 		this._windows.set(mode, win);
 		return win;
@@ -92,8 +104,10 @@ class WindowManager {
 	 */
 	switchMode(targetMode) {
 		const current = this._currentMode;
-		if (current && this._windows.has(current)) {
+		if (current && current !== targetMode && this._windows.has(current)) {
+			this._switching = true;
 			this._windows.get(current).hide();
+			this._switching = false;
 		}
 
 		const win = this.getOrCreateWindow(targetMode);

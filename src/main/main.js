@@ -19,6 +19,7 @@ const { NarrativeEngine } = require("./narrative-engine");
 const { ProactiveTrigger } = require("./proactive-trigger");
 const { UserStyleAnalyzer } = require("./user-style-analyzer");
 const { registerIpcHandlers } = require("./ipc-handlers");
+const { IPC } = require("../shared/constants.js");
 
 /** @type {Database} */
 let db;
@@ -26,6 +27,27 @@ let db;
 let windowManager;
 /** @type {Tray|null} */
 let tray = null;
+
+/**
+ * Single authoritative mode-switch implementation.
+ * Used by tray menu, IPC handler, and window close handlers.
+ * @param {'pet'|'wallpaper'|'software'} mode
+ */
+function switchModeWithCleanup(mode) {
+	if (_llmService) _llmService.abort();
+	if (_pomodoroService?.isRunning()) _pomodoroService.cancel();
+	windowManager.switchMode(mode);
+	db.updateAppState({ currentMode: mode });
+	const win = windowManager.getCurrentWindow();
+	if (win && !win.isDestroyed()) {
+		win.webContents.send(IPC.MODE_ACTIVATED, { mode });
+	}
+}
+
+/** @type {import('./llm-service').LLMService} */
+let _llmService;
+/** @type {import('./pomodoro-service').PomodoroService} */
+let _pomodoroService;
 
 function createTray() {
 	const iconPath = path.join(
@@ -52,23 +74,23 @@ function createTray() {
 		{
 			label: "桌宠模式",
 			type: "normal",
-			click: () => windowManager.switchMode("pet"),
+			click: () => switchModeWithCleanup("pet"),
 		},
 		{
 			label: "壁纸模式",
 			type: "normal",
-			click: () => windowManager.switchMode("wallpaper"),
+			click: () => switchModeWithCleanup("wallpaper"),
 		},
 		{
 			label: "软件模式",
 			type: "normal",
-			click: () => windowManager.switchMode("software"),
+			click: () => switchModeWithCleanup("software"),
 		},
 		{ type: "separator" },
 		{ label: "退出", type: "normal", click: () => app.quit() },
 	]);
 	tray.setContextMenu(contextMenu);
-	tray.on("click", () => windowManager.switchMode("pet"));
+	tray.on("click", () => switchModeWithCleanup("pet"));
 }
 
 function loadWorldBook() {
@@ -106,15 +128,17 @@ app.whenReady().then(() => {
 
 	const apiKey = db.getApiKey();
 	const llmService = new LLMService({ apiKey, db, worldBook });
-	const taskService = new TaskService(db);
+	_llmService = llmService;
+	const taskService = new TaskService({ db, worldBook });
 	const relationshipService = new RelationshipService(db);
 	const pomodoroService = new PomodoroService();
+	_pomodoroService = pomodoroService;
 	const narrativeEngine = new NarrativeEngine(llmService);
 	const proactiveTrigger = new ProactiveTrigger();
 	const _userStyleAnalyzer = new UserStyleAnalyzer();
 
 	const preloadPath = path.join(__dirname, "..", "preload.js");
-	windowManager = new WindowManager(preloadPath);
+	windowManager = new WindowManager(preloadPath, switchModeWithCleanup);
 
 	registerIpcHandlers(
 		{
@@ -125,13 +149,14 @@ app.whenReady().then(() => {
 			relationshipService,
 			pomodoroService,
 			narrativeEngine,
+			switchModeWithCleanup,
 		},
 		{ ipcMain, BrowserWindow },
 	);
 
 	createTray();
 	proactiveTrigger.start();
-	windowManager.switchMode("pet");
+	switchModeWithCleanup("pet");
 });
 
 app.on("window-all-closed", () => {});
@@ -141,5 +166,5 @@ app.on("before-quit", () => {
 });
 
 app.on("activate", () => {
-	if (windowManager) windowManager.switchMode("pet");
+	if (windowManager) switchModeWithCleanup("pet");
 });

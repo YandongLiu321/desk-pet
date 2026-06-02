@@ -6,7 +6,7 @@
 
 在 1-2 周内交付一个 Windows 桌面 AI 陪伴应用的可交互原型，覆盖三大场景：
 
-- **桌宠模式**：桌面悬浮的 Q 版角色（窗口即角色本体）。左键点击进行自然语言闲聊，右键菜单发布任务与切换模式；对话中能识别用户意图，主动询问是否切换模式
+- **桌宠模式**：桌面悬浮的 Q 版角色（500×500 透明大窗口，角色 120×120 偏右放置）。左键点击角色在左侧弹出对话面板（闲聊），右键在右侧弹出功能菜单（发布任务/切换模式等），主动气泡从角色头顶浮现；对话中能识别用户意图，主动询问是否切换模式
 - **壁纸模式**：全屏覆盖的专注陪伴层，含番茄钟和白噪音
 - **软件模式**：RPG 风格的游戏化主界面，任务结算与剧情推进
 
@@ -24,7 +24,7 @@
 |--------|------|------|
 | 桌面框架 | Electron 42 | 已安装，Windows 原生支持好 |
 | 主进程 | CommonJS (.js) | Electron 原生模块系统 |
-| 渲染进程 | Vue 3 + Vite (ESM) | 组件化开发，热更新 |
+| 渲染进程 | 纯 HTML/CSS/JS | 无前端框架，轻量级 |
 | AI 服务 | DeepSeek API | 用户指定，兼容 OpenAI 格式 |
 | 数据存储 | lowdb 7 | 已安装，JSON 文件，配置简单 |
 | 角色占位 | 纯图标 + CSS 动画 | Live2D 模型后续约稿 |
@@ -53,15 +53,16 @@
            ▼              ▼               ▼
 ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
 │ 桌宠渲染进程   │ │ 壁纸渲染进程  │ │ 软件渲染进程  │
-│ (Vue 3 App)  │ │ (Vue 3 App)  │ │ (Vue 3 App)  │
+│ (纯 HTML/JS)  │ │ (纯 HTML/JS)  │ │ (纯 HTML/JS)  │
 │              │ │              │ │              │
-│ 角色本体      │ │ 全屏覆盖      │ │ 独立窗口      │
-│ ~120×120px   │ │ 半透明        │ │ 1280×800px   │
-│ 浮层交互      │ │              │ │              │
+│ 500×500透明窗 │ │ 全屏覆盖      │ │ 独立窗口      │
+│ 角色偏右120px │ │ 半透明        │ │ 1280×800px   │
+│ 左侧对话面板  │ │              │ │              │
+│ 右侧菜单/气泡 │ │              │ │              │
 └──────────────┘ └──────────────┘ └──────────────┘
 ```
 
-三种模式各为一个独立的 BrowserWindow + Vue 应用，通过主进程 IPC 共享状态。
+三种模式各为一个独立的 BrowserWindow + 纯 HTML/CSS/JS 应用，通过主进程 IPC 共享状态。桌宠模式采用 500×500 透明大窗口，角色 120×120 偏右放置，其余透明区域鼠标穿透；对话面板左侧浮出，右键菜单右侧弹出，主动气泡从角色头顶浮现——四个浮层均作为窗口内 DOM 元素，渲染进程通过 IPC 控制鼠标穿透开关。
 
 ### 2.2. 目录结构
 
@@ -74,27 +75,18 @@ desk-pet/
 │   │   ├── database.js          # lowdb 封装
 │   │   ├── llm-service.js       # DeepSeek API 封装
 │   │   └── window-manager.js    # 三窗口生命周期管理
-│   ├── renderer/                # 渲染进程 (Vue 3 + Vite, ESM)
+│   ├── renderer/                # 渲染进程 (纯 HTML/CSS/JS)
 │   │   ├── pet/                 # 桌宠模式
-│   │   │   ├── index.html
-│   │   │   ├── main.js
-│   │   │   ├── App.vue
-│   │   │   └── components/
+│   │   │   └── index.html       # 单文件（内嵌 CSS + JS）
 │   │   ├── wallpaper/           # 壁纸模式
-│   │   │   ├── index.html
-│   │   │   ├── main.js
-│   │   │   ├── App.vue
-│   │   │   └── components/
+│   │   │   └── index.html       # 单文件（内嵌 CSS + JS）
 │   │   ├── software/            # 软件模式
-│   │   │   ├── index.html
-│   │   │   ├── main.js
-│   │   │   ├── App.vue
-│   │   │   └── components/
-│   │   └── shared/              # 共享组件和工具
-│   │       ├── components/      # 对话气泡、任务卡片等
-│   │       ├── stores/          # Pinia stores
-│   │       ├── styles/          # CSS 变量、主题
-│   │       └── utils/           # IPC 调用封装
+│   │   │   └── index.html       # 单文件（内嵌 CSS + JS）
+│   │   └── shared/              # 共享 JS 模块和样式
+│   │       ├── ipc-client.js, dom-utils.js, state-manager.js,
+│   │       │   character-renderer.js, conversation-panel.js,
+│   │       │   task-panel.js, pomodoro-timer.js
+│   │       └── styles/          # CSS 变量、动画、全局样式
 │   └── preload.js               # preload 脚本 (CommonJS)
 ├── assets/
 │   ├── characters/default/      # 角色占位图标
@@ -105,31 +97,60 @@ desk-pet/
 ├── data/                        # lowdb 数据文件
 ├── tests/                       # vitest 单元测试
 ├── doc/                         # 文档
-├── vite.config.js               # Vite 配置（多页面）
 ├── package.json
 ├── tsconfig.json
 └── biome.json
 ```
 
-### 2.3. Vite 多页面配置
+### 2.3. 渲染进程架构
 
-渲染进程使用 Vite 多页面构建，三个模式各为一个入口：
+每个模式使用单一 `index.html` 文件（内嵌 `<style>` 和 `<script>`）。共享样式通过 `<link rel="stylesheet">` 加载，共享 JS 通过 `<script src="../shared/...">` 加载。状态管理使用 `state-manager.js`（简易发布订阅），无前端框架。
+
+### 2.4. 窗口配置常量
 
 ```js
-// vite.config.js (示意)
-export default {
-  root: 'src/renderer',
-  build: {
-    rollupOptions: {
-      input: {
-        pet: 'src/renderer/pet/index.html',
-        wallpaper: 'src/renderer/wallpaper/index.html',
-        software: 'src/renderer/software/index.html',
-      }
-    }
+const WINDOW_CONFIG = {
+  pet: {
+    width: 500, height: 500,
+    transparent: true, frame: false,
+    alwaysOnTop: true, resizable: false,
+    skipTaskbar: true
+  },
+  // design note: 角色在 500×500 窗口中偏右放置 (x:240, y:20)
+  // 左侧 240px 给对话/任务面板，右侧 140px 给右键菜单
+  // 透明区域默认鼠标穿透，浮层打开时通过 IPC 控制全窗口可交互
+  wallpaper: {
+    fullscreen: true,
+    transparent: true, frame: false,
+    alwaysOnTop: false, resizable: false,
+    skipTaskbar: true
+  },
+  software: {
+    width: 1280, height: 800,
+    transparent: false, frame: true,
+    alwaysOnTop: false, resizable: true,
+    skipTaskbar: false
   }
 }
 ```
+
+### 2.5. IPC 通道清单
+
+**对话**：`conversation:send`, `conversation:chunk`(main→renderer), `conversation:done`(main→renderer), `conversation:error`(main→renderer), `conversation:get-history`, `conversation:abort`
+
+**任务**：`task:get-all`, `task:get-by-id`, `task:create`, `task:update`, `task:toggle-subtask`, `task:complete`, `task:delete`
+
+**应用/模式**：`app:switch-mode`, `app:get-state`, `app:get-character`, `app:get-relationship`, `mode:activated`(main→renderer)
+
+**番茄钟**：`pomodoro:start`, `pomodoro:stop`, `pomodoro:get-status`, `pomodoro:tick`(main→renderer), `pomodoro:end`(main→renderer)
+
+**设置**：`settings:get-api-key`, `settings:set-api-key`, `settings:get-wallpaper`, `settings:update-wallpaper`
+
+**窗口**：`window:hide`, `window:close-mode`
+
+**错误码**：`TASK_NOT_FOUND`, `TASK_CREATE_INVALID`, `LLM_NETWORK`, `LLM_API`, `LLM_TIMEOUT`, `POMODORO_NOT_RUNNING`, `MODE_INVALID`, `INTERNAL`
+
+所有 IPC 通道名必须定义在单一常量文件中（`src/shared/constants.js`），preload 与 ipc-handlers 共同引用同一常量对象，禁止裸写 channel 字符串。
 
 ---
 
@@ -141,7 +162,8 @@ export default {
 {
   "appState": {
     "currentMode": "pet",
-    "petWindowBounds": { "x": 1000, "y": 600, "width": 140, "height": 160 },
+    "petWindowBounds": { "x": 1000, "y": 600, "width": 500, "height": 500 },
+    "characterPosition": { "x": 240, "y": 20, "width": 120, "height": 120 },
     "wallpaperSettings": { "opacity": 0.85, "characterPosition": "right", "soundVolume": 0.5 },
     "pomodoro": null
   },
@@ -160,6 +182,7 @@ export default {
       "followUpPromptAt": null,
       "followUpCompleted": false,
       "followUpResult": "",
+      "milestoneId": "m1",
       "subtasks": [
         { "id": "st1", "realDesc": "阅读第六章教材", "rpgDesc": "探索迷宫地图", "completed": false },
         { "id": "st2", "realDesc": "完成课后习题", "rpgDesc": "击败迷宫守卫", "completed": false }
@@ -174,7 +197,7 @@ export default {
   },
   "relationship": {
     "characterId": "luna_moonwhisper",
-    "stage": "acquaintance",
+    "stage": "stranger",
     "totalTasksCompleted": 0,
     "totalPomodoros": 0,
     "totalConversations": 0,
@@ -215,16 +238,18 @@ export default {
 
 | 功能 | 描述 | 优先级 |
 |------|------|--------|
-| 角色悬浮窗口 | 窗口即角色本体（约 120×120），透明无边框，置顶，可拖动 | P0 |
+| 角色悬浮窗口 | 500×500 透明无边框窗口，角色 120×120 偏右放置（x=240,y=20），置顶，可拖动 | P0 |
 | 角色占位展示 | 纯图标 + CSS 呼吸动画、眨眼动画 | P0 |
 | 系统托盘 | 托盘图标 + 右键菜单（切换模式、退出） | P0 |
-| 左键：对话气泡 | 点击角色弹出对话浮层，单行输入框 + 回车发送，纯闲聊 | P0 |
+| 左键：对话面板 | 点击角色，在左侧弹出对话浮层（240×400），含消息列表+输入框，纯闲聊 | P0 |
 | AI 对话 | 接入 DeepSeek API，世界书 Prompt 注入，流式逐字显示 | P0 |
 | 智能模式切换 | 对话中识别用户"想专注/看剧情"等意图，主动询问后切换模式 | P0 |
-| 右键：功能菜单 | 右键弹出菜单，含"发布任务""切换壁纸/软件模式""退出"等入口 | P0 |
-| 任务发布 | 用户通过右键菜单进入，表达待办后 AI 转化为 RPG 叙事任务 | P0 |
-| 迷你任务面板 | 右键菜单展开，查看/勾选子任务 | P0 |
-| 主动交互 | 简化版：仅支持手动点击触发对话。完整版含 4 种触发源，见 4.4.2 | P1 |
+| 右键：功能菜单 | 右键弹出菜单（min-width:130px，右侧），含"发布任务""壁纸模式""软件模式""查看任务""隐藏"（隐藏到托盘，因应用托盘常驻不退出） | P0 |
+| 主动气泡 | 角色头顶浮现单行气泡（≤50字），数秒后自动消失，点击气泡展开对话面板 | P0 |
+| 任务发布 | 用户通过右键菜单"发布任务"进入，表达待办后 AI 转化为 RPG 叙事任务 | P0 |
+| 迷你任务面板 | 右键菜单"查看任务"展开（左侧，240×300），对话面板与任务面板互斥 | P0 |
+| 鼠标穿透 | 所有浮层关闭时透明区域 `pointer-events: none`；任一浮层打开时通过 `.interactive` CSS class 使全窗口可交互（纯 CSS 方案，无需 IPC） | P0 |
+| 主动交互触发 | 简化版：仅手动点击。完整版含 4 种触发源，见 4.4.2 | P1 |
 
 ### 4.2. 壁纸模式 — MVP 功能
 
@@ -246,7 +271,7 @@ export default {
 | 左侧导航 | 任务、地图、角色三个标签切换 | P0 |
 | 角色展示区 | 右侧大尺寸图标 + 对话面板 | P0 |
 | RPG 任务面板 | 任务列表、详情、子任务勾选 | P0 |
-| 任务结算 | 子任务全完成 → 叙事反馈 + 世界状态更新 | P0 |
+| 任务结算 | 子任务全完成 → 叙事反馈 + 世界状态更新。完成用户任务后贡献主线里程碑进度，里程碑全部完成推进章节 | P0 |
 | 世界地图 | 静态插画 + 区域状态（明亮/灰暗） | P1 |
 | 角色档案 | 背景故事、共同记忆时间线 | P1 |
 | 对话面板 | 底部聊天区域，与桌宠共享对话引擎 | P0 |
@@ -264,20 +289,19 @@ export default {
 | **原型做法** | 静态 SVG/CSS 图标 + 呼吸/弹跳动画 |
 | **完整需求** | Live2D Cubism 骨骼动画，待机/互动/陪伴多套动作 |
 | **简化原因** | Live2D 模型需约稿，模型文件尚未交付 |
-| **扩展接口** | `src/renderer/shared/components/CharacterRenderer.vue` — 组件内部根据 `modelType` 属性切换渲染引擎 |
+| **扩展接口** | `src/renderer/shared/character-renderer.js` — `CharacterRenderer` 类根据 `assetType` 参数切换渲染引擎 |
 
 ```js
-// CharacterRenderer.vue — 扩展接口定义
-props: {
-  modelType: 'icon' | 'live2d',   // 原型阶段为 'icon'，模型到位后传入 'live2d'
-  characterId: String,             // 角色 ID，用于加载对应模型资源
-  mode: 'pet' | 'wallpaper' | 'software',  // 模式决定尺寸和动作集
-  expression: String,              // 当前表情名
-  motion: String,                  // 当前动作名
-  autoplay: Boolean                // 是否自动播放待机动画
-}
-// 当 modelType === 'live2d' 时，初始化 Live2D Canvas，替换图标层
-// 当 modelType === 'icon' 时，渲染 <CharacterIcon> 子组件
+// CharacterRenderer 类 — 扩展接口定义
+constructor(container, {
+  mode: 'pet' | 'wallpaper' | 'software',  // 决定尺寸和动作集
+  size: Number,                             // 渲染尺寸 (px)
+  assetType: 'css' | 'image' | 'live2d',    // 原型阶段 'css'，后续扩展
+  characterId: String                       // 角色 ID，加载对应资源
+})
+// assetType === 'css' 时：渲染 SVG + CSS 动画
+// assetType === 'image' 时：加载 assets/characters/{id}/expressions/{name}.png
+// assetType === 'live2d' 时：初始化 Live2D Canvas（预留）
 ```
 
 - **表情/动作配置**：`assets/characters/{characterId}/expressions.json`、`motions.json`（每个角色独立配置，代码按名称引用，不硬编码参数）
@@ -289,7 +313,7 @@ props: {
 
 | 项目 | 说明 |
 |------|------|
-| **原型做法** | 仅支持手动点击角色触发对话 |
+| **原型做法** | 手动点击角色触发对话 + 主动气泡 UI（显示/隐藏/点击展开）。定时触发逻辑（ProactiveTrigger）为 P1 空壳 |
 | **完整需求** | 4 种触发条件——定时随机（15-30min）、任务截止提醒、用户久坐检测（30min 无操作）、任务完成后 1-3 天追问 |
 | **简化原因** | 定时器和空闲检测需要主进程全局监听，P0 交互优先 |
 | **扩展接口** | `src/main/proactive-trigger.js` — 触发器模块，统一调度 |
@@ -376,22 +400,20 @@ class PomodoroService {
 | **原型做法** | 一张静态插画占位图 + 文字标注当前章节 |
 | **完整需求** | 各区域根据任务完成状态动态变化（明亮/灰暗/锁链覆盖），显示世界变量数值，章节完成后出现"前往下一章"按钮 |
 | **简化原因** | 需要美术产出多状态插画，原型阶段用纯色 CSS 区域模拟 |
-| **扩展接口** | `src/renderer/software/components/WorldMap.vue` — 数据驱动渲染 |
+| **扩展接口** | `src/renderer/software/index.html` 中的 WorldMap DOM 组件 — 数据驱动渲染 |
 
 ```js
-// WorldMap.vue — 扩展接口
-props: {
+// WorldMap — 扩展接口（software/index.html 内的 JS 函数）
+function createWorldMap(container, {
   regions: Array<{
-    id: string,
-    name: string,
-    state: 'locked' | 'dark' | 'bright',  // 区域状态
-    position: { x: number, y: number },     // 在插画上的坐标位置
-    icon: string                             // 区域图标（建筑/雕像等）
+    id: string, name: string,
+    state: 'locked' | 'dark' | 'bright',
+    position: { x: number, y: number }
   }>,
-  worldVariables: Object,   // 键值对 {"crystalIntegrity": 75}
-  currentChapter: Object,   // 当前章节信息
-  onChapterAdvance: Function // 章节推进回调
-}
+  worldVariables: Object,
+  currentChapter: Object,
+  onChapterAdvance: Function
+}) → { updateRegions, destroy }
 // 原型阶段 regions 从 worldbook 读取但仅静态显示
 // 完整版需要：
 // 1. 各区域插画素材放入 assets/backgrounds/chapter_{id}/
@@ -483,7 +505,7 @@ class NarrativeEngine {
 
 ---
 
-#### 4.4.9. 四项完全不做（原型范围外）
+#### 4.4.9. 完全不做（原型范围外）
 
 以下功能原型阶段不实现，也不预留代码接口（因改动范围太大，需要在架构层重新设计）：
 
@@ -494,6 +516,9 @@ class NarrativeEngine {
 | 用户自定义世界书 | 需要世界书编辑器 UI，工作量相当于一个新模块 |
 | 在线同步/多设备 | 架构需改为 C/S 模式，原型阶段纯本地 |
 | 首次引导剧情 | 需要完整的新手引导 UI 流程和脚本 |
+| 礼物系统/商店 | 无货币体系、无购买/赠送、无感谢动画 |
+| CG 解锁/相册 | AI 剧情不可预测，不预设固定 CG 解锁节点 |
+| 显式好感度数值 | UI 中不显示任何好感度条、进度条、分数、等级数字，关系深化通过叙事体现 |
 
 ---
 
@@ -619,7 +644,7 @@ API 返回 SSE 流，主进程通过 IPC 逐块推送给渲染进程，渲染进
 
 ### 第一阶段：基础设施 (Day 1-2)
 
-- [ ] 搭建 Vite 多页面构建配置
+- [ ] 配置 package.json scripts 与资源文件目录
 - [ ] 实现 Electron 主进程框架（窗口管理、IPC、托盘）
 - [ ] 实现 preload 脚本（contextBridge 暴露安全 API）
 - [ ] 搭建 lowdb 数据层
@@ -663,7 +688,7 @@ API 返回 SSE 流，主进程通过 IPC 逐块推送给渲染进程，渲染进
 |------|--------|------|----------|
 | DeepSeek API 流式格式不兼容 | 低 | 高 | 兼容 OpenAI SSE 格式是标准，切换只需改 endpoint |
 | 透明窗口鼠标穿透实现复杂 | 中 | 中 | setIgnoreMouseEvents + 角色区域 hitTest 动态计算 |
-| 三窗口状态同步延迟 | 中 | 中 | IPC broadcast + Pinia watch，变更即同步 |
+| 三窗口状态同步延迟 | 中 | 中 | IPC broadcast，每个渲染进程启动时从主进程拉取最新状态 |
 | 1-2 周时间不足覆盖三模式 | 中 | 高 | 按优先级裁剪：桌宠 P0 → 软件 P0 → 壁纸 P0 → 各模式 P1 依次降级 |
 | 世界书 Prompt 过长导致 token 消耗大 | 低 | 中 | 按需注入：只传当前章节 + 角色设定，世界全貌存为摘要 |
 | Electron 打包体积过大 | — | — | 原型阶段不打包，直接用 `npm start` 运行 |

@@ -1,48 +1,53 @@
 # 桌宠模式 (renderer/pet/)
 
-> 桌面悬浮的 Q 版角色（窗口即角色本体，约 140×160）。左键闲聊，右键功能菜单。对话中能智能识别模式切换意图。
+> 500×500 透明无边框窗口，角色 120×120 偏右放置（x:240, y:20）。左键角色左侧弹出对话面板（闲聊），右键角色右侧弹出功能菜单，主动气泡从角色头顶浮现。
 
 ## 子任务
 
-### 项目初始化
+### 页面结构与布局
 
-- [ ] **pet-01** 创建 `index.html` 入口
-- [ ] **pet-02** 创建 `main.js`：创建 Vue 应用 + 注册 Pinia + 挂载
+- [ ] **pet-01** 创建 `index.html` 单文件页面：500×500 透明背景，角色区域绝对定位（240, 20, 120×120）
+- [ ] **pet-02** 集成 CharacterRenderer（mode='pet', size=120），挂载到角色区域
+- [ ] **pet-03** 实现角色呼吸/眨眼/弹跳动画
 
-### App.vue 根布局
+### 主动气泡（角色头顶）
 
-- [ ] **pet-03** 创建 `App.vue`：透明背景，窗口仅容纳角色本体（约 140×160）
-- [ ] **pet-04** 集成 CharacterRenderer（mode='pet', modelType='icon'），角色填充窗口
-- [ ] **pet-05** 集成 ConversationPanel（position='bottom'，**左键**点击角色弹出/收回，纯闲聊）
-- [ ] **pet-06** 集成 MiniTaskPanel（右键菜单触发，浮动面板，最大 300px 高）
-- [ ] **pet-07** 集成 ContextMenu（**右键**弹出功能菜单）
+- [ ] **pet-04** 创建主动气泡 DOM 元素：定位在角色头顶上方，单行文字（≤50字），带关闭按钮
+- [ ] **pet-05** 气泡自动消失逻辑：显示后 N 秒自动隐藏（`setTimeout`）
+- [ ] **pet-06** 气泡点击行为：点击气泡 → 展开左侧对话面板
 
-### 组件：MessageInput
+### 对话面板（角色左侧）
 
-- [ ] **pet-08** 创建 `MessageInput.vue`：单行输入框 + 发送按钮
-  - 回车发送，Shift+回车换行
-  - 发送中禁用输入
+- [ ] **pet-07** 集成 ConversationPanel（position='bottom'），定位在角色左侧（240×400）
+- [ ] **pet-08** 左键点击角色 → 对话面板 toggle（纯闲聊，`enableTaskCreation: false`）
+- [ ] **pet-09** 右键菜单"发布任务" → 打开对话面板，`enableTaskCreation: true`
+- [ ] **pet-10** conversation:done 中检测 `intent: 'switch_mode'` → 自动调用 `app:switch-mode(switchTarget)`
+- [ ] **pet-11** 点击角色区域外或按 ESC → 关闭对话面板
 
-### 组件：ContextMenu（右键菜单）
+### 右键菜单（角色右侧）
 
-- [ ] **pet-09** 创建 `ContextMenu.vue`：右键弹出菜单
-  - 菜单项：**发布任务**（进入任务转化流程）、进入壁纸模式、进入软件模式、查看任务列表、退出
-  - 点击菜单外部关闭
-  - 每个菜单项调用对应 action
+- [ ] **pet-12** 创建右键菜单 DOM 元素：定位在角色右侧，min-width:130px
+- [ ] **pet-13** 菜单项：发布任务 / 进入壁纸模式 / 进入软件模式 / 查看任务 / 隐藏（隐藏窗口到托盘，应用继续运行。因 `window-all-closed` 不退出，此为"隐藏"而非"退出应用"）
+- [ ] **pet-14** `contextmenu` 事件触发菜单，修复事件冒泡导致菜单项点击失效
+- [ ] **pet-15** 点击菜单项后关闭菜单，执行对应 action
 
-### 交互接入
+### 迷你任务面板（角色左侧，与对话面板互斥）
 
-- [ ] **pet-10** App.vue 接入 conversationStore：**左键** → 纯闲聊对话，流式显示回复。该通道不触发任务转化
-- [ ] **pet-11** 接入 taskStore：**右键→发布任务**入口触发。用户表达待办 → AI 返回 create_task intent → 创建任务 + 显示提示
-- [ ] **pet-12** 接入 appStore：模式切换（手动右键切换 + AI 智能切换两路径） + 监听 mode:activated 刷新数据
-- [ ] **pet-12b** 实现智能模式切换：conversation:done 中检测 `intent: 'switch_mode'` → 自动调用 appStore.switchMode(switchTarget)
+- [ ] **pet-16** 集成 TaskPanel（compact=true），定位在角色左侧（240×300）
+- [ ] **pet-17** 右键菜单"查看任务" → 展开任务面板，同时关闭对话面板（互斥）
+- [ ] **pet-18** 子任务勾选通过 IPC toggle，实时同步到主进程
 
-### 窗口行为
+### 鼠标交互控制（纯 CSS 方案）
 
-- [ ] **pet-13** 处理透明窗口鼠标穿透：角色区域可点击，非角色区域穿透。对话浮层/菜单打开时恢复角色区域附近的可交互性
-- [ ] **pet-14** 窗口置顶 + 任务栏不显示（通过主进程窗口配置）
-- [ ] **pet-15** 验证：左键角色弹出对话气泡（闲聊），右键弹出功能菜单（含发布任务入口），对话中表达"想专注"→AI 询问确认→切换壁纸模式
+- [ ] **pet-19** CSS 默认状态：`body` `pointer-events: none`，仅角色区域（120×120）`pointer-events: auto` + `-webkit-app-region: drag`
+- [ ] **pet-20** 封装浮层状态切换函数：给 `body` 添加/移除 `.interactive` class（`.interactive` 设置 `pointer-events: auto`）
+- [ ] **pet-21** 任一浮层（对话面板/菜单/气泡/任务面板）打开时 → 添加 `.interactive` class → 全窗口可交互
+- [ ] **pet-22** 所有浮层关闭时 → 移除 `.interactive` class → 恢复仅角色区域可交互
 
-### 测试
+### 验证
 
-- [ ] **pet-16** 编写 App.vue 组件测试：验证左键/右键行为分离、子组件正确渲染、事件传递
+- [ ] **pet-23** 验证：左键角色 → 左侧对话面板弹出（闲聊），右键 → 右侧菜单弹出（5 项）
+- [ ] **pet-24** 验证："发布任务"打开对话面板且 AI 注入任务转化 Prompt
+- [ ] **pet-25** 验证：对话面板与任务面板互斥（同时只显示一个）
+- [ ] **pet-26** 验证：主动气泡显示/自动隐藏/点击展开对话面板
+- [ ] **pet-27** 验证：鼠标交互控制——body 默认 `pointer-events: none`（仅角色可交互）；面板/菜单/气泡打开时 `.interactive` class 生效（全窗口可交互）；关闭后恢复默认

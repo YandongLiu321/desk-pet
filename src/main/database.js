@@ -8,7 +8,7 @@ const fs = require("node:fs");
  *   estimatedPomodoros: number, estimatedMinutes: number, deadline: string,
  *   status: TaskStatus, createdAt: string, completedAt: string|null,
  *   followUpPromptAt: string|null, followUpCompleted: boolean, followUpResult: string,
- *   subtasks: SubTask[] }} Task
+ *   subtasks: SubTask[], milestoneId: string|null }} Task
  * @typedef {{ id: string, realDesc: string, rpgDesc: string, completed: boolean }} SubTask
  * @typedef {{ role: 'user'|'assistant'|'system', content: string }} Message
  */
@@ -49,7 +49,8 @@ class Database {
 		return {
 			appState: {
 				currentMode: "pet",
-				petWindowBounds: { x: 1000, y: 600, width: 300, height: 400 },
+				petWindowBounds: { x: 1000, y: 600, width: 500, height: 500 },
+				characterPosition: { x: 240, y: 20, width: 120, height: 120 },
 				wallpaperSettings: {
 					opacity: 0.85,
 					characterPosition: "right",
@@ -67,14 +68,18 @@ class Database {
 			},
 			relationship: {
 				characterId: "luna_moonwhisper",
-				stage: "acquaintance",
+				stage: "stranger",
 				totalTasksCompleted: 0,
 				totalPomodoros: 0,
 				totalConversations: 0,
 				consecutiveDays: 1,
 				lastInteractionAt: "",
 			},
-			worldState: { currentChapter: 1, variables: { crystalIntegrity: 75 } },
+			worldState: {
+				currentChapter: 1,
+				variables: { crystalIntegrity: 75 },
+				milestoneProgress: {},
+			},
 			conversations: [],
 		};
 	}

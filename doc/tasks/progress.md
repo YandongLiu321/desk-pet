@@ -1,12 +1,13 @@
 # 总体进度
 
-## 第一阶段：基础设施 (5 个模块)
+## 第一阶段：基础设施 (6 个模块)
 
 - [x] [shared-styles](./shared-styles.md) — CSS 变量、动画、全局样式
 - [x] [database](./database.md) — lowdb 封装，全部 CRUD 操作
 - [x] [window-manager](./window-manager.md) — 三窗口生命周期管理
 - [x] [preload](./preload.md) — contextBridge 安全 API 暴露
-- [x] [shared-js](./shared-js.md) — 共享 JS 模块（ipc-client, dom-utils, state-manager 等）
+- [x] [shared-stores](./shared-stores.md) — 共享状态管理（state-manager, ipc-client）
+- [x] [shared-components](./shared-components.md) — 共享 UI 组件（character-renderer, conversation-panel, task-panel, pomodoro-timer, dom-utils）
 
 ## 第二阶段：桌宠模式 (7 个模块)
 

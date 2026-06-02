@@ -13,7 +13,10 @@ class TaskPanel {
 
 	mount() {
 		this.container.innerHTML = "";
-		this.container.style.cssText = `display:flex;flex-direction:column;gap:var(--space-xs);overflow-y:auto;padding:var(--space-xs);`;
+		this.container.style.flexDirection = "column";
+		this.container.style.gap = "var(--space-xs)";
+		this.container.style.overflowY = "auto";
+		this.container.style.padding = "var(--space-xs)";
 		this._listEl = document.createElement("div");
 		this._listEl.className = "task-list";
 		this.container.appendChild(this._listEl);

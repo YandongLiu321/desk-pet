@@ -359,39 +359,58 @@
     const task = res.data;
     const detail = document.getElementById("taskDetail");
     detail.style.display = "block";
-    detail.innerHTML = `
-      <h3>${task.rpgTitle}</h3>
-      <p>📝 ${task.realTitle}</p>
-      <p>📖 ${task.rpgDescription || "无描述"}</p>
-      <p>⏱️ 预计番茄数：${task.estimatedPomodoros} · 预计时间：${task.estimatedMinutes}分钟</p>
-      <p>📅 截止：${task.deadline || "无截止日期"}</p>
-      <p>📊 状态：${task.status === "completed" ? "✅ 已完成" : "⏳ 进行中"}</p>
-      <div style="margin-top:var(--space-md);display:flex;gap:var(--space-sm);">
-        ${task.status !== "completed" ? `<button class="btn btn-primary" id="btnComplete">✨ 完成任务</button>` : ""}
-        <button class="btn btn-danger" id="btnDelete">🗑️ 删除</button>
-      </div>
-    `;
+    detail.replaceChildren();
 
-    const btnComplete = document.getElementById("btnComplete");
-    if (btnComplete) {
+    const h3 = document.createElement("h3");
+    h3.textContent = task.rpgTitle;
+    detail.appendChild(h3);
+
+    const addPara = (text) => {
+      const p = document.createElement("p");
+      p.textContent = text;
+      detail.appendChild(p);
+    };
+    addPara(`📝 ${task.realTitle}`);
+    addPara(`📖 ${task.rpgDescription || "无描述"}`);
+    addPara(`⏱️ 预计番茄数：${task.estimatedPomodoros} · 预计时间：${task.estimatedMinutes}分钟`);
+    addPara(`📅 截止：${task.deadline || "无截止日期"}`);
+    addPara(`📊 状态：${task.status === "completed" ? "✅ 已完成" : "⏳ 进行中"}`);
+
+    const btnRow = document.createElement("div");
+    btnRow.style.cssText = "margin-top:var(--space-md);display:flex;gap:var(--space-sm);";
+
+    if (task.status !== "completed") {
+      const btnComplete = document.createElement("button");
+      btnComplete.className = "btn btn-primary";
+      btnComplete.id = "btnComplete";
+      btnComplete.textContent = "✨ 完成任务";
       btnComplete.addEventListener("click", async () => {
         const compRes = await ipc.completeTask(taskId);
         if (compRes.ok) {
           if (compRes.data.relationshipUpgrade?.upgraded) {
-            convPanel.addMessage("assistant", `✨ 你们的关系升级了！从 ${compRes.data.relationshipUpgrade.from} 到 ${compRes.data.relationshipUpgrade.to}`);
+            const from = compRes.data.relationshipUpgrade.from;
+            const to = compRes.data.relationshipUpgrade.to;
+            convPanel.addMessage("assistant", `✨ 你们的关系升级了！从 ${from} 到 ${to}`);
           }
           loadTasks();
           showTaskDetail(taskId);
         }
       });
+      btnRow.appendChild(btnComplete);
     }
 
-    document.getElementById("btnDelete").addEventListener("click", async () => {
+    const btnDelete = document.createElement("button");
+    btnDelete.className = "btn btn-danger";
+    btnDelete.id = "btnDelete";
+    btnDelete.textContent = "🗑️ 删除";
+    btnDelete.addEventListener("click", async () => {
       await ipc.deleteTask(taskId);
       detail.style.display = "none";
       selectedTaskId = null;
       loadTasks();
     });
+    btnRow.appendChild(btnDelete);
+    detail.appendChild(btnRow);
   }
 
   // Tab switching

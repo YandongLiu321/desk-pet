@@ -23,10 +23,12 @@
   - model: `deepseek-chat`, temperature: 0.8, max_tokens: 500, stream: true
 - [ ] **llm-04** 实现流式 SSE 解析：逐 token 回调 `onChunk(chunk)`
 - [ ] **llm-05** 流完成时回调 `onDone(fullText, metadata)`
-  - 解析 AI 返回中是否包含识别意图的结构化 JSON
-  - `intent: 'create_task'` → `metadata.intent = 'create_task'`, `metadata.taskPayload = {...}`
+  - **JSON 清洗**：先检测完整文本中是否包含 `{"intent":` 结构 → 若包含则提取 JSON 并从显示文本中移除，只保留角色台词
+  - 若 JSON 与文本混合（AI 未遵守"纯 JSON"指令）→ 分离两部分：台词部分作为显示文本，JSON 部分用于逻辑分发
+  - 解析提取出的 JSON → `intent: 'create_task'` → `metadata.intent = 'create_task'`, `metadata.taskPayload = {...}`
   - `intent: 'switch_mode'` → `metadata.intent = 'switch_mode'`, `metadata.switchTarget = 'wallpaper'|'software'`
-  - 无意图 → `metadata.intent = null`
+  - 无意图或无 JSON → `metadata.intent = null`，完整文本作为显示内容
+  - JSON 解析失败时 → 回退为纯文本显示，不阻塞对话
 - [ ] **llm-06** 实现 `abort()` → 取消当前活跃的 fetch 请求
 
 ### 错误处理

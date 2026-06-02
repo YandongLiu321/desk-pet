@@ -9,7 +9,7 @@
 - [ ] **wm-01** 定义 `WINDOW_CONFIG` 常量（pet/wallpaper/software 三种窗口配置）
 - [ ] **wm-02** 实现 `constructor(preloadPath)`，初始化窗口 Map
 - [ ] **wm-03** 实现 `getOrCreateWindow(mode)` → 创建或返回缓存的 BrowserWindow
-  - pet: 140×160, transparent, frame:false, alwaysOnTop（窗口仅容纳角色本体，对话/菜单为浮层）
+  - pet: 500×500, transparent, frame:false, alwaysOnTop（角色 120×120 偏右，其余透明区域穿透桌面，浮层作为 DOM 元素在窗口内）
   - wallpaper: fullscreen, transparent, frame:false
   - software: 1280×800, frame:true, resizable
 
@@ -30,8 +30,8 @@
 
 ### 桌宠特殊窗口行为
 
-- [ ] **wm-10** 实现鼠标穿透逻辑：非角色区域 `setIgnoreMouseEvents(true, { forward: true })`
-- [ ] **wm-11** 角色区域用 CSS `-webkit-app-region: drag` 支持拖动
+- [ ] **wm-10** 桌宠窗口：body 默认 `pointer-events: none`，角色区域 `pointer-events: auto`。无浮层时透明区域不接收鼠标事件（纯 CSS 控制，不调用 `setIgnoreMouseEvents`）
+- [ ] **wm-11** 角色区域用 CSS `-webkit-app-region: drag` 支持拖动（内部可点击元素用 `-webkit-app-region: no-drag` 覆盖）
 
 ### 测试
 

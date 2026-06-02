@@ -1,6 +1,7 @@
 # Preload 脚本 (preload.js)
 
 > 通过 `contextBridge` 向渲染进程暴露安全的最小 API 表面。渲染进程不能直接访问 Node.js 或 Electron API。
+> **约束**：所有 IPC 通道名必须通过 `require('../shared/constants')` 引用，禁止裸写 channel 字符串。
 
 ## 子任务
 

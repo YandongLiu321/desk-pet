@@ -29,7 +29,7 @@ class PomodoroService {
 
 			if (this._remaining <= 0) {
 				this._callbacks.onEnd();
-				this.stop();
+				this.stop(); // stop() no longer fires onCancel
 			}
 		}, 1000);
 
@@ -40,6 +40,15 @@ class PomodoroService {
 	}
 
 	stop() {
+		if (this._timerId) {
+			clearInterval(this._timerId);
+			this._timerId = null;
+		}
+		this._remaining = null;
+		this._totalSeconds = null;
+	}
+
+	cancel() {
 		if (this._timerId) {
 			clearInterval(this._timerId);
 			this._timerId = null;

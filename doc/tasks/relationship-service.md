@@ -23,7 +23,11 @@
   - 未达到 → 返回 `{ upgraded: false }`
   - 支持跨级跳跃（stats 可能一次满足多级阈值）
 - [ ] **rel-06** 实现 `touchLastInteraction()` → 更新 lastInteractionAt 时间戳
-- [ ] **rel-07** 实现 `updateConsecutiveDays()` → 计算从上次交互至今的连续天数
+- [ ] **rel-07** 实现 `updateConsecutiveDays()` → 按自然日计算：比较 `lastInteractionAt` 的日期与当前日期
+  - 若 `lastInteractionAt` 是昨天 → `consecutiveDays += 1`
+  - 若 `lastInteractionAt` 是今天 → 不变
+  - 若 `lastInteractionAt` 是前天或更早 → 重置为 1（断了连续）
+  - 若 `lastInteractionAt` 为空（首次） → 设为 1
 
 ### 测试
 

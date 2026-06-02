@@ -29,7 +29,7 @@ class CharacterRenderer {
 		wrapper.style.cssText = `width:${this.size}px;height:${this.size}px;position:relative;animation:breathe 3s ease-in-out infinite;`;
 
 		const svg = document.createElement("img");
-		svg.src = "../../assets/characters/default/icon.svg";
+		svg.src = "../../../assets/characters/default/icon.svg";
 		svg.alt = "露娜";
 		svg.style.cssText = "width:100%;height:100%;object-fit:contain;";
 
@@ -48,7 +48,7 @@ class CharacterRenderer {
 	/** @param {string} expression */
 	_renderImage(expression) {
 		const img = document.createElement("img");
-		img.src = `../../assets/characters/default/expressions/${expression}.png`;
+		img.src = `../../../assets/characters/default/expressions/${expression}.png`;
 		img.alt = expression;
 		img.style.cssText = "width:100%;height:100%;object-fit:contain;";
 		this.container.appendChild(img);

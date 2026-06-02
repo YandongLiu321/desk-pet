@@ -1,6 +1,7 @@
 # IPC 路由 (ipc-handlers.js)
 
 > 注册所有 `ipcMain.handle()` 通道，将请求路由到对应服务模块。主进程与渲染进程之间的唯一通信入口。
+> **约束**：所有 IPC 通道名必须通过 `require('../../shared/constants')` 引用，禁止裸写 channel 字符串。
 
 ## 子任务
 
@@ -10,6 +11,7 @@
 - [ ] **ipc-02** 实现 `registerAll()` → 注册全部 IPC 通道
 - [ ] **ipc-03** 定义统一响应格式：成功 `{ ok: true, data }` / 失败 `{ ok: false, error: { code, message } }`
 - [ ] **ipc-04** 实现通用错误包装器：handler 内 catch 异常 → 返回 INTERNAL 错误
+- [ ] **ipc-04b** 所有 IPC 通道名从 `src/shared/constants.js` 导入，不裸写字符串
 
 ### 对话通道
 
@@ -33,7 +35,7 @@
 
 ### 应用/模式通道
 
-- [ ] **ipc-15** `app:switch-mode` → windowManager.switchMode() + 通知目标窗口 `mode:activated`
+- [ ] **ipc-15** `app:switch-mode` → llmService.abort() + 若番茄钟运行中则 pomodoroService.stop()（退出询问由壁纸渲染进程自行处理，主进程不拦截）+ windowManager.switchMode() + 通知目标窗口 `mode:activated`
 - [ ] **ipc-16** `app:get-state` → db.getAppState()
 - [ ] **ipc-17** `app:get-character` → db.getCharacter()
 - [ ] **ipc-18** `app:get-relationship` → db.getRelationship()
@@ -54,7 +56,7 @@
 ### 窗口通道
 
 - [ ] **ipc-26** `window:hide` → currentWindow.minimize()
-- [ ] **ipc-27** `window:close-mode` → windowManager.switchMode('pet')
+- [ ] **ipc-27** `window:close-mode` → llmService.abort() + 若番茄钟运行中则 pomodoroService.stop() + windowManager.switchMode('pet')（退出询问由壁纸渲染进程自行处理，主进程不拦截）
 
 ### 测试
 

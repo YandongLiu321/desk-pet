@@ -1,46 +1,29 @@
-# 共享状态管理 (shared/stores/)
+# 共享状态管理 (renderer/shared/)
 
-> Pinia stores，封装对主进程数据的访问，每个 store 管理一个数据域。
+> 无前端框架。每个渲染进程页面内联 `<script>` 维护本地状态对象，通过 `IpcClient`（封装 `window.electronAPI`）与主进程通信。`state-manager.js` 提供轻量发布订阅。
 
 ## 子任务
 
-### conversationStore
+### state-manager.js
 
-- [ ] **sto-01** 创建 `conversationStore.js`，定义 state：messages[], isStreaming, currentChunk, error
-- [ ] **sto-02** 实现 `sendMessage(text)` → 调 electronAPI.conversation.send() + 监听 chunk/done/error 事件
-- [ ] **sto-03** 实现 `abortMessage()` → 调 electronAPI.conversation.abort()
-- [ ] **sto-04** 实现 `loadHistory()` → 调 electronAPI.conversation.getHistory()
-- [ ] **sto-05** 实现 `clearError()`
+- [ ] **sto-01** 创建 `state-manager.js`：`createState(initial)` → `{ get, set, subscribe }`
+- [ ] **sto-02** `subscribe(key, callback)` — 状态变化时自动调用回调
+- [ ] **sto-03** `set(key, value)` — 更新状态并通知订阅者
 
-### taskStore
+### IpcClient 封装 (ipc-client.js)
 
-- [ ] **sto-06** 创建 `taskStore.js`，定义 state：tasks[], activeTasks[], selectedTask
-- [ ] **sto-07** 实现 `fetchTasks(status?)` / `fetchTaskById(taskId)`
-- [ ] **sto-08** 实现 `createTask(data)` / `toggleSubtask(taskId, subId)` / `completeTask(taskId)` / `deleteTask(taskId)`
-- [ ] **sto-09** 实现 `selectTask(task)`
+- [ ] **sto-04** 创建 `ipc-client.js`：`IpcClient` 类，封装 `window.electronAPI` 所有方法
+- [ ] **sto-05** 统一处理 `{ ok, data }` / `{ ok, error }` 响应
+- [ ] **sto-06** 流式 API 提供 `onChunk/onDone/onError` 回调注册 + 取消订阅
 
-### characterStore
+### 各页面状态
 
-- [ ] **sto-10** 创建 `characterStore.js`，定义 state：character, relationship
-- [ ] **sto-11** 实现 `fetchCharacter()` / `fetchRelationship()`
+- [ ] **sto-07** 桌宠模式 `index.html`：本地维护对话消息列表、任务列表、面板开关状态、穿透状态
+- [ ] **sto-08** 壁纸模式 `index.html`：本地维护番茄钟状态、对话消息列表
+- [ ] **sto-09** 软件模式 `index.html`：本地维护任务详情、世界地图状态、角色档案数据
 
-### appStore
+### 数据流原则
 
-- [ ] **sto-12** 创建 `appStore.js`，定义 state：currentMode, appState, isModeActivating
-- [ ] **sto-13** 实现 `switchMode(mode)` → 调 electronAPI.app.switchMode()
-- [ ] **sto-14** 实现 `fetchAppState()` → 调 electronAPI.app.getState()
-- [ ] **sto-15** 实现 `onModeActivated(mode)` → 更新 currentMode + 触发相关 store 重新拉取数据
-
-### pomodoroStore
-
-- [ ] **sto-16** 创建 `pomodoroStore.js`，定义 state：remaining, total, isRunning, taskId
-- [ ] **sto-17** 实现 `start(duration, taskId?)` → 调 electronAPI.pomodoro.start() + 监听 tick/end 事件
-- [ ] **sto-18** 实现 `stop()` / `fetchStatus()`
-
-### 工具
-
-- [ ] **sto-19** 创建 `shared/utils/ipc.js`，提供类型化的 IPC 调用 wrapper（统一处理 `ok: false` 的错误分支）
-
-### 测试
-
-- [ ] **sto-20** 编写单元测试：mock electronAPI，验证每个 store 的 action 参数正确性和 state 变更
+- 页面启动 → IPC 拉取主进程最新数据 → 渲染 DOM
+- 写操作 → IPC → 主进程 lowdb 更新 → 返回确认 → 更新本地 DOM
+- 模式切换后新页面启动 → 重新从主进程拉取数据（无跨页面状态共享）

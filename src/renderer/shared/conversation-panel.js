@@ -19,7 +19,11 @@ class ConversationPanel {
 
 	mount() {
 		this.container.innerHTML = "";
-		this.container.style.cssText = `display:flex;flex-direction:column;height:100%;background:var(--color-bg-dark);border-radius:var(--radius-md);overflow:hidden;`;
+		this.container.style.flexDirection = "column";
+		this.container.style.height = "100%";
+		this.container.style.background = "var(--color-bg-dark)";
+		this.container.style.borderRadius = "var(--radius-md)";
+		this.container.style.overflow = "hidden";
 
 		this._msgList = document.createElement("div");
 		this._msgList.className = "conv-messages";

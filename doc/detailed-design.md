@@ -20,6 +20,7 @@
 | 任务管理 | 独立 `task-service.js` 模块 |
 | LLM 错误处理 | 自动重试 1 次 + 降级提示 |
 | 番茄钟 | 仅在壁纸模式存活，切换/关闭即取消 |
+| MVP 范围 | 不包含礼物/商店/CG/好感度数值/多角色/语音/世界编辑器/社交/在线同步 |
 | 设计粒度 | 模块接口 + 时序图 |
 
 ### 1.3. 模块依赖总览
@@ -118,6 +119,7 @@ class Database {
 interface AppState {
   currentMode: 'pet' | 'wallpaper' | 'software'
   petWindowBounds: { x: number; y: number; width: number; height: number }
+  characterPosition: { x: number; y: number; width: number; height: number }
   wallpaperSettings: { opacity: number; characterPosition: string; soundVolume: number }
   pomodoro: { taskId?: string; remaining: number; total: number; running: boolean } | null
   apiKey?: string  // DeepSeek API Key 存储于此
@@ -138,6 +140,7 @@ interface Task {
   followUpCompleted: boolean
   followUpResult: string
   subtasks: SubTask[]
+  milestoneId: string | null  // 关联的世界书 milestone id，AI 创建任务时根据当前章节主题填充
 }
 
 interface SubTask {
@@ -231,11 +234,14 @@ class WindowManager {
 ```js
 const WINDOW_CONFIG = {
   pet: {
-    width: 140, height: 160,
+    width: 500, height: 500,
     transparent: true, frame: false,
     alwaysOnTop: true, resizable: false,
     skipTaskbar: true
   },
+  // design note: 角色在 500×500 窗口中偏右放置 (x:240, y:20)
+  // 左侧 240px 给对话/任务面板，右侧 140px 给右键菜单
+  // 透明区域默认 pointer-events: none，浮层打开时通过 .interactive class 切换
   wallpaper: {
     fullscreen: true,
     transparent: true, frame: false,
@@ -344,7 +350,7 @@ API 调用失败
 
 ```js
 class TaskService {
-  constructor(db) {} // db: Database 实例
+  constructor({ db, worldBook }) {} // db: Database 实例, worldBook: 世界书对象
 
   // 创建任务
   createTask(data)             // → Task
@@ -367,11 +373,16 @@ class TaskService {
   toggleSubtask(taskId, subId) // → Task
 
   // 结算——子任务全部完成时调用
-  completeTask(taskId)         // → { task: Task, isFullyCompleted: boolean }
+  completeTask(taskId)         // → { task: Task, isFullyCompleted: boolean, milestoneProgress?: object }
   // 步骤：
   //   1. 检查所有子任务是否 completed
   //   2. 若是 → 调用 db.completeTask(taskId)
-  //   3. 返回更新后的 task 和 isFullyCompleted 标志
+  //   3. 若任务关联了当前章节的某个 milestone，milestone.progress += 1
+  //      - 关联方式：任务创建时 AI 根据当前章节主题包装叙事，完成后自动关联对应 milestone
+  //   4. 若 milestone.progress >= milestone.required，标记该 milestone 完成
+  //   5. 若当前章节所有 milestones 完成，worldState.currentChapter += 1，解锁下一章
+  //   6. 更新 worldState.variables（如 crystalIntegrity += 2）
+  //   7. 返回更新后的 task、isFullyCompleted 和可选的 milestoneProgress 标志
   // 注意：结算后的叙事反馈由 NarrativeEngine 负责，本模块不处理
 
   // 删除
@@ -682,7 +693,7 @@ const worldBook = JSON.parse(fs.readFileSync('assets/worldbooks/default.json'))
 
 const apiKey = db.getApiKey()
 const llmService = new LLMService({ apiKey, db, worldBook })
-const taskService = new TaskService(db)
+const taskService = new TaskService({ db, worldBook })
 const relationshipService = new RelationshipService(db)
 const pomodoroService = new PomodoroService()
 const narrativeEngine = new NarrativeEngine(llmService)
@@ -763,8 +774,8 @@ interface ElectronAPI {
 
   // 窗口
   window: {
-    hide(): Promise<void>       // 最小化到托盘
-    closeMode(): Promise<void>  // 关闭当前模式→返回桌宠
+    hide(): Promise<void>         // 最小化到托盘
+    closeMode(): Promise<void>    // 关闭当前模式→返回桌宠
   }
 }
 ```
@@ -780,184 +791,88 @@ interface ElectronAPI {
 
 ### 4.1. 渲染进程架构
 
-每个模式的 Vue 应用遵循相同的分层结构：
+每个模式使用单一 `index.html` 文件（内嵌 `<style>` 和 `<script>`）：
 
 ```
 renderer/{mode}/
-├── index.html        # HTML 入口
-├── main.js           # Vue 应用创建 + Pinia 注册 + electronAPI 注入
-├── App.vue           # 根组件，模式专属布局
-└── components/       # 模式专属组件
-    ├── ...           # 具体组件见各模式设计
+└── index.html        # 单文件页面（含内嵌 CSS + JS），模式专属布局
 
-renderer/shared/      # 三种模式共享
-├── components/       # 共享 UI 组件
-│   ├── CharacterRenderer.vue
-│   ├── ConversationPanel.vue
-│   ├── ChatBubble.vue
-│   ├── TaskCard.vue
-│   ├── TaskList.vue
-│   ├── MiniTaskPanel.vue
-│   ├── PomodoroTimer.vue
-│   └── ProgressBar.vue
-├── stores/           # Pinia stores
-│   ├── conversationStore.js
-│   ├── taskStore.js
-│   ├── characterStore.js
-│   ├── appStore.js
-│   └── pomodoroStore.js
-├── styles/
-│   ├── variables.css    # CSS 自定义属性（颜色、间距、字体）
-│   ├── animations.css   # 呼吸、眨眼、弹跳关键帧
-│   └── base.css         # reset + 全局样式
-└── utils/
-    └── ipc.js           # IPC 调用封装（类型化 wrapper）
+renderer/shared/      # 三种模式共享的 JS 模块和 CSS 样式
+├── ipc-client.js, dom-utils.js, state-manager.js,
+│   character-renderer.js, conversation-panel.js,
+│   task-panel.js, pomodoro-timer.js
+└── styles/
+    ├── variables.css    # CSS 自定义属性（颜色、间距、字体）
+    ├── animations.css   # 呼吸、眨眼、弹跳关键帧
+    └── base.css         # reset + 全局样式
 ```
 
-### 4.2. Pinia Store 设计
+### 4.2. 状态管理
 
-每个 Store 封装对一个数据域的访问，内部通过 `window.electronAPI` 与主进程通信。
+渲染进程不使用框架级状态管理。每个页面的 `<script>` 中维护本地状态对象，通过 `IpcClient`（封装 `window.electronAPI`）与主进程通信。共享模块 `state-manager.js` 提供轻量发布订阅。
 
-#### 4.2.1. conversationStore
+**数据流**：渲染进程启动 → IPC 拉取主进程最新状态 → 渲染 DOM。写操作：渲染进程 → IPC → 主进程更新 lowdb → 返回确认 → 更新本地状态 + DOM。
 
-```js
-// 状态
-{
-  messages: [],          // Message[]
-  isStreaming: false,    // 是否正在接收流式响应
-  currentChunk: '',      // 当前正在接收的流式 chunk
-  error: null            // { code, message } | null
-}
-
-// 动作
-sendMessage(text)        // 发送消息 → 启动流式接收
-abortMessage()           // 中止当前流
-loadHistory()            // 从主进程加载历史消息
-clearError()             // 清除错误状态
-```
-
-#### 4.2.2. taskStore
-
-```js
-// 状态
-{
-  tasks: [],             // Task[]
-  activeTasks: [],       // Task[]（status === 'active' 的缓存）
-  selectedTask: null     // Task | null（当前选中查看的任务）
-}
-
-// 动作
-fetchTasks(status?)      // 从主进程拉取任务列表
-fetchTaskById(taskId)    // 获取单个任务详情
-createTask(data)         // 创建新任务
-toggleSubtask(taskId, subId)  // 切换子任务完成状态
-completeTask(taskId)     // 结算任务
-deleteTask(taskId)       // 删除任务
-selectTask(task)         // 选中任务（供详情面板使用）
-```
-
-#### 4.2.3. characterStore
-
-```js
-// 状态
-{
-  character: null,       // Character
-  relationship: null     // Relationship
-}
-
-// 动作
-fetchCharacter()
-fetchRelationship()
-```
-
-#### 4.2.4. appStore
-
-```js
-// 状态
-{
-  currentMode: 'pet',    // 当前活跃模式
-  appState: null,        // AppState
-  isModeActivating: false
-}
-
-// 动作
-switchMode(mode)         // 切换到指定模式
-fetchAppState()
-onModeActivated(mode)    // 响应主进程通知的模式切换
-```
-
-#### 4.2.5. pomodoroStore
-
-```js
-// 状态
-{
-  remaining: 0,
-  total: 0,
-  isRunning: false,
-  taskId: null
-}
-
-// 动作
-start(duration, taskId?)  // 启动番茄钟
-stop()                     // 停止番茄钟
-fetchStatus()              // 查询当前状态
-```
-
-**测试策略**：
-- Store 是纯响应式逻辑，mock `window.electronAPI` 后可直接测试
-- 验证 action 调用 API 的参数正确性和 state 变更
-- 验证流式接收场景下 `currentChunk` 的累积
+**测试策略**：mock `window.electronAPI` 后验证 IpcClient 调用参数正确性和 DOM 更新。
 
 ### 4.3. 桌宠模式 (`renderer/pet/`)
 
-窗口即角色本体（约 140×160，仅容纳 Q 版角色图标），对话面板和任务面板均为从角色旁浮出的覆盖层，不常驻显示。
+500×500 透明无边框窗口，角色 120×120 偏右放置（x:240, y:20）。角色区域始终可交互。透明区域（非角色位置）默认鼠标穿透桌面，浮层打开时全窗口可交互。
 
-#### 组件树
+#### 页面结构
 
 ```
-App.vue
-├── CharacterRenderer.vue          # 角色展示（图标 + 呼吸/眨眼/弹跳动画），填充窗口
-├── ConversationPanel.vue           # 对话浮层（左键点击角色弹出/收回）
-│   ├── ChatBubble.vue（*n）        # 单条消息
-│   └── MessageInput.vue            # 单行输入框 + 发送按钮
-├── ContextMenu.vue                 # 右键上下文菜单（发布任务、切换模式、退出）
-└── MiniTaskPanel.vue               # 迷你任务面板（右键菜单入口展开）
-    └── TaskCard.vue（*n）          # 任务卡片（可勾选子任务）
+index.html（纯 HTML/CSS/JS，无框架）
+├── 角色区域 div（120×120，绝对定位 x:240 y:20）
+│   └── CharacterRenderer（mode='pet', size=120）
+├── 主动气泡 div（角色头顶上方，position: absolute）
+│   └── 单行文字 + 关闭按钮，默认隐藏，数秒后自动消失
+├── 对话面板容器 div（角色左侧，position: absolute）
+│   └── ConversationPanel（position='bottom', 240×400）
+├── 右键菜单 div（角色右侧，position: absolute）
+│   └── 菜单项：发布任务/壁纸模式/软件模式/查看任务/隐藏
+└── 迷你任务面板 div（角色左侧，position: absolute）
+    └── TaskPanel（compact=true, 240×300，与对话面板互斥）
 ```
 
-#### 交互流程
+#### 交互规格
 
-1. **闲聊（左键）**：点击角色 → 对话浮层弹出 → 输入文字 → 回车发送 → 流式显示回复。此为纯闲聊通道，不混入任务转化逻辑。
-2. **功能菜单（右键）**：右键角色 → 弹出上下文菜单，包含：
-   - **发布任务**：进入任务发布流程，用户表达待办 → AI 返回 `intent: create_task` → 创建任务 → 显示提示
-   - **切换壁纸/软件模式**：手动切换入口
-   - **查看任务列表**：展开迷你任务面板
-   - **退出**：关闭应用
-3. **迷你任务面板**：右键菜单中触发 → 面板展开 → 查看任务 → 勾选子任务
-4. **智能模式切换（对话）**：闲聊中用户表达"想开始专注/干活"等意图 → AI 识别后以角色口吻询问确认（如"旅者，要我展开星幕陪你专注吗？"） → 用户同意 → AI 返回 `intent: switch_mode` → 自动切换到目标模式
+1. **主动气泡**：角色头顶浮现单行简短文字（≤50字），带关闭按钮，数秒后自动消失。点击气泡 → 展开左侧对话面板。原型阶段仅搭 UI，触发逻辑后续补。
+2. **左键对话（闲聊）**：点击角色区域 → 左侧对话面板 toggle 展开（240×400）。纯闲聊通道，`enableTaskCreation: false`。流式显示 AI 回复。点击面板外或 ESC 关闭。
+3. **右键菜单**：右键角色 → 右侧弹出菜单（min-width:130px）。5 项：
+   - **发布任务** → 打开对话面板，`enableTaskCreation: true`（AI 注入任务转化 Prompt）
+   - **进入壁纸模式** → `app:switch-mode('wallpaper')`
+   - **进入软件模式** → `app:switch-mode('software')`
+   - **查看任务** → 左侧展开迷你任务面板（与对话面板互斥，同时只显示一个）
+   - **隐藏** → `window.hide()`（隐藏到托盘，因 `window-all-closed` 时应用托盘常驻不退出，与托盘的"退出应用"区分）
+4. **迷你任务面板**：右侧菜单"查看任务"触发，240×300，compact 模式。勾选子任务通过 IPC 同步。与对话面板互斥——打开一个时自动关闭另一个。
+5. **智能模式切换**：闲聊中 AI 识别切换意图 → 角色询问确认 → 用户同意 → AI 返回 `intent: switch_mode` → 自动切换。
 
-#### 特殊窗口行为
+#### 鼠标穿透规则（纯 CSS 方案）
 
-- 透明无边框，窗口仅容纳角色本体
-- 角色区域可拖动（通过 `-webkit-app-region: drag` + 主进程 `setIgnoreMouseEvents` 配合）
-- 非角色区域鼠标事件穿透到桌面
-- 对话浮层、菜单、任务面板为覆盖层，点击面板外区域或按 ESC 关闭
+- **默认状态**（无浮层）：`body` `pointer-events: none`。仅角色区域 `pointer-events: auto` + `-webkit-app-region: drag` 接收鼠标事件。
+- **浮层打开时**（任一对话面板/菜单/气泡/任务面板显示）：渲染进程给 `body` 添加 `.interactive` class → `pointer-events: auto` → 全窗口可交互。
+- **所有浮层关闭时**：移除 `.interactive` class → 恢复默认。
+- 无需 IPC 通道，主进程不参与鼠标穿透控制。
+
+#### 拖动
+
+角色区域 CSS `-webkit-app-region: drag`，用户可拖动整个窗口到桌面任意位置。角色内部可点击元素（气泡触发区、对话面板展开区）用 `-webkit-app-region: no-drag` 覆盖。
 
 ### 4.4. 壁纸模式 (`renderer/wallpaper/`)
 
-#### 组件树
+#### 页面结构
 
 ```
-App.vue
-├── WallpaperBackground.vue         # 全屏半透明暗色背景层
-├── CharacterRenderer.vue           # 角色大尺寸静坐展示
-├── PomodoroTimer.vue               # 番茄钟倒计时 + 启动/停止按钮
-├── WhiteNoiseControl.vue           # 白噪音（原型阶段为占位，接口预留）
-├── ConversationPanel.vue           # 侧边滑入对话栏
-│   ├── ChatBubble.vue（*n）
-│   └── MessageInput.vue
-├── EdgeProgressBar.vue             # 屏幕边缘极细进度条（简化：CSS 底部细条，无悬停展开）
-└── ExitButton.vue                  # ESC 或按钮退出→返回桌宠
+index.html（纯 HTML/CSS/JS）
+├── 全屏背景层 div（CSS 星空渐变）
+├── 角色展示区 div（居中 200×200px，CharacterRenderer mode='wallpaper'）
+├── 番茄钟控制区（居中下方，PomodoroTimer + 启动/停止按钮）
+├── 白噪音占位 div（禁用控件 + "音效即将上线"文字）
+├── 侧边对话栏 div（ConversationPanel position='side'，点击角色滑入）
+├── 底部进度条 div（番茄钟运行时显示，极细条）
+├── 退出按钮（ESC 或点击触发任务进度询问）
+└── 退出确认浮层 div（任务进度询问 → 勾选子任务 / 延长 / 记录进度）
 ```
 
 #### 交互流程
@@ -984,17 +899,18 @@ App.vue
 原型阶段不实现音频播放，仅渲染占位 UI。`assets/audio/` 目录已创建，后续放入 mp3 文件即可生效。
 
 ```js
-// WhiteNoiseControl.vue — 预留接口
-props: {
+// WhiteNoiseControl — 预留接口
+function createWhiteNoiseControl(container, {
   tracks: Array<{            // 原型阶段为空数组，后续从 assets/audio/ 扫描
     id: string,              // 音效标识，如 'rain', 'forest', 'fire'
     name: string,            // 显示名，如 "雨声"、"森林"、"篝火"
     file: string             // 相对于 assets/audio/ 的文件名，如 'rain.mp3'
   }>,
   volume: Number,            // 0-1，默认从 wallpaperSettings.soundVolume 读取
-  currentTrackId: string | null
-}
-emits: ['select-track', 'volume-change', 'play', 'pause']
+  currentTrackId: string | null,
+  onSelectTrack: Function,
+  onVolumeChange: Function
+}) → { destroy }
 // 原型阶段渲染：一个禁用的下拉选择框 + 禁用滑块 + 提示文字"音效即将上线"
 ```
 
@@ -1002,27 +918,19 @@ emits: ['select-track', 'volume-change', 'play', 'pause']
 
 ### 4.5. 软件模式 (`renderer/software/`)
 
-#### 组件树
+#### 页面结构
 
 ```
-App.vue
-├── LeftNavigation.vue              # 左侧导航栏
-│   ├── NavTab.vue（"任务"）         #
-│   ├── NavTab.vue（"地图"）         # 三个标签
-│   └── NavTab.vue（"角色"）         #
-├── ContentArea.vue                 # 中间内容区（根据标签切换）
-│   ├── TaskPanel.vue               # 标签1：任务
-│   │   ├── TaskList.vue            #   任务列表
-│   │   ├── TaskDetail.vue          #   任务详情 + 子任务列表
-│   │   └── SettlementResult.vue    #   结算叙结果展示
-│   ├── WorldMap.vue                # 标签2：世界地图（静态图 + 区域标记）
-│   └── CharacterProfile.vue        # 标签3：角色档案
-│       ├── CharacterBackstory.vue  #   背景故事
-│       └── MemoryTimeline.vue      #   共同记忆时间线
-├── CharacterSidebar.vue            # 右侧角色展示区
-│   ├── CharacterRenderer.vue       #   大尺寸图标
-│   └── ConversationPanel.vue       #   底部对话面板
-└── TitleBar.vue                    # 深色星空主题标题栏
+index.html（纯 HTML/CSS/JS，1280×800 窗口，暗色星空主题，三栏布局）
+├── 标题栏 div
+├── 左侧导航栏 div（任务/地图/角色，三个标签垂直排列）
+├── 中间内容区 div（根据标签切换）
+│   ├── 任务标签页：TaskPanel（任务列表+详情+子任务勾选+提交按钮）
+│   ├── 地图标签页：WorldMap（静态区域占位+章节文字）
+│   └── 角色标签页：背景故事 + 共同记忆时间线
+├── 右侧角色区 div
+│   ├── CharacterRenderer（mode='software', size=160）
+│   └── 底部 ConversationPanel
 ```
 
 #### 交互流程
@@ -1035,70 +943,79 @@ App.vue
 
 ### 4.6. 共享组件设计
 
-#### CharacterRenderer.vue
+#### CharacterRenderer (`character-renderer.js`)
 
 ```js
-props: {
-  modelType: 'icon',       // 原型阶段固定 'icon'
-  characterId: String,
-  mode: 'pet' | 'wallpaper' | 'software',
-  expression: String,       // 当前表情
-  motion: String,           // 当前动作
-  size: Number,             // 尺寸（px），不传则按 mode 使用默认值
+class CharacterRenderer {
+  constructor(container, {
+    mode: 'pet' | 'wallpaper' | 'software',
+    size: Number,             // 渲染尺寸（px）
+    assetType: 'css' | 'image' | 'live2d'  // 原型阶段 'css'
+  })
+  mount()                     // 初始化渲染
+  setExpression(name)         // 切换表情
+  setMotion(name)             // 切换动作
+  destroy()                   // 清理
 }
-// 原型阶段渲染：一个圆形 div + SVG 占位图标 + CSS 呼吸动画
-// modelType === 'icon' 时渲染 <CharacterIcon>
-// modelType === 'live2d' 时渲染 <canvas>（预留，原型不实现）
+// 原型阶段 assetType='css'：渲染 SVG 图标 + CSS 呼吸/眨眼动画
+// assetType='image'：加载 assets/characters/{id}/expressions/{name}.png
+// assetType='live2d'：初始化 Live2D Canvas（预留）
 ```
 
-各模式的默认尺寸：
+各模式默认尺寸：
 - pet: 120×120px
 - wallpaper: 200×200px
 - software: 160×160px
 
-#### ConversationPanel.vue
+#### ConversationPanel (`conversation-panel.js`)
 
 ```js
-props: {
-  messages: Array,          // Message[]
-  isStreaming: Boolean,
-  position: 'bottom' | 'side',  // bottom: 底部弹出（桌宠），side: 侧边滑入（壁纸）
-  placeholder: String,
+class ConversationPanel {
+  constructor(container, {
+    position: 'bottom' | 'side',  // bottom: 桌宠左侧，side: 壁纸侧边滑入
+    onSend: (text: string) => void
+  })
+  mount()                      // 初始化 DOM
+  addMessage(role, content)    // 添加消息到列表
+  showTyping() / hideTyping() // 显示/隐藏"正在输入"指示器
+  showError(err)               // 显示角色化错误文案
+  clear()                      // 清空消息列表
 }
-emits: ['send', 'abort']
 ```
 
-**行为**：
-- 自动滚动到最新消息
-- 流式消息实时渲染（逐字打印效果可选）
-- 发送中显示"..."动画
-- 流式消息中检测 `/task` 标记并高亮
+**行为**：自动滚动到最新消息、流式消息实时追加、发送中显示"..."动画。
 
-#### MiniTaskPanel.vue
+#### TaskPanel (`task-panel.js`)
 
 ```js
-props: {
-  tasks: Array,             // Task[]（仅 active 任务）
-  visible: Boolean,
+class TaskPanel {
+  constructor(container, {
+    compact: Boolean,          // true: 迷你面板, false: 完整模式
+    onToggle: (taskId, subId) => void,
+    onViewDetail: (taskId) => void
+  })
+  mount()                      // 初始化 DOM
+  setTasks(tasks)              // 设置任务列表并刷新
+  refresh()                    // 重新渲染
 }
-emits: ['close', 'toggle-subtask', 'view-detail']
 ```
 
-**行为**：右键触发的浮动面板，显示活跃任务列表和子任务勾选框。最大高度 300px，超出滚动。
+**行为**：compact 模式显示标题+子任务勾选框（240×300），最大高度 300px 超出滚动。
 
-#### PomodoroTimer.vue
+#### PomodoroTimer (`pomodoro-timer.js`)
 
 ```js
-props: {
-  remaining: Number,        // 剩余秒数
-  total: Number,            // 总秒数
-  isRunning: Boolean,
+class PomodoroTimer {
+  constructor(container, {
+    onStart: () => void,
+    onStop: () => void
+  })
+  update(remaining, total)    // 更新剩余时间和进度环
+  start() / stop()            // 切换运行状态
 }
-emits: ['start', 'stop']
 ```
 
-**显示格式**：`MM:SS`，最后一分钟数字变为暖色提示。
-**进度环**：圆形 SVG 进度条，不依赖外部库。
+**显示格式**：`MM:SS`，最后一分钟数字变暖色。**进度环**：圆形 SVG，不依赖外部库。
 
 ---
 
@@ -1369,8 +1286,8 @@ LLM Service → IPC (webContents.send) → Preload (ipcRenderer.on) → conversa
 | llm-service.js | API 调用、重试、流式解析、Prompt 组装 | fetch, Database |
 | narrative-engine.js | Prompt 构建、LLM 调用协调 | LLMService |
 | ipc-handlers.js | 参数校验、服务调用路由、错误响应 | 所有注入服务 |
-| Pinia stores | action 调用参数、state 变更 | window.electronAPI |
-| Vue 组件 | props 渲染、事件触发 | Pinia stores |
+| IpcClient | action 调用参数、响应处理 | window.electronAPI |
+| DOM 组件（JS 类） | 构造函数参数、DOM 渲染输出、事件回调 | 容器 DOM mock |
 
 ### 8.2. 集成测试
 
@@ -1404,60 +1321,22 @@ src/
 │   └── window-manager.js        # 三窗口生命周期
 ├── renderer/
 │   ├── pet/
-│   │   ├── index.html
-│   │   ├── main.js
-│   │   ├── App.vue
-│   │   └── components/
-│   │       ├── MessageInput.vue
-│   │       └── TrayContextMenu.vue
+│   │   └── index.html           # 桌宠模式（500×500 透明窗口）
 │   ├── wallpaper/
-│   │   ├── index.html
-│   │   ├── main.js
-│   │   ├── App.vue
-│   │   └── components/
-│   │       ├── WallpaperBackground.vue
-│   │       ├── WhiteNoiseControl.vue
-│   │       ├── EdgeProgressBar.vue
-│   │       └── ExitButton.vue
+│   │   └── index.html           # 壁纸模式（全屏覆盖）
 │   ├── software/
-│   │   ├── index.html
-│   │   ├── main.js
-│   │   ├── App.vue
-│   │   └── components/
-│   │       ├── LeftNavigation.vue
-│   │       ├── NavTab.vue
-│   │       ├── ContentArea.vue
-│   │       ├── TaskPanel.vue
-│   │       ├── TaskDetail.vue
-│   │       ├── SettlementResult.vue
-│   │       ├── WorldMap.vue
-│   │       ├── CharacterProfile.vue
-│   │       ├── CharacterBackstory.vue
-│   │       ├── MemoryTimeline.vue
-│   │       ├── CharacterSidebar.vue
-│   │       └── TitleBar.vue
+│   │   └── index.html           # 软件模式（1280×800 窗口）
 │   └── shared/
-│       ├── components/
-│       │   ├── CharacterRenderer.vue
-│       │   ├── CharacterIcon.vue
-│       │   ├── ConversationPanel.vue
-│       │   ├── ChatBubble.vue
-│       │   ├── TaskCard.vue
-│       │   ├── TaskList.vue
-│       │   ├── MiniTaskPanel.vue
-│       │   ├── PomodoroTimer.vue
-│       │   └── ProgressBar.vue
-│       ├── stores/
-│       │   ├── conversationStore.js
-│       │   ├── taskStore.js
-│       │   ├── characterStore.js
-│       │   ├── appStore.js
-│       │   └── pomodoroStore.js
-│       ├── styles/
-│       │   ├── variables.css
-│       │   ├── animations.css
-│       │   └── base.css
-│       └── utils/
-│           └── ipc.js
+│       ├── ipc-client.js        # IPC 调用封装
+│       ├── dom-utils.js         # DOM 操作工具函数
+│       ├── state-manager.js     # 简易发布订阅状态管理
+│       ├── character-renderer.js# 角色渲染器（SVG + 动画）
+│       ├── conversation-panel.js# 对话面板组件
+│       ├── task-panel.js        # 任务面板组件
+│       ├── pomodoro-timer.js    # 番茄钟显示组件
+│       └── styles/
+│           ├── variables.css    # CSS 自定义属性
+│           ├── animations.css   # 呼吸/眨眼/弹跳关键帧
+│           └── base.css         # reset + 全局样式
 └── preload.js
 ```
