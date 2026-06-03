@@ -1,9 +1,10 @@
 const { BrowserWindow } = require("electron");
 const path = require("node:path");
+const { MODE } = require("../shared/constants.js");
 
 /** @type {Record<string, Electron.BrowserWindowConstructorOptions>} */
 const WINDOW_CONFIG = {
-	pet: {
+	[MODE.PET]: {
 		width: 500,
 		height: 500,
 		transparent: true,
@@ -12,7 +13,7 @@ const WINDOW_CONFIG = {
 		resizable: false,
 		skipTaskbar: true,
 	},
-	wallpaper: {
+	[MODE.WALLPAPER]: {
 		fullscreen: true,
 		transparent: true,
 		frame: false,
@@ -20,7 +21,7 @@ const WINDOW_CONFIG = {
 		resizable: false,
 		skipTaskbar: true,
 	},
-	software: {
+	[MODE.SOFTWARE]: {
 		width: 1280,
 		height: 800,
 		transparent: false,
@@ -68,18 +69,17 @@ class WindowManager {
 		win.loadFile(htmlPath);
 		win.setMenuBarVisibility(false);
 
-		if (mode === "pet") {
+		if (mode === MODE.PET) {
 			win.setAlwaysOnTop(true, "screen-saver");
 			win.setVisibleOnAllWorkspaces(true);
 			win.setIgnoreMouseEvents(false);
 		}
-
-		if (mode === "wallpaper") {
+		if (mode === MODE.WALLPAPER) {
 			win.setAlwaysOnTop(false);
 		}
 
 		// Close handlers
-		if (mode === "pet") {
+		if (mode === MODE.PET) {
 			win.on("close", (e) => {
 				e.preventDefault();
 				win.hide();
@@ -90,7 +90,7 @@ class WindowManager {
 				e.preventDefault();
 				if (this._switching) return;
 				this._switching = true;
-				this._onSwitchToPet("pet");
+				this._onSwitchToPet(MODE.PET);
 				this._switching = false;
 			});
 		}
@@ -112,7 +112,7 @@ class WindowManager {
 
 		const win = this.getOrCreateWindow(targetMode);
 		win.show();
-		if (targetMode === "wallpaper") {
+		if (targetMode === MODE.WALLPAPER) {
 			win.focus();
 			win.setAlwaysOnTop(false);
 		}

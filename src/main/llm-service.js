@@ -87,107 +87,95 @@ class LLMService {
 		await this._doChat(options, onChunk, onDone, onError);
 	}
 
-	async _doChat(options, onChunk, onDone, onError) {
+	_buildChatMessages(options) {
 		const appState = this.db.getAppState();
 		const activeTask = this.db.getTasks({ status: "active" })[0];
-
 		const systemPrompt = this.buildSystemPrompt({
 			currentMode: appState.currentMode,
 			activeTask,
 			enableTaskCreation: options.enableTaskCreation,
 		});
-
 		const conv = this.db.getActiveConversation();
 		const history = this.db.getRecentMessages(conv.id, 20);
-		const messages = [
+		return [
 			{ role: "system", content: systemPrompt },
 			...history.map((m) => ({ role: m.role, content: m.content })),
 			{ role: "user", content: options.message },
 		];
+	}
 
+	_extractSSEContent(trimmed) {
+		if (!trimmed?.startsWith("data: ")) return null;
+		const data = trimmed.slice(6);
+		if (data === "[DONE]") return null;
+		try {
+			const parsed = JSON.parse(data);
+			return parsed.choices?.[0]?.delta?.content || null;
+		} catch {
+			return null;
+		}
+	}
+
+	_persistChatResult(convId, options, fullText, metadata) {
+		metadata.displayText = this._cleanDisplayText(fullText);
+		this.db.addMessage(convId, { role: "user", content: options.message });
+		this.db.addMessage(convId, { role: "assistant", content: fullText });
+		this.db.updateCharacter({ lastInteractionAt: new Date().toISOString() });
+		const rel = this.db.getRelationship();
+		this.db.updateRelationship({
+			totalConversations: rel.totalConversations + 1,
+			lastInteractionAt: new Date().toISOString(),
+		});
+	}
+
+	async _handleChatError(err, options, onChunk, onDone, onError) {
+		if (err.name === "AbortError") return;
+		if (!this._retried) {
+			this._retried = true;
+			await this._sleep(1000);
+			await this._doChat(options, onChunk, onDone, onError);
+			return;
+		}
+		onError({ type: "network", message: err.message, retried: this._retried });
+	}
+
+	async _doChat(options, onChunk, onDone, onError) {
+		const messages = this._buildChatMessages(options);
+		const conv = this.db.getActiveConversation();
 		try {
 			const response = await fetch(API_CONFIG.URL, {
 				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${this.apiKey}`,
-				},
-				body: JSON.stringify({
-					model: API_CONFIG.MODEL,
-					messages,
-					temperature: 0.8,
-					max_tokens: 500,
-					stream: true,
-				}),
+				headers: { "Content-Type": "application/json", Authorization: `Bearer ${this.apiKey}` },
+				body: JSON.stringify({ model: API_CONFIG.MODEL, messages, temperature: 0.8, max_tokens: 500, stream: true }),
 				signal: this._abortController.signal,
 			});
-
 			if (!response.ok) {
-				onError({
-					type: "api",
-					message: `API error: ${response.status}`,
-					retried: false,
-				});
+				onError({ type: "api", message: `API error: ${response.status}`, retried: false });
 				return;
 			}
-
 			const reader = response.body.getReader();
 			const decoder = new TextDecoder();
 			let fullText = "";
 			let buffer = "";
-
 			while (true) {
 				const { done, value } = await reader.read();
 				if (done) break;
-
 				buffer += decoder.decode(value, { stream: true });
 				const lines = buffer.split("\n");
 				buffer = lines.pop() || "";
-
 				for (const line of lines) {
-					const trimmed = line.trim();
-					if (!trimmed?.startsWith("data: ")) continue;
-					const data = trimmed.slice(6);
-					if (data === "[DONE]") continue;
-
-					try {
-						const parsed = JSON.parse(data);
-						const content = parsed.choices?.[0]?.delta?.content;
-						if (content) {
-							fullText += content;
-							onChunk(content);
-						}
-					} catch {
-						// skip unparseable SSE chunks
+					const content = this._extractSSEContent(line.trim());
+					if (content) {
+						fullText += content;
+						onChunk(content);
 					}
 				}
 			}
-
 			const metadata = this._extractIntent(fullText);
-			metadata.displayText = this._cleanDisplayText(fullText);
-			this.db.addMessage(conv.id, { role: "user", content: options.message });
-			this.db.addMessage(conv.id, { role: "assistant", content: fullText });
-			this.db.updateCharacter({ lastInteractionAt: new Date().toISOString() });
-			const rel = this.db.getRelationship();
-			this.db.updateRelationship({
-				totalConversations: rel.totalConversations + 1,
-				lastInteractionAt: new Date().toISOString(),
-			});
-
+			this._persistChatResult(conv.id, options, fullText, metadata);
 			onDone(fullText, metadata);
 		} catch (err) {
-			if (err.name === "AbortError") return;
-			if (!this._retried) {
-				this._retried = true;
-				await this._sleep(1000);
-				await this._doChat(options, onChunk, onDone, onError);
-				return;
-			}
-			onError({
-				type: "network",
-				message: err.message,
-				retried: this._retried,
-			});
+			await this._handleChatError(err, options, onChunk, onDone, onError);
 		}
 	}
 

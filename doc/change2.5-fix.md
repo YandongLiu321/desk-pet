@@ -959,3 +959,149 @@ MVP 不包含：礼物/商店、CG/相册、显式好感度、多角色、语音
 | 8 | `pet/index.html` | L189-198 | 移除调试代码 |
 
 **未改动**：`database.js`、`preload.js`、`ipc-client.js`、`character-renderer.js`、`conversation-panel.js`、`task-panel.js`、`pomodoro-timer.js`、`state-manager.js`、`dom-utils.js`、`constants.js`、`proactive-trigger.js`、`user-style-analyzer.js`、`narrative-engine.js`、`relationship-service.js`、`wallpaper/index.html`、所有 CSS 文件、所有 .md 文档文件。
+
+---
+
+## 十三、结构优化 — 常量统一与代码精简
+
+> **修复日期**：2026-06-03
+> **状态**：代码已修改
+> **触发条件**：遵循 prompt.md 底层约束（单文件不超 300 行、禁止硬编码、函数不超 50 行），对已有代码进行结构性优化，**不改变任何运行时行为**。
+
+---
+
+### 修改的文件
+
+#### 1. `src/main/main.js` — 模式字符串常量化
+
+**问题**：`MODE.PET` / `MODE.WALLPAPER` / `MODE.SOFTWARE` 等模式字符串在托盘菜单、生命周期回调中裸写。
+
+**修复**：从 `constants.js` 导入 `MODE`，全部替换为常量引用。
+
+```diff
+- const { IPC } = require("../shared/constants.js");
++ const { IPC, MODE } = require("../shared/constants.js");
+
+- click: () => switchModeWithCleanup("pet"),
++ click: () => switchModeWithCleanup(MODE.PET),
+```
+
+---
+
+#### 2. `src/main/window-manager.js` — 模式字符串常量化
+
+**问题**：`WINDOW_CONFIG` 静态键名和多处条件判断使用裸字符串 `"pet"` / `"wallpaper"` / `"software"`。
+
+**修复**：导入 `MODE` 常量，将 `WINDOW_CONFIG` 键改为计算属性 `[MODE.PET]` 等，所有字符串比较替换为常量。
+
+```diff
++ const { MODE } = require("../shared/constants.js");
+
+  const WINDOW_CONFIG = {
+-   pet: { ... },
+-   wallpaper: { ... },
+-   software: { ... },
++   [MODE.PET]: { ... },
++   [MODE.WALLPAPER]: { ... },
++   [MODE.SOFTWARE]: { ... },
+  };
+```
+
+---
+
+#### 3. `src/main/llm-service.js` — 超长函数拆分
+
+**问题**：`_doChat` 函数约 92 行，超过 prompt.md "单个函数不超过 50 行" 的约束。
+
+**修复**：将其拆分为 5 个职责单一的函数，`_doChat` 本身变为约 39 行的流程编排函数。
+
+| 新函数 | 职责 | 行数 |
+|--------|------|------|
+| `_buildChatMessages(options)` | 组装 system prompt + 历史消息 + 用户消息 | ~15 行 |
+| `_extractSSEContent(trimmed)` | 解析 SSE data 行，提取 delta content | ~10 行 |
+| `_persistChatResult(convId, options, fullText, metadata)` | 持久化消息、更新角色/关系状态 | ~12 行 |
+| `_handleChatError(err, options, onChunk, onDone, onError)` | 网络错误时重试一次，或上报错误 | ~10 行 |
+| `_doChat(options, onChunk, onDone, onError)` | 统筹 fetch → 流式读取 → 意图提取 → 持久化 | ~39 行 |
+
+**行为不变**：请求体、SSE 循环逻辑、持久化顺序、重试策略完全一致。
+
+---
+
+#### 4. `src/main/ipc-handlers.js` — 精简至 300 行以内
+
+**问题**：文件 341 行，超过 prompt.md "单个 JS 文件不超过 300 行" 的约束。大量 handler 重复 try/catch 模板代码。
+
+**修复**：
+- 提取 `runSafe(fn)`：包裹 try/catch，返回 `{ ok: true, data: fn() }` 或 `errorResponse(e)`。
+- 提取 `runTask(fn)`：在 `runSafe` 基础上增加 `"Task not found"` 错误码自动转换。
+- 15 个简单 handler 从 7~9 行压缩至 1 行。
+- 3 个任务 handler 的重复 `"Task not found"` 判断统一收拢。
+
+**文件从 341 行降至约 210 行**，所有返回结构、错误码、行为保持不变。
+
+```diff
++ function runSafe(fn) {
++   try { return { ok: true, data: fn() }; }
++   catch (e) { return errorResponse(e); }
++ }
++
++ function runTask(fn) {
++   try { return { ok: true, data: fn() }; }
++   catch (e) {
++     if (e.message.includes("Task not found")) {
++       return { ok: false, error: { code: ERROR_CODE.TASK_NOT_FOUND, message: e.message } };
++     }
++     return errorResponse(e);
++   }
++ }
+
+- ipcMain.handle(IPC.APP_GET_STATE, () => {
+-   try { return { ok: true, data: db.getAppState() }; }
+-   catch (e) { return errorResponse(e); }
+- });
++ ipcMain.handle(IPC.APP_GET_STATE, () => runSafe(() => db.getAppState()));
+```
+
+---
+
+#### 5. `src/renderer/software/index.html` — 结构优化
+
+**问题**：多处内联样式、DOM 查询重复、动态按钮带无用 ID、流式输出回调直接操作 DOM。
+
+**修复**：
+- **CSS 化**：提取 6 处内联样式为类（`.sidebar-spacer`、`.task-detail.hidden`、`.map-status`、`.map-progress`、`.map-progress-bar`、`.btn-row`）。
+- **去 ID**：移除动态创建的 `btnComplete` / `btnDelete` 的无用 `id` 属性。
+- **classList 显隐**：用 `detail.classList.add/remove("hidden")` 替代 `style.display`。
+- **DOM 缓存**：缓存 `convPanelEl`，避免每次 SSE chunk 都 `getElementById("convPanel")`。
+- **常量修复**：补充 `INTENT` / `MODE` 常量导入，将裸字符串 `"create_task"` / `"pet"` 替换为常量。
+
+---
+
+#### 6. `src/renderer/shared/conversation-panel.js` — 新增 `appendToLastMessage`
+
+**问题**：`software/index.html` 的流式输出回调需要直接 `querySelectorAll(".conv-msg--assistant")` 来追加文本，绕过 `ConversationPanel` 封装。
+
+**修复**：在 `ConversationPanel` 上新增 `appendToLastMessage(role, text)` 方法，使渲染进程可通过组件 API 追加文本，无需直接操作 DOM。
+
+```diff
++   appendToLastMessage(role, text) {
++     const msgs = this._msgList.querySelectorAll(`.conv-msg--${role}`);
++     const last = msgs[msgs.length - 1];
++     if (last) last.textContent += text;
++   }
+```
+
+---
+
+### 修改文件汇总
+
+| # | 文件 | 改动类型 | 说明 |
+|---|------|----------|------|
+| 1 | `src/main/main.js` | 常量替换 | 模式字符串 → `MODE.*` 常量 |
+| 2 | `src/main/window-manager.js` | 常量替换 | `WINDOW_CONFIG` 键名 + 条件判断常量化 |
+| 3 | `src/main/llm-service.js` | 函数拆分 | `_doChat` 拆分为 5 个函数，各不超过 50 行 |
+| 4 | `src/main/ipc-handlers.js` | 代码精简 | 引入 `runSafe` / `runTask`，341 行 → ~210 行 |
+| 5 | `src/renderer/software/index.html` | 结构优化 | 去内联样式、去无用 ID、DOM 缓存、常量修复 |
+| 6 | `src/renderer/shared/conversation-panel.js` | API 扩展 | 新增 `appendToLastMessage` 方法 |
+
+**未引入任何行为变更**：所有接口返回值、错误码、事件触发顺序、状态更新逻辑与修改前完全一致。

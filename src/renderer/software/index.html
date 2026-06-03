@@ -47,6 +47,10 @@
     border-right: 1px solid var(--color-bg-light);
   }
 
+  .sidebar-spacer {
+    flex: 1;
+  }
+
   .soft-sidebar-btn {
     width: 44px;
     height: 44px;
@@ -127,6 +131,10 @@
     margin-top: var(--space-md);
   }
 
+  .task-detail.hidden {
+    display: none;
+  }
+
   .task-detail h3 {
     color: var(--color-accent);
     margin-bottom: var(--space-sm);
@@ -161,6 +169,12 @@
     color: white;
   }
 
+  .btn-row {
+    margin-top: var(--space-md);
+    display: flex;
+    gap: var(--space-sm);
+  }
+
   .map-placeholder {
     display: flex;
     flex-direction: column;
@@ -181,6 +195,25 @@
 
   .map-placeholder .chapter-goal {
     font-size: var(--font-sm);
+  }
+
+  .map-status {
+    margin-top: 24px;
+    opacity: 0.5;
+  }
+
+  .map-progress {
+    margin-top: 16px;
+    width: 120px;
+    height: 4px;
+    background: var(--color-bg-light);
+    border-radius: 2px;
+  }
+
+  .map-progress-bar {
+    height: 100%;
+    background: var(--color-primary);
+    border-radius: 2px;
   }
 
   .char-lore {
@@ -224,7 +257,7 @@
     <button class="soft-sidebar-btn active" data-tab="tasks" title="任务">📋</button>
     <button class="soft-sidebar-btn" data-tab="map" title="地图">🗺️</button>
     <button class="soft-sidebar-btn" data-tab="character" title="角色">👤</button>
-    <div style="flex:1"></div>
+    <div class="sidebar-spacer"></div>
     <button class="soft-sidebar-btn" id="btnPetMode" title="返回桌宠">🐱</button>
   </div>
 
@@ -232,7 +265,7 @@
     <!-- Tasks tab -->
     <div class="tab-content active" id="tabTasks">
       <div id="taskList"></div>
-      <div class="task-detail" id="taskDetail" style="display:none"></div>
+      <div class="task-detail hidden" id="taskDetail"></div>
     </div>
 
     <!-- Map tab -->
@@ -240,9 +273,9 @@
       <div class="map-placeholder">
         <div class="chapter-title" id="chapterTitle">第一章 · 觉醒的星辰</div>
         <div class="chapter-goal" id="chapterGoal">目标：修复破碎的引导之星</div>
-        <p style="margin-top:24px;opacity:0.5">🗺️ 埃瑟利亚大陆地图（开发中）</p>
-        <div style="margin-top:16px;width:120px;height:4px;background:var(--color-bg-light);border-radius:2px;">
-          <div id="chapterProgress" style="width:0%;height:100%;background:var(--color-primary);border-radius:2px;"></div>
+        <p class="map-status">🗺️ 埃瑟利亚大陆地图（开发中）</p>
+        <div class="map-progress">
+          <div id="chapterProgress" class="map-progress-bar" style="width:0%"></div>
         </div>
       </div>
     </div>
@@ -273,6 +306,7 @@
   </div>
 </div>
 
+<script src="../../shared/constants.js"></script>
 <script src="../shared/ipc-client.js"></script>
 <script src="../shared/dom-utils.js"></script>
 <script src="../shared/character-renderer.js"></script>
@@ -281,6 +315,7 @@
 <script>
 (() => {
   const { IpcClient, CharacterRenderer, ConversationPanel, TaskPanel } = window;
+  const { INTENT, MODE } = window;
   const ipc = new IpcClient();
 
   // Character display
@@ -301,23 +336,21 @@
   });
 
   // Conversation panel (right sidebar)
-  const convPanel = new ConversationPanel(document.getElementById("convPanel"), {
+  const convPanelEl = document.getElementById("convPanel");
+  const convPanel = new ConversationPanel(convPanelEl, {
     position: "side",
     onSend: async (text) => {
       convPanel.showTyping();
       let started = false;
       const unsubChunk = ipc.onChunk((chunk) => {
         if (!started) { started = true; convPanel.addMessage("assistant", ""); }
-        const panel = document.getElementById("convPanel");
-        const msgs = panel.querySelectorAll(".conv-msg--assistant");
-        const last = msgs[msgs.length - 1];
-        if (last) last.textContent += chunk;
+        convPanel.appendToLastMessage("assistant", chunk);
       });
       const unsubDone = ipc.onDone((data) => {
         convPanel.hideTyping();
         unsubChunk();
         unsubDone();
-        if (data.intent === "create_task") {
+        if (data.intent === INTENT.CREATE_TASK) {
           ipc.createTask(data.taskPayload).then(() => loadTasks());
         }
       });
@@ -358,7 +391,7 @@
 
     const task = res.data;
     const detail = document.getElementById("taskDetail");
-    detail.style.display = "block";
+    detail.classList.remove("hidden");
     detail.replaceChildren();
 
     const h3 = document.createElement("h3");
@@ -377,12 +410,11 @@
     addPara(`📊 状态：${task.status === "completed" ? "✅ 已完成" : "⏳ 进行中"}`);
 
     const btnRow = document.createElement("div");
-    btnRow.style.cssText = "margin-top:var(--space-md);display:flex;gap:var(--space-sm);";
+    btnRow.className = "btn-row";
 
     if (task.status !== "completed") {
       const btnComplete = document.createElement("button");
       btnComplete.className = "btn btn-primary";
-      btnComplete.id = "btnComplete";
       btnComplete.textContent = "✨ 完成任务";
       btnComplete.addEventListener("click", async () => {
         const compRes = await ipc.completeTask(taskId);
@@ -401,11 +433,10 @@
 
     const btnDelete = document.createElement("button");
     btnDelete.className = "btn btn-danger";
-    btnDelete.id = "btnDelete";
     btnDelete.textContent = "🗑️ 删除";
     btnDelete.addEventListener("click", async () => {
       await ipc.deleteTask(taskId);
-      detail.style.display = "none";
+      detail.classList.add("hidden");
       selectedTaskId = null;
       loadTasks();
     });
@@ -428,7 +459,7 @@
   });
 
   // Pet mode button
-  document.getElementById("btnPetMode").addEventListener("click", () => ipc.switchMode("pet"));
+  document.getElementById("btnPetMode").addEventListener("click", () => ipc.switchMode(MODE.PET));
 
   loadTasks();
 })();

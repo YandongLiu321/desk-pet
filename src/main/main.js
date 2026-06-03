@@ -19,7 +19,7 @@ const { NarrativeEngine } = require("./narrative-engine");
 const { ProactiveTrigger } = require("./proactive-trigger");
 const { UserStyleAnalyzer } = require("./user-style-analyzer");
 const { registerIpcHandlers } = require("./ipc-handlers");
-const { IPC } = require("../shared/constants.js");
+const { IPC, MODE } = require("../shared/constants.js");
 
 /** @type {Database} */
 let db;
@@ -74,23 +74,23 @@ function createTray() {
 		{
 			label: "桌宠模式",
 			type: "normal",
-			click: () => switchModeWithCleanup("pet"),
+			click: () => switchModeWithCleanup(MODE.PET),
 		},
 		{
 			label: "壁纸模式",
 			type: "normal",
-			click: () => switchModeWithCleanup("wallpaper"),
+			click: () => switchModeWithCleanup(MODE.WALLPAPER),
 		},
 		{
 			label: "软件模式",
 			type: "normal",
-			click: () => switchModeWithCleanup("software"),
+			click: () => switchModeWithCleanup(MODE.SOFTWARE),
 		},
 		{ type: "separator" },
 		{ label: "退出", type: "normal", click: () => app.quit() },
 	]);
 	tray.setContextMenu(contextMenu);
-	tray.on("click", () => switchModeWithCleanup("pet"));
+	tray.on("click", () => switchModeWithCleanup(MODE.PET));
 }
 
 function loadWorldBook() {
@@ -156,7 +156,7 @@ app.whenReady().then(() => {
 
 	createTray();
 	proactiveTrigger.start();
-	switchModeWithCleanup("pet");
+	switchModeWithCleanup(MODE.PET);
 });
 
 app.on("window-all-closed", () => {});
@@ -166,5 +166,5 @@ app.on("before-quit", () => {
 });
 
 app.on("activate", () => {
-	if (windowManager) switchModeWithCleanup("pet");
+	if (windowManager) switchModeWithCleanup(MODE.PET);
 });

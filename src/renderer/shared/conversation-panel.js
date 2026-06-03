@@ -91,6 +91,12 @@ class ConversationPanel {
 		this._msgList.scrollTop = this._msgList.scrollHeight;
 	}
 
+	appendToLastMessage(role, text) {
+		const msgs = this._msgList.querySelectorAll(`.conv-msg--${role}`);
+		const last = msgs[msgs.length - 1];
+		if (last) last.textContent += text;
+	}
+
 	showTyping() {
 		if (this._typingIndicator) this._typingIndicator.style.display = "";
 	}
