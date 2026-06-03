@@ -13,11 +13,7 @@
     overflow: hidden;
     margin: 0;
     padding: 0;
-    pointer-events: none;
-  }
-
-  body.interactive {
-    pointer-events: auto;
+    -webkit-app-region: drag;
   }
 
   .pet-char-area {
@@ -28,9 +24,11 @@
     height: var(--char-pet-size);
     pointer-events: auto;
     z-index: 10;
+    cursor: default;
+    -webkit-app-region: no-drag;
   }
 
-  .pet-char-area:active {
+  .pet-char-area.grabbing {
     cursor: grabbing;
   }
 
@@ -49,6 +47,7 @@
     z-index: 50;
     pointer-events: auto;
     cursor: pointer;
+    -webkit-app-region: no-drag;
     align-items: center;
     gap: var(--space-xs);
   }
@@ -91,6 +90,7 @@
     box-shadow: var(--shadow-lg);
     z-index: 20;
     pointer-events: auto;
+    -webkit-app-region: no-drag;
     background: var(--color-bg-dark);
   }
 
@@ -111,6 +111,7 @@
     padding: var(--space-xs) 0;
     z-index: 100;
     pointer-events: auto;
+    -webkit-app-region: no-drag;
     box-shadow: var(--shadow-md);
   }
 
@@ -141,6 +142,7 @@
     box-shadow: var(--shadow-lg);
     z-index: 30;
     pointer-events: auto;
+    -webkit-app-region: no-drag;
     overflow: hidden;
   }
 
@@ -157,7 +159,7 @@
   <button class="pet-bubble-close" id="bubbleClose">&times;</button>
 </div>
 
-<div class="pet-char-area" id="charArea" title="左键聊天，右键菜单"></div>
+<div class="pet-char-area" id="charArea" title="点击聊天 | 长按拖动 | 右键菜单"></div>
 
 <div class="pet-conv-container" id="convContainer"></div>
 
@@ -185,23 +187,6 @@
   const ipc = new IpcClient();
   let isTaskMode = false;
   let bubbleTimer = null;
-
-  function syncInteractive() {
-    const anyOpen = document.querySelector(".open") !== null;
-    if (anyOpen) {
-      document.body.classList.add("interactive");
-    } else {
-      document.body.classList.remove("interactive");
-    }
-  }
-
-  // MutationObserver: auto-sync interactive when .open class changes
-  const observer = new MutationObserver(() => syncInteractive());
-  observer.observe(document.body, {
-    attributes: true,
-    subtree: true,
-    attributeFilter: ["class"],
-  });
 
   function closeAll() {
     document.getElementById("convContainer").classList.remove("open");
@@ -250,6 +235,13 @@
   const convPanel = new ConversationPanel(convContainer, {
     position: "bottom",
     onSend: async (text) => {
+      // Check API key before sending
+      const keyRes = await ipc.getApiKey();
+      if (!keyRes.ok || !keyRes.data?.apiKey) {
+        convPanel.addMessage("assistant", "旅者，你还没有设置与星辰通讯的密钥。\n\n请打开软件模式 → 设置，或直接在 data/db.json 中配置 apiKey 后再来找我聊天吧~");
+        return;
+      }
+
       convPanel.showTyping();
       let currentMsg = null;
       const unsubChunk = ipc.onChunk((chunk) => {
@@ -262,7 +254,6 @@
         convPanel.hideTyping();
         unsubChunk();
         unsubDone();
-        // Clean raw JSON from the streamed message
         if (data.displayText) {
           const msgs = convPanel._msgList.querySelectorAll(".conv-msg--assistant");
           const last = msgs[msgs.length - 1];
@@ -301,9 +292,70 @@
     if (res.ok) taskPanel.setTasks(res.data);
   }
 
-  // Left-click character → toggle conversation (chat mode)
+  // ── Character interaction ──
   const charArea = document.getElementById("charArea");
+  const LONG_PRESS_MS = 300;
+  const DRAG_TICK_MS = 16;
+  let longPressTimer = null;
+  let isDragging = false;
+  let wasLongPress = false;
+  let dragLastSX = 0;
+  let dragLastSY = 0;
+  let dragAccDx = 0;
+  let dragAccDy = 0;
+  let dragTickTimer = null;
+
+  function flushDrag() {
+    if (dragAccDx !== 0 || dragAccDy !== 0) {
+      ipc.moveWindowBy(dragAccDx, dragAccDy);
+      dragAccDx = 0;
+      dragAccDy = 0;
+    }
+    dragTickTimer = null;
+  }
+
+  function endDrag() {
+    if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+    if (dragTickTimer) { clearTimeout(dragTickTimer); dragTickTimer = null; }
+    if (isDragging) {
+      isDragging = false;
+      flushDrag();
+    }
+    charArea.classList.remove("grabbing");
+    // wasLongPress is NOT reset here — click handler checks it
+  }
+
+  charArea.addEventListener("mousedown", (e) => {
+    if (e.button !== 0) return;
+    endDrag();
+    wasLongPress = false;
+    dragLastSX = e.screenX;
+    dragLastSY = e.screenY;
+    dragAccDx = 0;
+    dragAccDy = 0;
+    longPressTimer = setTimeout(() => {
+      wasLongPress = true;
+      isDragging = true;
+      charArea.classList.add("grabbing");
+    }, LONG_PRESS_MS);
+  });
+
+  document.addEventListener("mousemove", (e) => {
+    if (!isDragging) return;
+    dragAccDx += e.screenX - dragLastSX;
+    dragAccDy += e.screenY - dragLastSY;
+    dragLastSX = e.screenX;
+    dragLastSY = e.screenY;
+    if (!dragTickTimer) {
+      dragTickTimer = setTimeout(flushDrag, DRAG_TICK_MS);
+    }
+  });
+
+  document.addEventListener("mouseup", () => endDrag());
+
+  // Left-click → toggle conversation (charArea is no-drag, click fires reliably)
   charArea.addEventListener("click", (e) => {
+    if (wasLongPress) return;
     e.stopPropagation();
     isTaskMode = false;
     convContainer.classList.toggle("open");
@@ -313,7 +365,7 @@
     loadTasks();
   });
 
-  // Right-click character → toggle context menu
+  // Right-click → toggle context menu
   const ctxMenu = document.getElementById("contextMenu");
   charArea.addEventListener("contextmenu", (e) => {
     e.preventDefault();
@@ -355,7 +407,6 @@
     if (e.key === "Escape") closeAll();
   });
 
-  syncInteractive();
   window._petShowBubble = showBubble;
 })();
 </script>

@@ -42,6 +42,7 @@ const IPC = {
 	// Window
 	WINDOW_HIDE: "window:hide",
 	WINDOW_CLOSE_MODE: "window:close-mode",
+	WINDOW_MOVE_BY: "window:move-by",
 };
 
 const INTENT = {

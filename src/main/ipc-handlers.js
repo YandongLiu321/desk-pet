@@ -148,6 +148,13 @@ function registerIpcHandlers(services, deps) {
 	// ── Window ──
 	ipcMain.handle(IPC.WINDOW_HIDE, () => runSafe(() => { windowManager.getCurrentWindow()?.hide(); return null; }));
 	ipcMain.handle(IPC.WINDOW_CLOSE_MODE, () => runSafe(() => { services.switchModeWithCleanup(MODE.PET); return null; }));
+	ipcMain.on(IPC.WINDOW_MOVE_BY, (event, { dx, dy }) => {
+		const win = BrowserWindow.fromWebContents(event.sender);
+		if (win && !win.isDestroyed()) {
+			const [x, y] = win.getPosition();
+			win.setPosition(x + Math.round(dx), y + Math.round(dy));
+		}
+	});
 }
 
 module.exports = { registerIpcHandlers };

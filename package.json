@@ -15,7 +15,7 @@
 	"author": "",
 	"license": "ISC",
 	"dependencies": {
-		"electron": "^42.3.0",
+		"electron": "^42.3.2",
 		"lowdb": "^7.0.1"
 	},
 	"devDependencies": {

@@ -137,6 +137,9 @@ class IpcClient {
 	async closeMode() {
 		return this._call("window.closeMode");
 	}
+	moveWindowBy(dx, dy) {
+		this.api?.window.moveBy(dx, dy);
+	}
 }
 
 window.IpcClient = IpcClient;

@@ -1,15 +1,18 @@
 class PomodoroTimer {
 	/**
 	 * @param {HTMLElement} container
-	 * @param {{ onStart?: () => void, onStop?: () => void }} options
+	 * @param {{ onStart?: () => void, onPause?: () => void, onResume?: () => void, onStop?: () => void }} options
 	 */
 	constructor(container, options = {}) {
 		this.container = container;
 		this.onStart = options.onStart || (() => {});
+		this.onPause = options.onPause || (() => {});
+		this.onResume = options.onResume || (() => {});
 		this.onStop = options.onStop || (() => {});
 		this._total = 0;
 		this._remaining = 0;
 		this._running = false;
+		this._paused = false;
 	}
 
 	mount() {
@@ -32,10 +35,7 @@ class PomodoroTimer {
 		bg.setAttribute("stroke-width", "6");
 		this._svg.appendChild(bg);
 
-		this._ring = document.createElementNS(
-			"http://www.w3.org/2000/svg",
-			"circle",
-		);
+		this._ring = document.createElementNS("http://www.w3.org/2000/svg", "circle");
 		this._ring.setAttribute("cx", "60");
 		this._ring.setAttribute("cy", "60");
 		this._ring.setAttribute("r", "52");
@@ -55,24 +55,63 @@ class PomodoroTimer {
 
 		// Controls
 		const controls = document.createElement("div");
-		controls.style.cssText = "display:flex;gap:var(--space-sm);";
+		controls.style.cssText = "display:flex;flex-direction:column;align-items:center;gap:var(--space-sm);";
+
+		const row1 = document.createElement("div");
+		row1.style.cssText = "display:flex;gap:var(--space-sm);";
+
+		const btnStyle = `padding:var(--space-sm) var(--space-md);border:none;border-radius:var(--radius-sm);cursor:pointer;font-size:var(--font-base);`;
 
 		this._startBtn = document.createElement("button");
 		this._startBtn.textContent = "开始专注";
-		this._startBtn.style.cssText = `padding:var(--space-sm) var(--space-md);background:var(--color-primary);color:white;border:none;border-radius:var(--radius-sm);cursor:pointer;font-size:var(--font-base);`;
+		this._startBtn.style.cssText = `${btnStyle}background:var(--color-primary);color:white;`;
 		this._startBtn.addEventListener("click", () => this.onStart());
 
+		this._pauseBtn = document.createElement("button");
+		this._pauseBtn.textContent = "暂停";
+		this._pauseBtn.style.cssText = `${btnStyle}background:var(--color-bg-light);color:var(--color-text-primary);display:none;`;
+		this._pauseBtn.addEventListener("click", () => {
+			if (this._paused) return;
+			this._paused = true;
+			this._running = false;
+			this.showControls("paused");
+			this.onPause();
+		});
+
+		this._resumeBtn = document.createElement("button");
+		this._resumeBtn.textContent = "继续";
+		this._resumeBtn.style.cssText = `${btnStyle}background:var(--color-primary);color:white;display:none;`;
+		this._resumeBtn.addEventListener("click", () => {
+			if (!this._paused) return;
+			this._paused = false;
+			this._running = true;
+			this.showControls("running");
+			this.onResume();
+		});
+
+		row1.appendChild(this._startBtn);
+		row1.appendChild(this._pauseBtn);
+		row1.appendChild(this._resumeBtn);
+		controls.appendChild(row1);
+
+		const row2 = document.createElement("div");
 		this._stopBtn = document.createElement("button");
 		this._stopBtn.textContent = "停止";
-		this._stopBtn.style.cssText = `padding:var(--space-sm) var(--space-md);background:var(--color-bg-light);color:var(--color-text-primary);border:none;border-radius:var(--radius-sm);cursor:pointer;font-size:var(--font-base);display:none;`;
+		this._stopBtn.style.cssText = `${btnStyle}background:var(--color-error, #d32f2f);color:white;display:none;`;
 		this._stopBtn.addEventListener("click", () => this.onStop());
-
-		controls.appendChild(this._startBtn);
-		controls.appendChild(this._stopBtn);
+		row2.appendChild(this._stopBtn);
+		controls.appendChild(row2);
 
 		this.container.appendChild(this._svg);
 		this.container.appendChild(this._timeDisplay);
 		this.container.appendChild(controls);
+	}
+
+	showControls(state) {
+		this._startBtn.style.display = state === "idle" ? "" : "none";
+		this._pauseBtn.style.display = state === "running" ? "" : "none";
+		this._resumeBtn.style.display = state === "paused" ? "" : "none";
+		this._stopBtn.style.display = state === "paused" ? "" : "none";
 	}
 
 	/** @param {number} remaining seconds */
@@ -90,17 +129,22 @@ class PomodoroTimer {
 	start(totalSeconds) {
 		this._total = totalSeconds;
 		this._running = true;
+		this._paused = false;
 		this.update(totalSeconds);
-		this._startBtn.style.display = "none";
-		this._stopBtn.style.display = "";
+		this.showControls("running");
 	}
 
 	stop() {
 		this._running = false;
+		this._paused = false;
 		this._timeDisplay.textContent = "25:00";
 		this._ring.setAttribute("stroke-dashoffset", "0");
-		this._startBtn.style.display = "";
-		this._stopBtn.style.display = "none";
+		this.showControls("idle");
+	}
+
+	/** @returns {number} seconds remaining */
+	getRemaining() {
+		return this._remaining;
 	}
 }
 

@@ -265,28 +265,46 @@
   charRenderer.mount();
 
   // Pomodoro helpers
-  async function startPomodoroFlow(durationMinutes, taskId) {
-    ipc.removePomodoroListeners();
+  let pomodoroTickUnsub = null;
+  let pomodoroEndUnsub = null;
+
+  function clearPomodoroListeners() {
+    if (pomodoroTickUnsub) { pomodoroTickUnsub(); pomodoroTickUnsub = null; }
+    if (pomodoroEndUnsub) { pomodoroEndUnsub(); pomodoroEndUnsub = null; }
+  }
+
+  async function startPomodoroFlow(durationSeconds, taskId) {
+    clearPomodoroListeners();
+    const durationMinutes = durationSeconds / 60;
     const res = await ipc.startPomodoro(durationMinutes, taskId);
     if (!res.ok) return;
-    pomodoroTimer.start(durationMinutes * 60);
+    pomodoroTimer.start(durationSeconds);
     currentPomodoroTaskId = taskId || null;
-    const unsubTick = ipc.onPomodoroTick((data) => {
+    pomodoroTickUnsub = ipc.onPomodoroTick((data) => {
       if (data.remaining >= 0) pomodoroTimer.update(data.remaining);
     });
-    const unsubEnd = ipc.onPomodoroEnd(() => {
+    pomodoroEndUnsub = ipc.onPomodoroEnd(() => {
+      clearPomodoroListeners();
       pomodoroTimer.stop();
-      unsubTick();
-      unsubEnd();
     });
   }
 
   // Pomodoro timer
   const pomodoroTimer = new PomodoroTimer(document.getElementById("pomodoroArea"), {
-    onStart: () => startPomodoroFlow(25),
+    onStart: () => startPomodoroFlow(25 * 60, currentPomodoroTaskId),
+    onPause: async () => {
+      await ipc.stopPomodoro();
+      clearPomodoroListeners();
+    },
+    onResume: () => {
+      const remaining = pomodoroTimer.getRemaining();
+      startPomodoroFlow(remaining, currentPomodoroTaskId);
+    },
     onStop: async () => {
       await ipc.stopPomodoro();
-      ipc.removePomodoroListeners();
+      clearPomodoroListeners();
+      currentPomodoroTaskId = null;
+      pomodoroTimer.stop();
     },
   });
   pomodoroTimer.mount();
@@ -411,7 +429,7 @@
 
   document.getElementById("exitExtendYesBtn").addEventListener("click", async () => {
     hideExitPanel();
-    await startPomodoroFlow(25, window._exitTaskId);
+    await startPomodoroFlow(25 * 60, window._exitTaskId);
   });
 
   document.getElementById("exitExtendNoBtn").addEventListener("click", () => {

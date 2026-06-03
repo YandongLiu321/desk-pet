@@ -126,5 +126,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		closeMode() {
 			return ipcRenderer.invoke(IPC.WINDOW_CLOSE_MODE);
 		},
+		moveBy(dx, dy) {
+			ipcRenderer.send(IPC.WINDOW_MOVE_BY, { dx, dy });
+		},
 	},
 });
