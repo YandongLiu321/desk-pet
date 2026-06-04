@@ -1,94 +1,104 @@
 (function () {
     "use strict";
 
-    // ---------------------------------------------------------------------------
-    // EditorApp — main editor controller
-    // ---------------------------------------------------------------------------
-
     class EditorApp {
         constructor() {
-            /** @type {WebGLWallpaperRenderer|null} */
             this.renderer = null;
-
-            /** @type {Object|null} */
             this.sceneData = null;
-
-            /** @type {Object|null} */
             this.selectedNode = null;
+            this._webglOk = false;
         }
 
-        /**
-         * Initialize the editor: create WebGL renderer, register shaders,
-         * load current scene or create a default empty scene.
-         */
         async init() {
             var self = this;
 
-            // 1. Get preview canvas, create WebGLWallpaperRenderer
+            // Try WebGL preview
             var canvas = document.getElementById("previewCanvas");
-            if (!canvas) {
-                console.error("EditorApp: previewCanvas not found");
-                return;
+            if (canvas) {
+                try {
+                    this.renderer = new window.WebGLWallpaperRenderer(canvas);
+                    var vertEl = document.getElementById("shader-default-vert");
+                    var fragEl = document.getElementById("shader-default-frag");
+                    if (vertEl && fragEl) {
+                        this.renderer.registerShader("default", vertEl.textContent, fragEl.textContent);
+                        var gl = this.renderer.gl;
+                        gl._defaultShader = this.renderer.shaderManager.get("default");
+                        this._webglOk = true;
+                    }
+                } catch (err) {
+                    console.warn("WebGL preview unavailable:", err.message);
+                    this._showViewportStatus("WebGL preview unavailable — using data view only");
+                }
             }
 
-            try {
-                this.renderer = new window.WebGLWallpaperRenderer(canvas);
-            } catch (err) {
-                console.error("EditorApp: WebGL2 init failed:", err);
-                return;
-            }
-
-            // 2. Register default shader from inline sources
-            var vertEl = document.getElementById("shader-default-vert");
-            var fragEl = document.getElementById("shader-default-frag");
-            if (!vertEl || !fragEl) {
-                console.error("EditorApp: shader source elements not found");
-                return;
-            }
-            this.renderer.registerShader("default", vertEl.textContent, fragEl.textContent);
-
-            // Pre-compile and attach to the GL context for LayerNode.render access
-            var gl = this.renderer.gl;
-            gl._defaultShader = this.renderer.shaderManager.get("default");
-
-            // 3. Load current scene via ipc.getScene() if available
+            // Load current WE wallpaper data as starting scene
             var ipc = new window.IpcClient();
-            var res = await ipc.getScene();
-            if (res.ok && res.data) {
-                this.loadScene(res.data);
-            } else {
-                // 4. Create default empty scene
-                this.sceneData = {
-                    camera: { x: 1920, y: 1080, width: 3840, height: 2160 },
-                    children: [],
-                };
-                this.renderer.loadScene(this.sceneData);
+            try {
+                var state = await ipc.getAppState();
+                if (state.ok && state.data && state.data.wallpaperSettings && state.data.wallpaperSettings.weWallpaperDir) {
+                    var weRes = await ipc.loadWeWallpaper(state.data.wallpaperSettings.weWallpaperDir);
+                    if (weRes.ok && weRes.data) {
+                        // Convert to scene format
+                        if (window.SceneConverter) {
+                            this.sceneData = window.SceneConverter.convert(weRes.data);
+                        } else {
+                            this.sceneData = this._layersToScene(weRes.data.layers || []);
+                        }
+                        this._status("Loaded: " + (weRes.data.title || weRes.data.dirName));
+                    }
+                }
+            } catch (e) {
+                console.warn("Could not load current wallpaper:", e);
             }
 
-            // Start the render loop
-            this.renderer.start();
+            // Fallback: empty scene
+            if (!this.sceneData) {
+                this.sceneData = { camera: { x: 1920, y: 1080, width: 3840, height: 2160 }, children: [] };
+            }
 
-            // 5. Refresh all panels
+            // Start render loop
+            if (this._webglOk && this.renderer) {
+                try {
+                    await this.renderer.loadScene(this.sceneData);
+                    this.renderer.start();
+                } catch (e) {
+                    console.warn("Render start failed:", e);
+                }
+            }
+
             this.refreshAll();
         }
 
-        /**
-         * Load scene data into the renderer and update all panels.
-         * @param {Object} data - scene JSON
-         */
+        // Convert raw WE layers to scene graph format
+        _layersToScene(layers) {
+            var children = [];
+            layers.forEach(function (lyr, i) {
+                children.push({
+                    type: "Layer",
+                    name: lyr.name || ("layer_" + i),
+                    position: [lyr.x, 2160 - lyr.y],
+                    alpha: lyr.alpha !== undefined ? lyr.alpha : 1,
+                    zIndex: i + 1,
+                    texture: lyr.url,
+                    width: lyr.width,
+                    height: lyr.height,
+                    anchor: [0.5, 0.5],
+                });
+            });
+            return { camera: { x: 1920, y: 1080, width: 3840, height: 2160 }, children: children };
+        }
+
         loadScene(data) {
             this.sceneData = data;
-            if (this.renderer) {
-                this.renderer.loadScene(data);
-            }
             this.selectedNode = null;
+            if (this._webglOk && this.renderer) {
+                this.renderer.loadScene(data).catch(function (e) {
+                    console.warn("Scene render failed:", e);
+                });
+            }
             this.refreshAll();
         }
 
-        /**
-         * Select a node in the scene tree and show its properties.
-         * @param {Object} node
-         */
         selectNode(node) {
             this.selectedNode = node;
             if (window.propertyInspector) {
@@ -96,53 +106,37 @@
             }
         }
 
-        /**
-         * Create a new empty scene.
-         */
         fileNew() {
-            var sceneData = {
-                camera: { x: 1920, y: 1080, width: 3840, height: 2160 },
-                children: [],
-            };
-            this.loadScene(sceneData);
-            console.log("Editor: new scene created");
+            this.loadScene({ camera: { x: 1920, y: 1080, width: 3840, height: 2160 }, children: [] });
+            this._status("New scene created");
         }
 
-        /**
-         * Load the saved scene from the default save path via IPC.
-         */
         async fileOpen() {
+            // Reload current WE wallpaper
             var ipc = new window.IpcClient();
-            var res = await ipc.getScene();
-            if (res.ok && res.data) {
-                this.loadScene(res.data);
-                console.log("Editor: scene loaded from saved data");
-            } else {
-                console.warn("Editor: no scene data available, creating new scene");
-                this.fileNew();
+            var state = await ipc.getAppState();
+            if (state.ok && state.data && state.data.wallpaperSettings && state.data.wallpaperSettings.weWallpaperDir) {
+                var weRes = await ipc.loadWeWallpaper(state.data.wallpaperSettings.weWallpaperDir);
+                if (weRes.ok && weRes.data) {
+                    if (window.SceneConverter) {
+                        this.loadScene(window.SceneConverter.convert(weRes.data));
+                    } else {
+                        this.loadScene(this._layersToScene(weRes.data.layers || []));
+                    }
+                    this._status("Loaded: " + (weRes.data.title || weRes.data.dirName));
+                    return;
+                }
             }
+            this._status("No wallpaper data found");
         }
 
-        /**
-         * Save the current scene via IPC.
-         */
         async fileSave() {
-            if (!this.sceneData) {
-                console.warn("Editor: no scene data to save");
-                return;
-            }
+            if (!this.sceneData) { this._status("Nothing to save"); return; }
             var ipc = new window.IpcClient();
             var res = await ipc.saveScene("", this.sceneData);
-            if (res.ok) {
-                console.log("Editor: scene saved");
-            } else {
-                console.error("Editor: save failed", res.error);
-            }
+            this._status(res.ok ? "Saved" : "Save failed: " + (res.error ? res.error.message : "unknown"));
         }
 
-        /**
-         * Import a WE wallpaper by directory name and convert to scene format.
-         */
         async importWE() {
             var dirName = prompt("Enter WE wallpaper directory name:", "3163060610");
             if (!dirName) return;
@@ -150,40 +144,27 @@
             var ipc = new window.IpcClient();
             var res = await ipc.loadWeWallpaper(dirName);
             if (!res.ok || !res.data) {
-                console.error("Editor: failed to load WE wallpaper", res.error);
+                this._status("Failed to load: " + (res.error ? res.error.message : "unknown"));
                 return;
             }
 
-            // Convert to scene format using SceneConverter
+            var sceneData;
             if (window.SceneConverter) {
-                var sceneData = window.SceneConverter.convert(res.data);
-                this.loadScene(sceneData);
-                console.log("Editor: WE wallpaper imported and converted to scene");
+                sceneData = window.SceneConverter.convert(res.data);
             } else {
-                console.error("Editor: SceneConverter not available");
+                sceneData = this._layersToScene(res.data.layers || []);
             }
+            this.loadScene(sceneData);
+            this._status("Imported: " + (res.data.title || dirName) + " (" + (res.data.layers ? res.data.layers.length : 0) + " layers)");
         }
 
-        /**
-         * Apply the current scene to the wallpaper window.
-         */
         async applyToWallpaper() {
-            if (!this.sceneData) {
-                console.warn("Editor: no scene data to apply");
-                return;
-            }
+            if (!this.sceneData) { this._status("Nothing to apply"); return; }
             var ipc = new window.IpcClient();
             var res = await ipc.applyScene(this.sceneData);
-            if (res.ok) {
-                console.log("Editor: scene applied to wallpaper");
-            } else {
-                console.error("Editor: apply failed", res.error);
-            }
+            this._status(res.ok ? "Applied to wallpaper" : "Apply failed: " + (res.error ? res.error.message : "unknown"));
         }
 
-        /**
-         * Refresh all editor panels.
-         */
         refreshAll() {
             if (window.sceneTreePanel) {
                 window.sceneTreePanel.refresh(this.sceneData, this);
@@ -195,17 +176,33 @@
                 window.timelinePanel.refresh();
             }
         }
-    }
 
-    // ---------------------------------------------------------------------------
-    // Initialize on DOM ready
-    // ---------------------------------------------------------------------------
+        _showViewportStatus(msg) {
+            var canvas = document.getElementById("previewCanvas");
+            if (canvas && canvas.parentElement) {
+                var div = document.createElement("div");
+                div.style.cssText = "position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#666;font-size:14px;pointer-events:none;";
+                div.textContent = msg;
+                canvas.parentElement.appendChild(div);
+            }
+        }
+
+        _status(msg) {
+            console.log("[Editor]", msg);
+            // Flash status in the menu bar
+            var statusEl = document.getElementById("statusMsg");
+            if (statusEl) {
+                statusEl.textContent = msg;
+                clearTimeout(this._statusTimer);
+                this._statusTimer = setTimeout(function () { statusEl.textContent = ""; }, 3000);
+            }
+        }
+    }
 
     document.addEventListener("DOMContentLoaded", function () {
         window.editorApp = new EditorApp();
         window.editorApp.init();
     });
 
-    // Export for direct reference
     window.EditorApp = EditorApp;
 })();
