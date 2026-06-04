@@ -150,6 +150,50 @@
     display: flex;
     flex-direction: column;
   }
+
+  .pet-task-indicator {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-xs) var(--space-sm);
+    background: var(--color-primary);
+    color: white;
+    font-size: var(--font-sm);
+    font-weight: bold;
+  }
+
+  .pet-task-indicator.active {
+    display: flex;
+  }
+
+  .pet-task-indicator-close {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: var(--font-base);
+    padding: 0;
+    line-height: 1;
+  }
+
+  .pet-task-toggle {
+    background: none;
+    border: 1px solid var(--color-bg-light);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    font-size: var(--font-xs);
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-sm);
+    margin-right: var(--space-xs);
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+
+  .pet-task-toggle.active {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: white;
+  }
 </style>
 </head>
 <body>
@@ -178,6 +222,8 @@
 <script src="../shared/dom-utils.js"></script>
 <script src="../shared/state-manager.js"></script>
 <script src="../shared/character-renderer.js"></script>
+<script src="../shared/live2dcubismcore.min.js"></script>
+<script src="../shared/live2d-renderer.bundle.js"></script>
 <script src="../shared/conversation-panel.js"></script>
 <script src="../shared/task-panel.js"></script>
 <script>
@@ -193,7 +239,7 @@
     document.getElementById("taskPanel").classList.remove("open");
     document.getElementById("contextMenu").classList.remove("open");
     hideBubble();
-    isTaskMode = false;
+    setTaskMode(false);
   }
 
   // Bubble
@@ -226,7 +272,7 @@
 
   // Character renderer
   const charRenderer = new CharacterRenderer(document.getElementById("charArea"), {
-    mode: "pet", size: 120,
+    mode: "pet", size: 120, assetType: "live2d",
   });
   charRenderer.mount();
 
@@ -245,22 +291,25 @@
       convPanel.showTyping();
       let currentMsg = null;
       const unsubChunk = ipc.onChunk((chunk) => {
-        if (!currentMsg) { currentMsg = true; convPanel.addMessage("assistant", ""); }
-        const msgs = convPanel._msgList.querySelectorAll(".conv-msg--assistant");
-        const last = msgs[msgs.length - 1];
-        if (last) last.textContent += chunk;
+        if (!currentMsg) { currentMsg = true; }
       });
       const unsubDone = ipc.onDone((data) => {
         convPanel.hideTyping();
         unsubChunk();
         unsubDone();
         if (data.displayText) {
-          const msgs = convPanel._msgList.querySelectorAll(".conv-msg--assistant");
-          const last = msgs[msgs.length - 1];
-          if (last) last.textContent = data.displayText;
+          convPanel.addMessage("assistant", data.displayText);
         }
-        if (data.intent === INTENT.CREATE_TASK) {
-          ipc.createTask(data.taskPayload).catch(() => {});
+        if (data.intent === INTENT.CREATE_TASK && data.taskPayload) {
+          ipc.createTask(data.taskPayload).then((res) => {
+            if (res.ok) {
+              convPanel.addMessage("assistant", "✨ 任务已记录在星之书中~");
+              loadTasks();
+              setTaskMode(false);
+            } else {
+              convPanel.showError(res.error);
+            }
+          });
         } else if (data.intent === INTENT.SWITCH_MODE && data.switchTarget) {
           convContainer.classList.remove("open");
           ipc.switchMode(data.switchTarget).catch(() => {});
@@ -277,6 +326,36 @@
     },
   });
   convPanel.mount();
+
+  // ── Task mode indicator + toggle ──
+  const taskIndicator = document.createElement("div");
+  taskIndicator.className = "pet-task-indicator";
+  taskIndicator.innerHTML = '<span>🔮 任务模式 — 描述任务，AI会自动创建</span><button class="pet-task-indicator-close">&times;</button>';
+  taskIndicator.querySelector(".pet-task-indicator-close").addEventListener("click", (e) => {
+    e.stopPropagation();
+    setTaskMode(false);
+  });
+  convContainer.insertBefore(taskIndicator, convContainer.firstChild);
+
+  const taskToggle = document.createElement("button");
+  taskToggle.className = "pet-task-toggle";
+  taskToggle.textContent = "📋任务";
+  taskToggle.title = "切换任务模式";
+  const inputRow = convContainer.querySelector(".conv-input-row");
+  if (inputRow) {
+    inputRow.insertBefore(taskToggle, inputRow.firstChild);
+  }
+  taskToggle.addEventListener("click", (e) => {
+    e.stopPropagation();
+    setTaskMode(!isTaskMode);
+  });
+
+  function setTaskMode(on) {
+    isTaskMode = on;
+    taskIndicator.classList.toggle("active", on);
+    taskToggle.classList.toggle("active", on);
+    convPanel._input.placeholder = on ? "描述你要发布的任务..." : "和露娜说点什么吧...";
+  }
 
   // Task panel
   const taskPanelContainer = document.getElementById("taskPanel");
@@ -357,7 +436,7 @@
   charArea.addEventListener("click", (e) => {
     if (wasLongPress) return;
     e.stopPropagation();
-    isTaskMode = false;
+    setTaskMode(false);
     convContainer.classList.toggle("open");
     taskPanelContainer.classList.remove("open");
     charRenderer.setMotion("bounce");
@@ -379,7 +458,7 @@
       e.stopPropagation();
       const action = item.dataset.action;
       if (action === "create-task") {
-        isTaskMode = true;
+        setTaskMode(true);
         convContainer.classList.add("open");
         taskPanelContainer.classList.remove("open");
       } else if (action === MODE.WALLPAPER || action === MODE.SOFTWARE) {

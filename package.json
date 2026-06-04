@@ -9,18 +9,21 @@
 		"test": "vitest",
 		"lint": "biome check .",
 		"lint:fix": "biome check --write .",
-		"typecheck": "tsc --noEmit"
+		"typecheck": "tsc --noEmit",
+		"bundle:live2d": "esbuild src/renderer/shared/live2d-bundle-entry.js --bundle --format=iife --global-name=Live2DRenderer --platform=browser --alias:path=src/renderer/shared/path-browser.js --external:magic-bytes.js --outfile=src/renderer/shared/live2d-renderer.bundle.js"
 	},
 	"keywords": [],
 	"author": "",
 	"license": "ISC",
 	"dependencies": {
 		"electron": "^42.3.2",
+		"live2d-renderer": "^0.6.6",
 		"lowdb": "^7.0.1"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
 		"@types/node": "^25.9.1",
+		"esbuild": "^0.28.0",
 		"typescript": "^6.0.3",
 		"vitest": "^4.1.7"
 	}

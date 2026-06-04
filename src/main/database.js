@@ -55,6 +55,7 @@ class Database {
 					opacity: 0.85,
 					characterPosition: "right",
 					soundVolume: 0.5,
+					weWallpaperDir: null,
 				},
 				pomodoro: null,
 				apiKey: "",

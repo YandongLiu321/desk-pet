@@ -1,0 +1,1872 @@
+{
+	"approved" : true,
+	"contentrating" : "Everyone",
+	"description" : "Tags：\nBlue Archive    Takanashi Hoshino    BA    小鳥遊 ホシノ     time switching\n\nOriginal image: \"Blue Archive\" Vol.1 - Chapter 3 - CG7\n\nFor other frequently asked questions about the wallpaper, please check the FAQ jump link listed in the user properties.\n\nIf you have any questions or suggestions, please feel free to ask in the comments section!",
+	"file" : "scene.json",
+	"general" : 
+	{
+		"properties" : 
+		{
+			"av" : 
+			{
+				"condition" : "c.value",
+				"index" : 106,
+				"order" : 206,
+				"text" : "<hr/><p><big>Audio Visualization<br/>音频可视化</big></p>",
+				"type" : "bool",
+				"value" : true
+			},
+			"av_amp" : 
+			{
+				"condition" : "av.value && c.value && ds_av.value",
+				"fraction" : true,
+				"index" : 110,
+				"max" : 1,
+				"min" : 0,
+				"order" : 210,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Bar amplitude<br/>可视化的平均幅度</p>",
+				"type" : "slider",
+				"value" : 0.7
+			},
+			"av_count" : 
+			{
+				"condition" : "av.value && c.value && ds_av.value",
+				"fraction" : false,
+				"index" : 111,
+				"max" : 32,
+				"min" : 0,
+				"order" : 211,
+				"text" : "<p>Bar count<br/>可视化的数量</p>",
+				"type" : "slider",
+				"value" : 13
+			},
+			"av_radius" : 
+			{
+				"condition" : "av.value && c.value && ds_av.value && av_style.value == \"2\"",
+				"fraction" : true,
+				"index" : 109,
+				"max" : 1,
+				"min" : 0.2,
+				"order" : 209,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Radius<br/>半径</p>",
+				"type" : "slider",
+				"value" : 0.7
+			},
+			"av_spacing" : 
+			{
+				"condition" : "av.value && c.value && ds_av.value",
+				"fraction" : true,
+				"index" : 112,
+				"max" : 1,
+				"min" : 0,
+				"order" : 212,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Bar spacing<br/>可视化的间距</p>",
+				"type" : "slider",
+				"value" : 0.05
+			},
+			"av_style" : 
+			{
+				"condition" : "av.value && c.value",
+				"index" : 108,
+				"options" : 
+				[
+					{
+						"label" : "Segmented (分段)",
+						"value" : "1"
+					},
+					{
+						"label" : "Rounded rectangle (圆角矩形)",
+						"value" : "2"
+					}
+				],
+				"order" : 208,
+				"text" : "<p>Style<br/>样式</p>",
+				"type" : "combo",
+				"value" : "1"
+			},
+			"bg_settings_text" : 
+			{
+				"index" : 38,
+				"order" : 138,
+				"text" : "<hr/><h4><b>Background Settings<br/>背景设置</b></h4>",
+				"type" : "text"
+			},
+			"bgsettings" : 
+			{
+				"condition" : "",
+				"index" : 3,
+				"order" : 103,
+				"text" : "<b>Basic Index</b> (from top to bottom):<br/><b>Filter Settings:</b> Time Filter<br/><b>Camera Settings:</b> Parallax, Offset, Bloom<br/><b>Background Settings:</b> Elements in the background, such as clouds, curtain, dynamic particles.<br/><b>Character Settings:</b> effects for character.<br/><b>Component Settings:</b> Clock, audio visualization, media component.<br/><b>基本索引</b>(从上往下):<br/><b>镜头设置:</b> 视差、偏移、泛光<br/><b>背景设置:</b> 背景中元素，如云朵、窗帘、动态粒子等<br/><b>人物设置:</b> 人物的效果<br/><b>组件设置:</b> 时钟、音频可视化、媒体集成<hr/><h4><b>Filter Settings<br/>滤镜设置</b></h4>",
+				"type" : "text"
+			},
+			"bloom" : 
+			{
+				"index" : 35,
+				"order" : 135,
+				"text" : "<hr/><p><big>Bloom<br/>泛光</big><br/><b>!!! Requires post-processing !!!<br/>!!! 需要启用后处理 !!!</b></p>",
+				"type" : "bool",
+				"value" : false
+			},
+			"bloom_strength" : 
+			{
+				"condition" : "bloom.value",
+				"fraction" : true,
+				"index" : 36,
+				"max" : 1,
+				"min" : 0.01,
+				"order" : 136,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Strength<br/>强度</p>",
+				"type" : "slider",
+				"value" : 0.5
+			},
+			"bloom_threshold" : 
+			{
+				"condition" : "bloom.value",
+				"fraction" : true,
+				"index" : 37,
+				"max" : 1,
+				"min" : 0,
+				"order" : 137,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Threshold<br/>阈值</p>",
+				"type" : "slider",
+				"value" : 0.9
+			},
+			"c" : 
+			{
+				"index" : 78,
+				"order" : 178,
+				"text" : "<p><big>Enable Components<br/>启用组件</big></p>",
+				"type" : "bool",
+				"value" : true
+			},
+			"c_de" : 
+			{
+				"condition" : "cloud.value",
+				"index" : 48,
+				"order" : 148,
+				"text" : "<p>Deformation effect<br/>形变效果</p>",
+				"type" : "bool",
+				"value" : true
+			},
+			"c_de_scale" : 
+			{
+				"condition" : "ds_cloud.value",
+				"fraction" : true,
+				"index" : 51,
+				"max" : 1,
+				"min" : 0.01,
+				"order" : 151,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Scale of deformation<br/>形变比例</p>",
+				"type" : "slider",
+				"value" : 0.12
+			},
+			"c_de_speed" : 
+			{
+				"condition" : "ds_cloud.value",
+				"fraction" : true,
+				"index" : 49,
+				"max" : 0.2,
+				"min" : -0.2,
+				"order" : 149,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Speed of deformation<br/>形变速度</p>",
+				"type" : "slider",
+				"value" : 0.07
+			},
+			"c_de_strength" : 
+			{
+				"condition" : "ds_cloud.value",
+				"fraction" : true,
+				"index" : 50,
+				"max" : 0.3,
+				"min" : 0.01,
+				"order" : 150,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Strength of deformation<br/>形变强度</p>",
+				"type" : "slider",
+				"value" : 0.15
+			},
+			"c_fe" : 
+			{
+				"condition" : "cloud.value",
+				"index" : 56,
+				"order" : 156,
+				"text" : "<p>Internal flow effect<br/>内部流动效果</p>",
+				"type" : "bool",
+				"value" : true
+			},
+			"c_fe_speed" : 
+			{
+				"condition" : "ds_cloud.value",
+				"fraction" : true,
+				"index" : 57,
+				"max" : 2,
+				"min" : -2,
+				"order" : 157,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Speed of flow<br/>流动速度</p>",
+				"type" : "slider",
+				"value" : 0.25
+			},
+			"c_fe_strength" : 
+			{
+				"condition" : "ds_cloud.value",
+				"fraction" : true,
+				"index" : 58,
+				"max" : 3,
+				"min" : 0.01,
+				"order" : 158,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Strength of flow<br/>流动强度</p>",
+				"type" : "slider",
+				"value" : 1
+			},
+			"c_layer" : 
+			{
+				"condition" : "c.value && false",
+				"index" : 79,
+				"options" : 
+				[
+					{
+						"label" : "Outside(室外)",
+						"value" : "outside"
+					},
+					{
+						"label" : "Inside(室内)",
+						"value" : "inside"
+					},
+					{
+						"label" : "Top(最上层)",
+						"value" : "top"
+					}
+				],
+				"order" : 179,
+				"text" : "[隐藏] <p>Layer relationship<br/>层级关系</p>",
+				"type" : "combo",
+				"value" : "outside"
+			},
+			"c_pa" : 
+			{
+				"condition" : "cloud.value",
+				"index" : 46,
+				"order" : 146,
+				"text" : "<p>Panning animation<br/>平移动画</p>",
+				"type" : "bool",
+				"value" : true
+			},
+			"c_pa_speed" : 
+			{
+				"condition" : "ds_cloud.value",
+				"fraction" : true,
+				"index" : 47,
+				"max" : 5,
+				"min" : -5,
+				"order" : 147,
+				"precision" : 2,
+				"step" : 0.1,
+				"text" : "<p>Speed of panning<br/>平移速度</p>",
+				"type" : "slider",
+				"value" : 1
+			},
+			"c_se" : 
+			{
+				"condition" : "cloud.value",
+				"index" : 52,
+				"order" : 152,
+				"text" : "<p>Swing effect<br/>摇摆效果</p>",
+				"type" : "bool",
+				"value" : true
+			},
+			"c_se_speed" : 
+			{
+				"condition" : "ds_cloud.value",
+				"fraction" : true,
+				"index" : 53,
+				"max" : 1,
+				"min" : 0.01,
+				"order" : 153,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Speed of swing<br/>摇摆速度</p>",
+				"type" : "slider",
+				"value" : 0.1
+			},
+			"c_se_strength" : 
+			{
+				"condition" : "ds_cloud.value",
+				"fraction" : true,
+				"index" : 54,
+				"max" : 0.45,
+				"min" : -0.45,
+				"order" : 154,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Strength of swing<br/>摇摆强度</p>",
+				"type" : "slider",
+				"value" : 0.3
+			},
+			"c_se_tos" : 
+			{
+				"condition" : "ds_cloud.value",
+				"fraction" : true,
+				"index" : 55,
+				"max" : 0.4,
+				"min" : 0,
+				"order" : 155,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Time-offset strength of the swing<br/>摇摆时间偏移强度</p>",
+				"type" : "slider",
+				"value" : 0.1
+			},
+			"camera_settings_text" : 
+			{
+				"index" : 28,
+				"order" : 128,
+				"text" : "<hr/><h4><b>Camera Settings<br/>镜头设置</h4></b>",
+				"type" : "text"
+			},
+			"character" : 
+			{
+				"index" : 72,
+				"order" : 172,
+				"text" : "<hr/><h4><b>Character Settings<br/>人物设置</h4></b><hr/><big><p>Takanashi Hoshino<br/>小鸟游星野</big></p>",
+				"type" : "text"
+			},
+			"character_b_speed" : 
+			{
+				"condition" : "character_breathing.value && ds_character.value",
+				"fraction" : true,
+				"index" : 75,
+				"max" : 2,
+				"min" : -2,
+				"order" : 175,
+				"precision" : 2,
+				"step" : 0.1,
+				"text" : "<p>Speed<br/>速度</p>",
+				"type" : "slider",
+				"value" : 1.2
+			},
+			"character_b_strength" : 
+			{
+				"condition" : "character_breathing.value && ds_character.value",
+				"fraction" : true,
+				"index" : 76,
+				"max" : 0.5,
+				"min" : 0.01,
+				"order" : 176,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Strength<br/>强度</p>",
+				"type" : "slider",
+				"value" : 0.35
+			},
+			"character_breathing" : 
+			{
+				"index" : 74,
+				"order" : 174,
+				"text" : "<p>Breathing effect<br/>呼吸效果</p>",
+				"type" : "bool",
+				"value" : true
+			},
+			"clock1" : 
+			{
+				"condition" : "c.value",
+				"index" : 94,
+				"order" : 194,
+				"text" : "<hr/><p><big>Clock1<br/>时钟1</big></p>",
+				"type" : "bool",
+				"value" : true
+			},
+			"clock1_xpos" : 
+			{
+				"condition" : "clock1.value && ds_clock1.value && c.value",
+				"fraction" : false,
+				"index" : 97,
+				"max" : 100,
+				"min" : -100,
+				"order" : 197,
+				"text" : "<p>Horizontal position<br/>水平位置</p>",
+				"type" : "slider",
+				"value" : 0
+			},
+			"clock1_ypos" : 
+			{
+				"condition" : "clock1.value && ds_clock1.value && c.value",
+				"fraction" : false,
+				"index" : 98,
+				"max" : 100,
+				"min" : -100,
+				"order" : 198,
+				"text" : "<p>Vertical position<br/>垂直位置</p>",
+				"type" : "slider",
+				"value" : 0
+			},
+			"clock2" : 
+			{
+				"condition" : "c.value",
+				"index" : 100,
+				"order" : 200,
+				"text" : "<hr/><p><big>Clock2<br/>时钟2</big></p>",
+				"type" : "bool",
+				"value" : true
+			},
+			"clock2_xpos" : 
+			{
+				"condition" : "clock2.value && ds_clock2.value && c.value",
+				"fraction" : false,
+				"index" : 103,
+				"max" : 100,
+				"min" : -100,
+				"order" : 203,
+				"text" : "<p>Horizontal position<br/>水平位置</p>",
+				"type" : "slider",
+				"value" : 0
+			},
+			"clock2_ypos" : 
+			{
+				"condition" : "clock2.value && ds_clock2.value && c.value",
+				"fraction" : false,
+				"index" : 104,
+				"max" : 100,
+				"min" : -100,
+				"order" : 204,
+				"text" : "<p>Vertical position<br/>垂直位置</p>",
+				"type" : "slider",
+				"value" : 0
+			},
+			"clock_custom_lang" : 
+			{
+				"condition" : "clock_lang.value == \"3\" && c.value",
+				"index" : 87,
+				"order" : 187,
+				"text" : "<p>Days of the week and time periods<br/>星期几与时间段</p>",
+				"type" : "textinput",
+				"value" : "7,1,2,3,4,5,6,0~5,6~11,12~15,16~23"
+			},
+			"clock_lang" : 
+			{
+				"condition" : "(clock1.value || clock2.value) && c.value",
+				"index" : 84,
+				"options" : 
+				[
+					{
+						"label" : "English",
+						"value" : "0"
+					},
+					{
+						"label" : "中文",
+						"value" : "1"
+					},
+					{
+						"label" : "日本語",
+						"value" : "2"
+					},
+					{
+						"label" : "Custom(自定义)",
+						"value" : "3"
+					}
+				],
+				"order" : 184,
+				"text" : "<big><p>Clock language<br/>时钟语言</p></big>",
+				"type" : "combo",
+				"value" : "0"
+			},
+			"cloud" : 
+			{
+				"index" : 44,
+				"order" : 144,
+				"text" : "<hr/><p><big>Cloud<br/>云朵</big></p>",
+				"type" : "text"
+			},
+			"csetting_text" : 
+			{
+				"index" : 77,
+				"order" : 177,
+				"text" : "<hr/><h4><b>Component Settings<br/>组件设置</b><h4><br/><small>Format of the clock(时钟格式)：<br/>- Year(年份): yyyy / yy<br/><i>(Display the last 2 digits when only 2 digits are entered)<br/>(只输入2位时将显示后2位)</i><br/>- Month(月份): MM<br/>- Day(日): dd<br/>- Hour[0~12](小时): hh<br/>- Hour[0~24](小时): HH<br/>- Minute(分钟): mm<br/>- Second(秒): ss<br/>- Wrap(换行): \\n<br/>- Day of the week(星期几): [W]<br/>- Time period(时间段): [P]<br/>For <b>30-hour</b> clock(对于<b>30小时制</b>时钟):<br/>- Month(月份): JM<br/>- Day(日): Jd<br/>- Hour[6~29](小时): JH<br/>- Day of the week(星期几): [JW]<br/><b>Characters that do not match the rule will be output as is.<br/>与规则不匹配的字符将保持原样输出</b></small>",
+				"type" : "text"
+			},
+			"cur_s_scale" : 
+			{
+				"condition" : "curtain.value && ds_cur.value && cur_swing.value",
+				"fraction" : true,
+				"index" : 71,
+				"max" : 8,
+				"min" : 0,
+				"order" : 171,
+				"precision" : 2,
+				"step" : 0.1,
+				"text" : "<p>Scale of swing<br/>飘动比例</p>",
+				"type" : "slider",
+				"value" : 2
+			},
+			"cur_s_speed" : 
+			{
+				"condition" : "curtain.value && ds_cur.value && cur_swing.value",
+				"fraction" : true,
+				"index" : 68,
+				"max" : 4,
+				"min" : 0.01,
+				"order" : 168,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Speed of swing<br/>摇摆速度</p>",
+				"type" : "slider",
+				"value" : 1.5
+			},
+			"cur_s_strength" : 
+			{
+				"condition" : "curtain.value && ds_cur.value && cur_swing.value",
+				"fraction" : true,
+				"index" : 69,
+				"max" : 0.5,
+				"min" : 0.01,
+				"order" : 169,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Strength of swing<br/>摇摆强度</p>",
+				"type" : "slider",
+				"value" : 0.2
+			},
+			"cur_s_timeoffset" : 
+			{
+				"condition" : "curtain.value && ds_cur.value && cur_swing.value",
+				"fraction" : true,
+				"index" : 70,
+				"max" : 1,
+				"min" : 0,
+				"order" : 170,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Time-offset strength of the swing<br/>摇摆时间偏移强度</p>",
+				"type" : "slider",
+				"value" : 0.3
+			},
+			"cur_swing" : 
+			{
+				"condition" : "curtain.value",
+				"index" : 67,
+				"order" : 167,
+				"text" : "<p>Swing effect<br/>摇摆效果</p>",
+				"type" : "bool",
+				"value" : true
+			},
+			"curtain" : 
+			{
+				"index" : 65,
+				"order" : 165,
+				"text" : "<hr/><p><big>Curtain<br/>窗帘</big></p>",
+				"type" : "bool",
+				"value" : true
+			},
+			"custom_clock_lang_text" : 
+			{
+				"condition" : "clock_lang.value == \"3\" && c.value",
+				"index" : 85,
+				"order" : 185,
+				"text" : "<p><small>Custom Clock Language Notes:<br/>Use \",\" <b>(half-width)</b> as a separator for lists.<br/>If the number of elements in the list is not correct, the settings in the list <b>will not be used</b>.<br/>It is recommended that copying the contents of the list to a text editor for editing, and then copying it back to the settings when finished.<br/>自定义时钟语言注意事项：<br/>使用\",\"<b>(半角)</b>作为列表的分隔符。<br/>若列表中元素个数不正确，则<b>不会使用</b>列表中的设置。<br/>建议将列表中的内容复制到文本编辑器进行编辑，完成后再复制回设置中。</small></p>",
+				"type" : "text"
+			},
+			"d_count" : 
+			{
+				"condition" : "dust.value && ds_dust.value",
+				"fraction" : true,
+				"index" : 64,
+				"max" : 4,
+				"min" : 0.01,
+				"order" : 164,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Count<br/>数量</p>",
+				"type" : "slider",
+				"value" : 1
+			},
+			"d_opacity" : 
+			{
+				"condition" : "dust.value && ds_dust.value",
+				"fraction" : true,
+				"index" : 63,
+				"max" : 4,
+				"min" : 0.01,
+				"order" : 163,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Opacity<br/>不透明度</p>",
+				"type" : "slider",
+				"value" : 1
+			},
+			"d_size" : 
+			{
+				"condition" : "dust.value && ds_dust.value",
+				"fraction" : true,
+				"index" : 61,
+				"max" : 4,
+				"min" : 0.01,
+				"order" : 161,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Size<br/>大小</p>",
+				"type" : "slider",
+				"value" : 0.9
+			},
+			"d_speed" : 
+			{
+				"condition" : "dust.value && ds_dust.value",
+				"fraction" : true,
+				"index" : 62,
+				"max" : 4,
+				"min" : 0,
+				"order" : 162,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Speed<br/>速度</p>",
+				"type" : "slider",
+				"value" : 1
+			},
+			"date_custom_lang" : 
+			{
+				"condition" : "ds_custom_clock.value && clock_lang.value == \"3\" && c.value",
+				"index" : 89,
+				"order" : 189,
+				"text" : "<p>Date<br/>日期</p>",
+				"type" : "textinput",
+				"value" : "01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31"
+			},
+			"debug" : 
+			{
+				"condition" : "false",
+				"index" : 150,
+				"order" : 250,
+				"text" : "Debug",
+				"type" : "bool",
+				"value" : false
+			},
+			"debug_text" : 
+			{
+				"condition" : "debug.value",
+				"index" : 151,
+				"order" : 251,
+				"text" : "<p><big><b>As long as the Debug option has been turned on, if any problems occur, please simply reset the user properties.<br/></b></big></p>",
+				"type" : "text"
+			},
+			"ds_av" : 
+			{
+				"condition" : "av.value && c.value",
+				"index" : 107,
+				"order" : 207,
+				"text" : "<p>Show detailed settings<br/>显示详细设置</p>",
+				"type" : "bool",
+				"value" : false
+			},
+			"ds_character" : 
+			{
+				"index" : 73,
+				"order" : 173,
+				"text" : "<p>Show detailed settings<br/>显示详细设置</p>",
+				"type" : "bool",
+				"value" : false
+			},
+			"ds_clock1" : 
+			{
+				"condition" : "clock1.value && c.value",
+				"index" : 95,
+				"order" : 195,
+				"text" : "<p>Show detailed settings<br/>显示详细设置</p>",
+				"type" : "bool",
+				"value" : false
+			},
+			"ds_clock2" : 
+			{
+				"condition" : "clock2.value && c.value",
+				"index" : 101,
+				"order" : 201,
+				"text" : "<p>Show detailed settings<br/>显示详细设置</p>",
+				"type" : "bool",
+				"value" : false
+			},
+			"ds_cloud" : 
+			{
+				"condition" : "",
+				"index" : 45,
+				"order" : 145,
+				"text" : "<p>Show detailed settings<br/>显示详细设置</p>",
+				"type" : "bool",
+				"value" : false
+			},
+			"ds_cur" : 
+			{
+				"condition" : "curtain.value",
+				"index" : 66,
+				"order" : 166,
+				"text" : "<p>Show detailed settings<br/>显示详细设置</p>",
+				"type" : "bool",
+				"value" : false
+			},
+			"ds_custom_clock" : 
+			{
+				"condition" : "clock_lang.value == \"3\" && c.value",
+				"index" : 86,
+				"order" : 186,
+				"text" : "<p>Show all customizations<br/>显示全部可自定义内容</p>",
+				"type" : "bool",
+				"value" : false
+			},
+			"ds_dust" : 
+			{
+				"condition" : "dust.value",
+				"index" : 60,
+				"order" : 160,
+				"text" : "<p>Show detailed settings<br/>显示详细设置</p>",
+				"type" : "bool",
+				"value" : false
+			},
+			"ds_media" : 
+			{
+				"condition" : "media.value && c.value",
+				"index" : 114,
+				"order" : 214,
+				"text" : "<p>Show detailed settings<br/>显示详细设置</p>",
+				"type" : "bool",
+				"value" : false
+			},
+			"ds_ts" : 
+			{
+				"condition" : "ts.value",
+				"index" : 5,
+				"order" : 105,
+				"text" : "<p>Show detailed settings<br/>显示详细设置</p>",
+				"type" : "bool",
+				"value" : false
+			},
+			"dust" : 
+			{
+				"index" : 59,
+				"order" : 159,
+				"text" : "<hr/><p><big>Dust particle<br/>灰尘粒子</big></p>",
+				"type" : "bool",
+				"value" : true
+			},
+			"ef_scale" : 
+			{
+				"condition" : "use_external_file.value",
+				"fraction" : true,
+				"index" : 43,
+				"max" : 10,
+				"min" : 0.01,
+				"order" : 143,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Scale<br/>比例</p>",
+				"type" : "slider",
+				"value" : 1
+			},
+			"ef_xoffset" : 
+			{
+				"condition" : "use_external_file.value",
+				"fraction" : false,
+				"index" : 41,
+				"max" : 3840,
+				"min" : -3840,
+				"order" : 141,
+				"text" : "<p>Horizontal offset<br/>水平偏移</p>",
+				"type" : "slider",
+				"value" : 0
+			},
+			"ef_yoffset" : 
+			{
+				"condition" : "use_external_file.value",
+				"fraction" : false,
+				"index" : 42,
+				"max" : 2160,
+				"min" : -2160,
+				"order" : 142,
+				"text" : "<p>Vertical offset<br/>垂直偏移</p>",
+				"type" : "slider",
+				"value" : 0
+			},
+			"exp_settings_text" : 
+			{
+				"condition" : "false",
+				"index" : 149,
+				"order" : 249,
+				"text" : "<hr/><h4><b>Experimental Settings<br/>实验设置</h4><small>Very noticeable imperfections may appear when experimental-type effects are enabled!</br>启用实验类效果后可能出现很明显的瑕疵</small></b><hr/>",
+				"type" : "text"
+			},
+			"external_file_path" : 
+			{
+				"condition" : "use_external_file.value",
+				"index" : 40,
+				"order" : 140,
+				"text" : "<p>External file path</br>外部文件路径</p>",
+				"type" : "scenetexture",
+				"value" : ""
+			},
+			"f_clock1" : 
+			{
+				"condition" : "clock1.value && c.value",
+				"index" : 96,
+				"order" : 196,
+				"text" : "<p>Format<br/>格式</p>",
+				"type" : "textinput",
+				"value" : "HH:mm"
+			},
+			"f_clock2" : 
+			{
+				"condition" : "clock2.value && c.value",
+				"index" : 102,
+				"order" : 202,
+				"text" : "<p>Format<br/>格式</p>",
+				"type" : "textinput",
+				"value" : "MM|dd [W]"
+			},
+			"faq_contents" : 
+			{
+				"condition" : "",
+				"index" : 2,
+				"order" : 102,
+				"text" : "<big><b><p><a href='https://steamcommunity.com/linkfilter/?url=https://help.wallpaperengine.io/audio/mediaintegration.html'>Official FAQ (Media Integration)<br/>官方常见问题 (媒体集成)</a></p><p><a href='https://steamcommunity.com/linkfilter/?url=https://www.bilibili.com/read/cv31573707'>[Chinese] FAQ About This Wallpaper<br/>[中文]本壁纸的常见问题</a></p><p><a href='https://steamcommunity.com/linkfilter/?url=https://www.bilibili.com/read/cv23961318'>[Chinese] Media Integration<br/>[中文]媒体集成可用软件推荐(Hope麻匪的专栏)</a></p></big></b><hr/>",
+				"type" : "text"
+			},
+			"g_offset_components" : 
+			{
+				"index" : 30,
+				"order" : 130,
+				"text" : "<p>Offset the components<br/>组件跟随偏移</p>",
+				"type" : "bool",
+				"value" : false
+			},
+			"g_yoffset" : 
+			{
+				"fraction" : false,
+				"index" : 29,
+				"max" : 260,
+				"min" : -260,
+				"order" : 129,
+				"text" : "<p>Vertical offset<br/>垂直偏移</p>",
+				"type" : "slider",
+				"value" : 0
+			},
+			"head_contents" : 
+			{
+				"condition" : "show_hc.value",
+				"index" : 0,
+				"order" : 100,
+				"text" : "<big>To Chinese users (for publicity):<br/>致国内用户:<br/>如果您喜欢这张壁纸并且想要支持我们，您可以在B站上为我们的宣传视频点赞转发，这是对我们最大的帮助！<br/><a href='https://steamcommunity.com/linkfilter/?url=https://www.bilibili.com/video/BV1MB421675X'>BV1MB421675X (点击跳转)</a><big></p>",
+				"type" : "text"
+			},
+			"hours_custom_lang" : 
+			{
+				"condition" : "ds_custom_clock.value && clock_lang.value == \"3\" && c.value",
+				"index" : 90,
+				"order" : 190,
+				"text" : "<p>Hours<br/>小时</p>",
+				"type" : "textinput",
+				"value" : "00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23"
+			},
+			"jhours_custom_lang" : 
+			{
+				"condition" : "ds_custom_clock.value && clock_lang.value == \"3\" && c.value",
+				"index" : 91,
+				"order" : 191,
+				"text" : "<p>Hours (30-hour clock)<br/>小时(30小时制)</p>",
+				"type" : "textinput",
+				"value" : "06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29"
+			},
+			"m_artist_size" : 
+			{
+				"condition" : "media.value && c.value && ds_media.value",
+				"fraction" : false,
+				"index" : 116,
+				"max" : 20,
+				"min" : 1,
+				"order" : 216,
+				"text" : "<p>Artist text size<br/>作者与专辑文本大小</p>",
+				"type" : "slider",
+				"value" : 14
+			},
+			"m_auto_pick_color" : 
+			{
+				"condition" : "media.value && c.value",
+				"index" : 134,
+				"order" : 234,
+				"text" : "<p>Auto color picking<br/>自动取色</p>",
+				"type" : "bool",
+				"value" : true
+			},
+			"m_av_amp" : 
+			{
+				"condition" : "ds_media.value && media.value && c.value",
+				"fraction" : true,
+				"index" : 145,
+				"max" : 1,
+				"min" : 0.01,
+				"order" : 245,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Bar amplitude<br/>可视化的平均幅度</p>",
+				"type" : "slider",
+				"value" : 1
+			},
+			"m_av_count" : 
+			{
+				"condition" : "ds_media.value && media.value && c.value",
+				"fraction" : false,
+				"index" : 144,
+				"max" : 72,
+				"min" : 1,
+				"order" : 244,
+				"text" : "<p>Bar count<br/>可视化的数量</p>",
+				"type" : "slider",
+				"value" : 20
+			},
+			"m_av_seg_count" : 
+			{
+				"condition" : "m_av_style.value == '1' && ds_media.value && media.value && c.value",
+				"fraction" : false,
+				"index" : 147,
+				"max" : 128,
+				"min" : 1,
+				"order" : 247,
+				"text" : "<p>Number of segments<br/>分段数</p>",
+				"type" : "slider",
+				"value" : 32
+			},
+			"m_av_seg_space" : 
+			{
+				"condition" : "m_av_style.value == '1' && ds_media.value && media.value && c.value",
+				"fraction" : true,
+				"index" : 148,
+				"max" : 1,
+				"min" : 0,
+				"order" : 248,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Segment spacing<br/>分段的间距</p>",
+				"type" : "slider",
+				"value" : 0.2
+			},
+			"m_av_space" : 
+			{
+				"condition" : "ds_media.value && media.value && c.value",
+				"fraction" : true,
+				"index" : 146,
+				"max" : 1,
+				"min" : 0,
+				"order" : 246,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Bar spacing<br/>可视化的间距</p>",
+				"type" : "slider",
+				"value" : 0.1
+			},
+			"m_av_style" : 
+			{
+				"condition" : "media.value",
+				"index" : 143,
+				"options" : 
+				[
+					{
+						"label" : "Segmented (分段)",
+						"value" : "1"
+					},
+					{
+						"label" : "Rounded rectangle (圆角矩形)",
+						"value" : "2"
+					}
+				],
+				"order" : 243,
+				"text" : "<p> Audio visualization style<br/>音频可视化样式</p>",
+				"type" : "combo",
+				"value" : "1"
+			},
+			"m_bd_color" : 
+			{
+				"condition" : "media.value && ds_media.value && c.value",
+				"index" : 127,
+				"order" : 227,
+				"text" : "<p>Border color<br/>边框颜色</p>",
+				"type" : "color",
+				"value" : "1 1 1"
+			},
+			"m_bf" : 
+			{
+				"condition" : "media.value && c.value",
+				"index" : 132,
+				"order" : 232,
+				"text" : "<p>Cover Border<br/>封面边框</p>",
+				"type" : "bool",
+				"value" : true
+			},
+			"m_bg_blur" : 
+			{
+				"condition" : "media.value && c.value",
+				"index" : 130,
+				"order" : 230,
+				"text" : "<p>Background blur<br/>背景模糊</p>",
+				"type" : "bool",
+				"value" : true
+			},
+			"m_bg_blur_strength" : 
+			{
+				"condition" : "media.value && ds_media.value && m_bg_blur.value && c.value",
+				"fraction" : true,
+				"index" : 131,
+				"max" : 1.5,
+				"min" : 0.1,
+				"order" : 231,
+				"precision" : 2,
+				"step" : 0.1,
+				"text" : "<p>Background blur strength<br/>背景模糊强度</p>",
+				"type" : "slider",
+				"value" : 1.5
+			},
+			"m_bg_color" : 
+			{
+				"condition" : "media.value && ds_media.value && c.value",
+				"index" : 128,
+				"order" : 228,
+				"text" : "<p>Background color<br/>背景颜色</p>",
+				"type" : "color",
+				"value" : "1 1 1"
+			},
+			"m_bg_color_mix_strength" : 
+			{
+				"condition" : "media.value && ds_media.value && m_auto_pick_color.value && c.value",
+				"fraction" : true,
+				"index" : 138,
+				"max" : 1,
+				"min" : 0,
+				"order" : 238,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Background color mixing strength<br/>背景色混合强度</p>",
+				"type" : "slider",
+				"value" : 0.2
+			},
+			"m_bg_opacity" : 
+			{
+				"condition" : "media.value && ds_media.value && c.value",
+				"fraction" : true,
+				"index" : 129,
+				"max" : 1,
+				"min" : 0,
+				"order" : 229,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Background opacity<br/>背景不透明度</p>",
+				"type" : "slider",
+				"value" : 0.25
+			},
+			"m_ca_fr" : 
+			{
+				"condition" : "media.value && m_cover_aberration.value && ds_media.value && c.value",
+				"fraction" : false,
+				"index" : 121,
+				"max" : 15,
+				"min" : 0,
+				"order" : 221,
+				"text" : "<p>Frequency of response<br/>响应的声音频率</p>",
+				"type" : "slider",
+				"value" : 5
+			},
+			"m_ca_rs" : 
+			{
+				"condition" : "media.value && m_cover_aberration.value && ds_media.value && c.value",
+				"fraction" : true,
+				"index" : 120,
+				"max" : 5,
+				"min" : 0.1,
+				"order" : 220,
+				"precision" : 2,
+				"step" : 0.1,
+				"text" : "<p>Strength of response<br/>响应的强度</p>",
+				"type" : "slider",
+				"value" : 2.5
+			},
+			"m_caa" : 
+			{
+				"condition" : "media.value && c.value",
+				"index" : 117,
+				"order" : 217,
+				"text" : "<p>Cover pseudo-antialiasing<br/>封面伪抗锯齿</p>",
+				"type" : "bool",
+				"value" : true
+			},
+			"m_caa_scale" : 
+			{
+				"condition" : "media.value && m_caa.value && ds_media.value && c.value",
+				"fraction" : true,
+				"index" : 118,
+				"max" : 2,
+				"min" : 0.1,
+				"order" : 218,
+				"precision" : 2,
+				"step" : 0.1,
+				"text" : "<p>Anti-aliasing scale<br/>抗锯齿比例</p>",
+				"type" : "slider",
+				"value" : 0.7
+			},
+			"m_cb_opacity" : 
+			{
+				"condition" : "media.value && ds_media.value && m_bf.value && c.value",
+				"fraction" : true,
+				"index" : 133,
+				"max" : 1,
+				"min" : 0,
+				"order" : 233,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Cover border opacity<br/>封面边框不透明度</p>",
+				"type" : "slider",
+				"value" : 0.8
+			},
+			"m_col_condition" : 
+			{
+				"condition" : "media.value && c.value",
+				"index" : 122,
+				"options" : 
+				[
+					{
+						"label" : "Closed(已关闭)",
+						"value" : "0"
+					},
+					{
+						"label" : "Closed or paused(已关闭或已暂停)",
+						"value" : "1"
+					}
+				],
+				"order" : 222,
+				"text" : "<p>Condition collapsing<br/>折叠组件的条件</p>",
+				"type" : "combo",
+				"value" : "1"
+			},
+			"m_color_gradient_duration" : 
+			{
+				"condition" : "media.value && ds_media.value && c.value",
+				"fraction" : true,
+				"index" : 125,
+				"max" : 2,
+				"min" : 0.2,
+				"order" : 225,
+				"precision" : 2,
+				"step" : 0.1,
+				"text" : "<p>Color transition duration<br/>颜色过渡时长</p>",
+				"type" : "slider",
+				"value" : 1.8
+			},
+			"m_cover_aberration" : 
+			{
+				"condition" : "media.value && c.value",
+				"index" : 119,
+				"order" : 219,
+				"text" : "<p>Cover aberration<br/>封面色差</p>",
+				"type" : "bool",
+				"value" : true
+			},
+			"m_exp_on_update" : 
+			{
+				"condition" : "media.value && c.value",
+				"index" : 124,
+				"order" : 224,
+				"text" : "<p>Auto expand on update<br/>媒体信息更新时自动展开</p>",
+				"type" : "bool",
+				"value" : true
+			},
+			"m_higher_contrast_color_first" : 
+			{
+				"condition" : "media.value && ds_media.value && m_auto_pick_color.value && c.value",
+				"index" : 137,
+				"order" : 237,
+				"text" : "<p>Prioritize colors with higher contrast<br/>优先使用对比度更高的颜色</p>",
+				"type" : "bool",
+				"value" : true
+			},
+			"m_hpos" : 
+			{
+				"condition" : "c.value",
+				"fraction" : false,
+				"index" : 80,
+				"max" : 3840,
+				"min" : 0,
+				"order" : 180,
+				"text" : "<p>Horizontal position<br/>水平位置</p>",
+				"type" : "slider",
+				"value" : 1030
+			},
+			"m_max_text_brightness" : 
+			{
+				"condition" : "media.value && ds_media.value && m_auto_pick_color.value && c.value && m_swap_tb_color.value",
+				"fraction" : true,
+				"index" : 142,
+				"max" : 1,
+				"min" : 0,
+				"order" : 242,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Text Maximum Brightness<br/>最大文本亮度</p>",
+				"type" : "slider",
+				"value" : 0.9
+			},
+			"m_min_text_brightness" : 
+			{
+				"condition" : "media.value && ds_media.value && m_auto_pick_color.value && c.value && m_swap_tb_color.value",
+				"fraction" : true,
+				"index" : 141,
+				"max" : 1,
+				"min" : 0,
+				"order" : 241,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Text Minimum Brightness<br/>最小文本亮度</p>",
+				"type" : "slider",
+				"value" : 0.7
+			},
+			"m_octext_color_mixing_f" : 
+			{
+				"condition" : "media.value && ds_media.value && m_auto_pick_color.value && c.value && !m_swap_tb_color.value",
+				"fraction" : true,
+				"index" : 140,
+				"max" : 1,
+				"min" : 0.01,
+				"order" : 240,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p> Minimum text contrast<br/>最小文本对比度</p>",
+				"type" : "slider",
+				"value" : 0.4
+			},
+			"m_show_theme_switch_btn" : 
+			{
+				"condition" : "media.value && m_auto_pick_color.value && c.value",
+				"index" : 135,
+				"order" : 235,
+				"text" : "<p>Show Theme Switching Button<br/>显示主题切换按钮</p>",
+				"type" : "bool",
+				"value" : true
+			},
+			"m_size" : 
+			{
+				"condition" : "c.value",
+				"fraction" : true,
+				"index" : 83,
+				"max" : 1,
+				"min" : 0.25,
+				"order" : 183,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Size<br/>大小</p>",
+				"type" : "slider",
+				"value" : 1
+			},
+			"m_swap_tb_color" : 
+			{
+				"condition" : "media.value && m_auto_pick_color.value && c.value",
+				"index" : 139,
+				"order" : 239,
+				"text" : "<p>Using Contrasting Color Borders<br/>使用对比色边框</p>",
+				"type" : "bool",
+				"value" : true
+			},
+			"m_text_color" : 
+			{
+				"condition" : "media.value && ds_media.value && c.value",
+				"index" : 126,
+				"order" : 226,
+				"text" : "<p>Text color<br/>文本颜色</p>",
+				"type" : "color",
+				"value" : "0.4627450980392157 0.7843137254901961 1"
+			},
+			"m_title_size" : 
+			{
+				"condition" : "media.value && c.value && ds_media.value",
+				"fraction" : false,
+				"index" : 115,
+				"max" : 20,
+				"min" : 1,
+				"order" : 215,
+				"text" : "<p>Title text size<br/>标题大小</p>",
+				"type" : "slider",
+				"value" : 16
+			},
+			"m_trigger" : 
+			{
+				"condition" : "media.value && false && c.value",
+				"index" : 123,
+				"options" : 
+				[
+					{
+						"label" : "Cursor hover (鼠标悬浮)",
+						"value" : "0"
+					},
+					{
+						"label" : "Cursor click (鼠标点击)",
+						"value" : "1"
+					}
+				],
+				"order" : 223,
+				"text" : "[隐藏] <p>Condition of expanding<br/>展开条件</p>",
+				"type" : "combo",
+				"value" : "1"
+			},
+			"m_vpos" : 
+			{
+				"condition" : "c.value",
+				"fraction" : false,
+				"index" : 81,
+				"max" : 2160,
+				"min" : 0,
+				"order" : 181,
+				"text" : "<p>Vertical position<br/>垂直位置</p>",
+				"type" : "slider",
+				"value" : 1370
+			},
+			"media" : 
+			{
+				"condition" : "c.value",
+				"index" : 113,
+				"order" : 213,
+				"text" : "<hr/><p><big>Media Integration<br/>媒体集成</big></p>",
+				"type" : "bool",
+				"value" : true
+			},
+			"minutes_custom_lang" : 
+			{
+				"condition" : "ds_custom_clock.value && clock_lang.value == \"3\" && c.value",
+				"index" : 92,
+				"order" : 192,
+				"text" : "<p>Minutes<br/>分钟</p>",
+				"type" : "textinput",
+				"value" : "00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59"
+			},
+			"month_custom_lang" : 
+			{
+				"condition" : "ds_custom_clock.value && clock_lang.value == \"3\" && c.value",
+				"index" : 88,
+				"order" : 188,
+				"text" : "<p>Month<br/>月</p>",
+				"type" : "textinput",
+				"value" : "01,02,03,04,05,06,07,08,09,10,11,12"
+			},
+			"p_sp" : 
+			{
+				"condition" : "parallax.value",
+				"fraction" : true,
+				"index" : 34,
+				"max" : 0,
+				"min" : -5.5,
+				"order" : 134,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Stationary point<br/>静止点</p>",
+				"type" : "slider",
+				"value" : 0
+			},
+			"parallax" : 
+			{
+				"index" : 31,
+				"order" : 131,
+				"text" : "<hr/><p><big>Parallax<br/>视差</big></p>",
+				"type" : "bool",
+				"value" : true
+			},
+			"parallax_delay" : 
+			{
+				"condition" : "parallax.value",
+				"fraction" : true,
+				"index" : 33,
+				"max" : 2.9,
+				"min" : 0,
+				"order" : 133,
+				"precision" : 2,
+				"step" : 0.1,
+				"text" : "<p>Smoothing duration<br/>平滑时间</p>",
+				"type" : "slider",
+				"value" : 1.6
+			},
+			"parallax_strength" : 
+			{
+				"condition" : "parallax.value",
+				"fraction" : false,
+				"index" : 32,
+				"max" : 300,
+				"min" : -300,
+				"order" : 132,
+				"text" : "<p>Strength<br/>强度</p>",
+				"type" : "slider",
+				"value" : -100
+			},
+			"pautocolorpickingbrp" : 
+			{
+				"condition" : "media.value && m_auto_pick_color.value && c.value",
+				"index" : 136,
+				"options" : 
+				[
+					{
+						"label" : "Auto-coordinate",
+						"value" : "0"
+					},
+					{
+						"label" : "Auto comparison",
+						"value" : "1"
+					},
+					{
+						"label" : "Light",
+						"value" : "2"
+					},
+					{
+						"label" : "Dark",
+						"value" : "3"
+					}
+				],
+				"order" : 236,
+				"text" : "<p>Default color theme<br/>默认颜色主题</p>",
+				"type" : "combo",
+				"value" : "2"
+			},
+			"ps_media" : 
+			{
+				"condition" : "parallax.value && c.value",
+				"fraction" : true,
+				"index" : 82,
+				"max" : 5.5,
+				"min" : -5.5,
+				"order" : 182,
+				"precision" : 2,
+				"step" : 0.1,
+				"text" : "<p>Parallax strength<br/>视差强度</p>",
+				"type" : "slider",
+				"value" : 1
+			},
+			"schemecolor" : 
+			{
+				"index" : 0,
+				"order" : 100,
+				"text" : "ui_browse_properties_scheme_color",
+				"type" : "color",
+				"value" : "0.5450980392156862 0.7725490196078432 1"
+			},
+			"seconds_custom_lang" : 
+			{
+				"condition" : "ds_custom_clock.value && clock_lang.value == \"3\" && c.value",
+				"index" : 93,
+				"order" : 193,
+				"text" : "<p>Seconds<br/>秒</p>",
+				"type" : "textinput",
+				"value" : "00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59"
+			},
+			"show_hc" : 
+			{
+				"condition" : "",
+				"index" : 1,
+				"order" : 101,
+				"text" : "<p>Show information above<br/>显示宣传文本</p><hr/>",
+				"type" : "bool",
+				"value" : true
+			},
+			"show_sponsor_code" : 
+			{
+				"index" : 152,
+				"order" : 252,
+				"text" : "<hr/><h4><b>Buy me a coffee<br/>支持我们</h4><br/>Thanks for your support!<br/>感谢您的支持!</b>",
+				"type" : "bool",
+				"value" : true
+			},
+			"size_clock1" : 
+			{
+				"condition" : "clock1.value && ds_clock1.value && c.value",
+				"fraction" : false,
+				"index" : 99,
+				"max" : 80,
+				"min" : 1,
+				"order" : 199,
+				"text" : "<p>Size<br/>大小</p>",
+				"type" : "slider",
+				"value" : 32
+			},
+			"size_clock2" : 
+			{
+				"condition" : "clock2.value && ds_clock2.value && c.value",
+				"fraction" : false,
+				"index" : 105,
+				"max" : 80,
+				"min" : 1,
+				"order" : 205,
+				"text" : "<p>Size<br/>大小</p>",
+				"type" : "slider",
+				"value" : 22
+			},
+			"sponsor_code1" : 
+			{
+				"condition" : "show_sponsor_code.value",
+				"index" : 153,
+				"order" : 253,
+				"text" : "<img src=\"https://s1.imagehub.cc/images/2024/03/16/e6c97467ea645e56fd006c79be0cb825.png\" width=\"275\" height=\"275\"/>",
+				"type" : "text"
+			},
+			"sponsor_code2" : 
+			{
+				"condition" : "show_sponsor_code.value",
+				"index" : 154,
+				"order" : 254,
+				"text" : "<h4>↑推荐国内赞助者使用↑</h4><br/><img src=\"https://s1.imagehub.cc/images/2024/03/24/4bc189c5b6f5236a34a7ea59f929fa26.png\" alt=\"4bc189c5b6f5236a34a7ea59f929fa26.png\" width=\"275\" height=\"275\"/>",
+				"type" : "text"
+			},
+			"ts" : 
+			{
+				"index" : 4,
+				"order" : 104,
+				"text" : "<hr/><p><big>Time Filter<br/>时间滤镜</big><br/><small>When enabled, it will take up an additional 157MB of VRAM.<br/>启用后，将额外占用约157MB显存</small></p>",
+				"type" : "bool",
+				"value" : false
+			},
+			"ts_daytime" : 
+			{
+				"condition" : "ts.value && ts_mode.value == \"sync\"",
+				"index" : 23,
+				"order" : 123,
+				"text" : "<p>Daytime starting time<br/>白天开始时间</p>",
+				"type" : "textinput",
+				"value" : "7:30"
+			},
+			"ts_locked_time" : 
+			{
+				"condition" : "ts.value && ts_mode.value == \"locked\"",
+				"index" : 26,
+				"options" : 
+				[
+					{
+						"label" : "Morning(清晨)",
+						"value" : "1"
+					},
+					{
+						"label" : "Daytime(白天)",
+						"value" : "2"
+					},
+					{
+						"label" : "Sunset(日落)",
+						"value" : "3"
+					},
+					{
+						"label" : "Night(夜晚)",
+						"value" : "0"
+					}
+				],
+				"order" : 126,
+				"text" : "<p>Locked time<br/>锁定时间</p>",
+				"type" : "combo",
+				"value" : "2"
+			},
+			"ts_lut_cloud_m" : 
+			{
+				"condition" : "ts.value && ds_ts.value",
+				"fraction" : true,
+				"index" : 7,
+				"max" : 1.5,
+				"min" : 0,
+				"order" : 107,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Morning - Cloud<br/>早晨 - 云朵</p>",
+				"type" : "slider",
+				"value" : 1.5
+			},
+			"ts_lut_cloud_n" : 
+			{
+				"condition" : "ts.value && ds_ts.value",
+				"fraction" : true,
+				"index" : 17,
+				"max" : 1.5,
+				"min" : 0,
+				"order" : 117,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Night - Cloud<br/>夜晚 - 云朵</p>",
+				"type" : "slider",
+				"value" : 1.35
+			},
+			"ts_lut_cloud_s" : 
+			{
+				"condition" : "ts.value && ds_ts.value",
+				"fraction" : true,
+				"index" : 12,
+				"max" : 1.5,
+				"min" : 0,
+				"order" : 112,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Sunset - Cloud<br/>日落 - 云朵</p>",
+				"type" : "slider",
+				"value" : 0.9
+			},
+			"ts_lut_inside_m" : 
+			{
+				"condition" : "ts.value && ds_ts.value",
+				"fraction" : true,
+				"index" : 9,
+				"max" : 1.5,
+				"min" : 0,
+				"order" : 109,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Morning - Wall<br/>早晨 - 墙壁</p>",
+				"type" : "slider",
+				"value" : 1.5
+			},
+			"ts_lut_inside_n" : 
+			{
+				"condition" : "ts.value && ds_ts.value",
+				"fraction" : true,
+				"index" : 19,
+				"max" : 1.5,
+				"min" : 0,
+				"order" : 119,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Night - Wall<br/>夜晚 - 墙壁</p>",
+				"type" : "slider",
+				"value" : 1.5
+			},
+			"ts_lut_inside_s" : 
+			{
+				"condition" : "ts.value && ds_ts.value",
+				"fraction" : true,
+				"index" : 14,
+				"max" : 1.5,
+				"min" : 0,
+				"order" : 114,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Sunset - Wall<br/>日落 - 墙壁</p>",
+				"type" : "slider",
+				"value" : 0.7
+			},
+			"ts_lut_obj_m" : 
+			{
+				"condition" : "ts.value && ds_ts.value",
+				"fraction" : true,
+				"index" : 10,
+				"max" : 1.5,
+				"min" : 0,
+				"order" : 110,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Morning - Character and tables<br/>早晨 - 人物与桌椅</p>",
+				"type" : "slider",
+				"value" : 1
+			},
+			"ts_lut_obj_n" : 
+			{
+				"condition" : "ts.value && ds_ts.value",
+				"fraction" : true,
+				"index" : 20,
+				"max" : 1.5,
+				"min" : 0,
+				"order" : 120,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Night - Character and tables<br/>夜晚 - 人物与桌椅</p>",
+				"type" : "slider",
+				"value" : 1.2
+			},
+			"ts_lut_obj_s" : 
+			{
+				"condition" : "ts.value && ds_ts.value",
+				"fraction" : true,
+				"index" : 15,
+				"max" : 1.5,
+				"min" : 0,
+				"order" : 115,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Sunset - Character and tables<br/>日落 - 人物与桌椅</p>",
+				"type" : "slider",
+				"value" : 0.8
+			},
+			"ts_lut_outside_m" : 
+			{
+				"condition" : "ts.value && ds_ts.value",
+				"fraction" : true,
+				"index" : 8,
+				"max" : 1.5,
+				"min" : 0,
+				"order" : 108,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Morning - Buildings<br/>早晨 - 建筑</p>",
+				"type" : "slider",
+				"value" : 1.5
+			},
+			"ts_lut_outside_n" : 
+			{
+				"condition" : "ts.value && ds_ts.value",
+				"fraction" : true,
+				"index" : 18,
+				"max" : 1.5,
+				"min" : 0,
+				"order" : 118,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Night - Buildings<br/>夜晚 - 建筑</p>",
+				"type" : "slider",
+				"value" : 1
+			},
+			"ts_lut_outside_s" : 
+			{
+				"condition" : "ts.value && ds_ts.value",
+				"fraction" : true,
+				"index" : 13,
+				"max" : 1.5,
+				"min" : 0,
+				"order" : 113,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Sunset - Buildings<br/>日落 - 建筑</p>",
+				"type" : "slider",
+				"value" : 1
+			},
+			"ts_lut_sky_m" : 
+			{
+				"condition" : "ts.value && ds_ts.value",
+				"fraction" : true,
+				"index" : 6,
+				"max" : 1.5,
+				"min" : 0,
+				"order" : 106,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Morning - Sky<br/>早晨 - 天空</p>",
+				"type" : "slider",
+				"value" : 1.5
+			},
+			"ts_lut_sky_n" : 
+			{
+				"condition" : "ts.value && ds_ts.value",
+				"fraction" : true,
+				"index" : 16,
+				"max" : 1.5,
+				"min" : 0,
+				"order" : 116,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Night - Sky<br/>夜晚 - 天空</p>",
+				"type" : "slider",
+				"value" : 1
+			},
+			"ts_lut_sky_s" : 
+			{
+				"condition" : "ts.value && ds_ts.value",
+				"fraction" : true,
+				"index" : 11,
+				"max" : 1.5,
+				"min" : 0,
+				"order" : 111,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Sunset - Sky<br/>日落 - 天空</p>",
+				"type" : "slider",
+				"value" : 1
+			},
+			"ts_mode" : 
+			{
+				"index" : 21,
+				"options" : 
+				[
+					{
+						"label" : "Real time(现实时间)",
+						"value" : "sync"
+					},
+					{
+						"label" : "Locked(锁定)",
+						"value" : "locked"
+					},
+					{
+						"label" : "Timed(定时)",
+						"value" : "rotating"
+					}
+				],
+				"order" : 121,
+				"text" : "<p>Condition for switching<br/>切换的条件</p>",
+				"type" : "combo",
+				"value" : "sync"
+			},
+			"ts_morning" : 
+			{
+				"condition" : "ts.value && ts_mode.value == \"sync\"",
+				"index" : 22,
+				"order" : 122,
+				"text" : "<p>Morning starting time<br/>清晨开始时间</p>",
+				"type" : "textinput",
+				"value" : "5:30"
+			},
+			"ts_night" : 
+			{
+				"condition" : "ts.value && ts_mode.value == \"sync\"",
+				"index" : 25,
+				"order" : 125,
+				"text" : "<p>Night starting time<br/>夜晚开始时间</p>",
+				"type" : "textinput",
+				"value" : "19:00"
+			},
+			"ts_rotation_interval" : 
+			{
+				"condition" : "ts.value && ts_mode.value == \"rotating\"",
+				"fraction" : true,
+				"index" : 27,
+				"max" : 1440,
+				"min" : 0.05,
+				"order" : 127,
+				"precision" : 3,
+				"step" : 0.01,
+				"text" : "<p>Interval (minute)<br/>间隔 (分钟)</p>",
+				"type" : "slider",
+				"value" : 1
+			},
+			"ts_sunset" : 
+			{
+				"condition" : "ts.value && ts_mode.value == \"sync\"",
+				"index" : 24,
+				"order" : 124,
+				"text" : "<p>Sunset starting time<br/>日落开始时间</p>",
+				"type" : "textinput",
+				"value" : "17:30"
+			},
+			"use_external_file" : 
+			{
+				"index" : 39,
+				"order" : 139,
+				"text" : "<p>Using external file as background<br/>使用外部文件作为背景</p>",
+				"type" : "bool",
+				"value" : false
+			}
+		},
+		"supportsaudioprocessing" : true,
+		"supportsvideo" : true,
+		"supportsvideoflags" : 2
+	},
+	"preview" : "preview.gif",
+	"ratingsex" : "none",
+	"ratingviolence" : "none",
+	"tags" : [ "Anime" ],
+	"title" : "[4K | Customizable] Where Dream Has Been | 夢が残した足跡",
+	"type" : "scene",
+	"version" : 37,
+	"visibility" : "public",
+	"workshopid" : "3163060610",
+	"workshopurl" : "steam://url/CommunityFilePage/3163060610"
+}

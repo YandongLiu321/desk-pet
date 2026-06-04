@@ -51,25 +51,22 @@ class LLMService {
 			`活跃任务：${context.activeTask?.realTitle || "无"}`,
 			"",
 			`[行为指令]`,
-			`- 回复控制在 50-100 字`,
-			`- 在主动互动时，保持简短（不超过 50 字）`,
-			`- 识别用户切换模式的意图，但必须在用户明确同意后才输出模式切换 JSON：`,
-			`  - 用户说"想开始专注/干活/执行任务/开始番茄钟"等 → 先以角色口吻询问"要进入壁纸模式吗？"`,
-			`  - 用户说"想看剧情/进度/结算/进入软件模式"等 → 先以角色口吻询问"要打开星之书查看进度吗？"`,
-			`  - 用户同意（"好""嗯""可以""是的"）后，才输出切换 JSON`,
-			"",
-			`[模式切换]`,
-			`当用户明确同意切换模式后，返回以下 JSON（不要包含其他文字）：`,
-			`{"intent":"switch_mode","mode":"wallpaper"} 或 {"intent":"switch_mode","mode":"software"}`,
-		];
+			];
 
-		if (enableTaskCreation) {
-			sections.push(
-				"",
-				`[任务转化]`,
-				`当检测到用户待办事项时，返回以下 JSON（不要包含其他文字）：`,
-				`{"intent":"create_task","realTask":"...","rpgTitle":"...","rpgDescription":"...","estimatedPomodoros":2,"estimatedMinutes":50,"subtasks":[{"realDesc":"...","rpgDesc":"..."}]}`,
-			);
+			if (enableTaskCreation) {
+				sections.push(
+					`- 回复控制在 30-60 字`,
+					`- 当前是任务发布模式。用户只会在这里发布任务，你的唯一职责是识别任务并转化为结构化数据`,
+					`- 先用角色口吻简短回应（1-2句话），然后在末尾输出任务 JSON（不要用代码块包裹）：`,
+					`{"intent":"create_task","realTask":"用一句话概括","rpgTitle":"RPG化标题","rpgDescription":"RPG氛围描述","estimatedPomodoros":2,"estimatedMinutes":50,"subtasks":[{"realDesc":"子任务实际描述","rpgDesc":"子任务RPG描述"}]}`,
+					`- 禁止询问壁纸模式或软件模式，禁止输出模式切换 JSON`,
+				);
+			} else {
+				sections.push(
+					`- 回复控制在 50-100 字，主动互动时保持简短`,
+					`- 根据对话自然判断用户意图：用户有专注/做事意愿时，以角色口吻询问是否进入壁纸模式；用户想看进度/数据时，询问是否打开软件模式`,
+					`- 用户同意后，在回复末尾输出模式切换 JSON：{"intent":"switch_mode","mode":"wallpaper"} 或 {"intent":"switch_mode","mode":"software"}`,
+				);
 		}
 
 		return sections.join("\n");
@@ -182,8 +179,18 @@ class LLMService {
 	/** @param {string} text */
 	_extractIntent(text) {
 		try {
+			// Strip markdown code fences — LLM often wraps JSON in ```json ... ```
+			let searchText = text;
+			const fenceMatches = [...text.matchAll(/```(?:json)?\s*([\s\S]*?)```/g)];
+			for (const m of fenceMatches) {
+				if (m[1].includes('"intent"')) {
+					searchText = m[1];
+					break;
+				}
+			}
+
 			// Try create_task intent
-			const taskMatch = text.match(
+			const taskMatch = searchText.match(
 				/\{[\s\S]*"intent"\s*:\s*"create_task"[\s\S]*\}/,
 			);
 			if (taskMatch) {
@@ -233,6 +240,13 @@ class LLMService {
 	/** @param {string} text */
 	_cleanDisplayText(text) {
 		let cleaned = text;
+		// Strip markdown code fences before cleaning
+		const fenceMatches = [...text.matchAll(/```(?:json)?\s*([\s\S]*?)```/g)];
+		for (const m of fenceMatches) {
+			if (m[1].includes('"intent"')) {
+				cleaned = cleaned.replace(m[0], m[1]);
+			}
+		}
 		for (const pattern of [
 			/\{"intent"\s*:\s*"create_task"[\s\S]*\}/,
 			/\{"intent"\s*:\s*"switch_mode"[\s\S]*\}/,
