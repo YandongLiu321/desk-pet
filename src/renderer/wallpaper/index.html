@@ -226,6 +226,10 @@
 
 <div id="audioArea"></div>
 
+<div class="wallpaper-editor-btn" id="editorBtnArea" style="display:none;margin-top:var(--space-sm);gap:var(--space-sm);align-items:center;">
+  <button id="openEditorBtn" style="background:var(--color-primary);color:#fff;border:none;border-radius:var(--radius-sm);padding:var(--space-xs) var(--space-sm);font-size:var(--font-sm);cursor:pointer;">Open Editor</button>
+</div>
+
 <div class="wallpaper-we-selector" id="weSelector">
   <label>壁纸</label>
   <select id="weSelect"></select>
@@ -290,6 +294,14 @@
   const { IpcClient, CharacterRenderer, ConversationPanel, PomodoroTimer, WhiteNoiseControl } = window;
   const { INTENT, MODE } = window;
   const ipc = new IpcClient();
+  // Listen for scene updates from the editor
+  ipc.onEditorApply(function(sceneData) {
+    console.log("Received scene from editor:", sceneData);
+    if (window._webglApplyWeWallpaper) {
+      window._webglApplyWeWallpaper(sceneData);
+    }
+  });
+
   let currentPomodoroTaskId = null;
   let isExitingWithTask = false;
 
@@ -506,6 +518,27 @@
   });
 
   loadWeWallpapers();
+  // Open editor button
+  var editorBtnArea = document.getElementById("editorBtnArea");
+  var openEditorBtn = document.getElementById("openEditorBtn");
+  if (openEditorBtn) {
+    openEditorBtn.addEventListener("click", function() {
+      ipc.openEditor().catch(function(e) { console.warn("Failed to open editor:", e); });
+    });
+  }
+
+  // Show editor button when WE wallpapers are available
+  var showEditorBtn = function() {
+    if (editorBtnArea) editorBtnArea.style.display = "flex";
+  };
+  // Show it once we know WE wallpapers exist
+  if (currentWeDir) showEditorBtn();
+
+  // Also listen for scene updates from the editor via polling
+  // The main process sends editor:apply to the wallpaper window
+  // But with contextIsolation, we need to handle this differently.
+  // For now, the editor communicates via file save/load.
+
 
   document.getElementById("charArea").addEventListener("click", () => {
     sidebar.classList.toggle("open");
@@ -690,45 +723,65 @@ void main() {
         renderer.start();
     }
 
-    async function applyWeWallpaperWebGL(dirName) {
+        // arg can be: (string) WE wallpaper dir name, (object) direct scene data, or (null) to clear
+    async function applyWeWallpaperWebGL(arg) {
         if (!renderer) return;
 
-        if (!dirName) {
+        if (!arg) {
+            // Clear scene
             var children = renderer._rootNode.children.slice();
             children.forEach(function (c) { c.destroy(); });
             renderer._rootNode.children = [];
             return;
         }
 
-        var ipc = new window.IpcClient();
-        var res = await ipc.loadWeWallpaper(dirName);
-        if (!res.ok || !res.data) return;
+        var sceneData;
 
-        var layers = res.data.layers || [];
-        var sceneChildren = [];
-        layers.forEach(function (lyr, i) {
-            // WE uses CSS coords (y=0 at TOP). WebGL uses OpenGL coords (y=0 at BOTTOM).
-            // Flip Y: webgl_y = 2160 - we_y
-            sceneChildren.push({
-                type: "Layer",
-                name: lyr.name || ("layer_" + i),
-                position: [lyr.x, 2160 - lyr.y],
-                alpha: lyr.alpha !== undefined ? lyr.alpha : 1,
-                zIndex: i + 1,
-                texture: lyr.url,
-                width: lyr.width,
-                height: lyr.height,
-                anchor: [0.5, 0.5],
+        if (typeof arg === "string") {
+            // WE wallpaper dir name — load via IPC
+            var ipc = new window.IpcClient();
+            var res = await ipc.loadWeWallpaper(arg);
+            if (!res.ok || !res.data) return;
+            var layers = res.data.layers || [];
+            var sceneChildren = [];
+            layers.forEach(function (lyr, i) {
+                // WE uses CSS coords (y=0 at TOP). WebGL uses OpenGL (y=0 at BOTTOM).
+                sceneChildren.push({
+                    type: "Layer",
+                    name: lyr.name || ("layer_" + i),
+                    position: [lyr.x, 2160 - lyr.y],
+                    alpha: lyr.alpha !== undefined ? lyr.alpha : 1,
+                    zIndex: i + 1,
+                    texture: lyr.url,
+                    width: lyr.width,
+                    height: lyr.height,
+                    anchor: [0.5, 0.5],
+                });
             });
-        });
+            sceneData = {
+                camera: { x: 1920, y: 1080, width: 3840, height: 2160 },
+                children: sceneChildren,
+            };
+        } else if (typeof arg === "object") {
+            // Direct scene data from editor
+            sceneData = arg;
+            // Flip Y in all child positions if they come from WE data
+            if (sceneData.children) {
+                sceneData.children.forEach(function (c) {
+                    if (c.position && c._weYFlip !== false) {
+                        c.position[1] = 2160 - c.position[1];
+                        c._weYFlip = true;
+                    }
+                });
+            }
+        } else {
+            return;
+        }
 
-        await renderer.loadScene({
-            camera: { x: 1920, y: 1080, width: 3840, height: 2160 },
-            children: sceneChildren,
-        });
+        await renderer.loadScene(sceneData);
     }
 
-    // Wire up the delegation from the CSS-side applyWeWallpaper
+    // Wire up the delegation// Wire up the delegation from the CSS-side applyWeWallpaper
     // _webglApplyWeWallpaper is defined in the main IIFE above
     document.addEventListener("DOMContentLoaded", async function () {
         await initWebGL();
@@ -746,6 +799,18 @@ void main() {
 
     // Expose the WebGL apply function globally for the main IIFE to delegate to
     window._webglApplyWeWallpaper = applyWeWallpaperWebGL;
+    // Listen for scene updates from the editor
+    if (window.electronAPI && window.electronAPI.editor) {
+        // The editor forwards via main process which sends IPC.EDITOR_APPLY
+        // We need to listen on ipcRenderer — but with contextIsolation,
+        // we need a preload API for this. Use the IpcClient polling approach instead.
+    }
+    window._onEditorSceneApplied = function(sceneData) {
+        if (renderer && sceneData) {
+            applyWeWallpaperWebGL(sceneData);
+        }
+    };
+
 })();
 </script>
 </body>

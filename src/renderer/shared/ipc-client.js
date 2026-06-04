@@ -160,6 +160,13 @@ class IpcClient {
 		return this._call("editor.updateProperty", node, prop, value);
 	}
 
+	onEditorApply(cb) {
+		return this.api?.editor?.onApply?.(cb);
+	}
+	onEditorUpdateProperty(cb) {
+		return this.api?.editor?.onUpdateProperty?.(cb);
+	}
+
 	// Window
 	async hideWindow() {
 		return this._call("window.hide");

@@ -150,6 +150,16 @@ contextBridge.exposeInMainWorld("electronAPI", {
 			updateProperty(node, prop, value) {
 				return ipcRenderer.invoke(IPC.EDITOR_UPDATE_PROPERTY, { node, prop, value });
 			},
+			onApply(cb) {
+				var handler = function(_event, data) { cb(data.sceneData); };
+				ipcRenderer.on(IPC.EDITOR_APPLY, handler);
+				return function() { ipcRenderer.removeListener(IPC.EDITOR_APPLY, handler); };
+			},
+			onUpdateProperty(cb) {
+				var handler = function(_event, data) { cb(data); };
+				ipcRenderer.on(IPC.EDITOR_UPDATE_PROPERTY, handler);
+				return function() { ipcRenderer.removeListener(IPC.EDITOR_UPDATE_PROPERTY, handler); };
+			},
 		},
 
 	window: {
