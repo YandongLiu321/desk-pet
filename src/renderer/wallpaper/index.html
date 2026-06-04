@@ -707,10 +707,12 @@ void main() {
         var layers = res.data.layers || [];
         var sceneChildren = [];
         layers.forEach(function (lyr, i) {
+            // WE uses CSS coords (y=0 at TOP). WebGL uses OpenGL coords (y=0 at BOTTOM).
+            // Flip Y: webgl_y = 2160 - we_y
             sceneChildren.push({
                 type: "Layer",
                 name: lyr.name || ("layer_" + i),
-                position: [lyr.x, lyr.y],
+                position: [lyr.x, 2160 - lyr.y],
                 alpha: lyr.alpha !== undefined ? lyr.alpha : 1,
                 zIndex: i + 1,
                 texture: lyr.url,
