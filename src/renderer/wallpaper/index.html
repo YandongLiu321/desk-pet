@@ -215,7 +215,7 @@
 </head>
 <body>
 
-<canvas id="webglCanvas" style="position:absolute;inset:0;width:100%;height:100%;z-index:-1;"></canvas>
+<canvas id="webglCanvas" style="position:absolute;inset:0;width:100%;height:100%;z-index:1;"></canvas>
 
 <div class="wallpaper-bg-layer"></div>
 
@@ -426,76 +426,26 @@
     }
   }
 
+    // Delegate to WebGL renderer (set below by WebGL init)
   async function applyWeWallpaper(dirName) {
-    const layersContainer = document.getElementById("weLayers");
-    layersContainer.innerHTML = "";
-
+    currentWeDir = dirName;
+    var layersContainer = document.getElementById('weLayers');
+    if (layersContainer) layersContainer.innerHTML = '';
+    document.body.style.backgroundImage = '';
     if (!dirName) {
-      document.body.style.backgroundImage = "";
-      currentWeDir = null;
+      if (window._webglApplyWeWallpaper) await window._webglApplyWeWallpaper(null);
       return;
     }
-
-    const res = await ipc.loadWeWallpaper(dirName);
-    if (!res.ok || !res.data?.layers?.length) return;
-
-    document.body.style.backgroundImage = "";
-
-    const layers = res.data.layers;
-
-    // Sort: backgrounds (unnamed) first by size, then positioned by y-coordinate
-    const sorted = [...layers].sort((a, b) => {
-      const aIsBg = !a.name;
-      const bIsBg = !b.name;
-      if (aIsBg && !bIsBg) return -1;
-      if (!aIsBg && bIsBg) return 1;
-      if (aIsBg) return (b.width * b.height) - (a.width * a.height);
-      return a.y - b.y;
-    });
-
-    let z = 1;
-    for (const layer of sorted) {
-      const div = document.createElement("div");
-      div.className = "we-layer";
-
-      if (!layer.name) {
-        // Background layer — fill screen
-        div.style.cssText = `background-image:url('${layer.url}');background-size:cover;background-position:center;z-index:${z};`;
-      } else {
-        // Positioned layer — map 4K coordinate space (3840x2160) → viewport %
-        const leftPct = (layer.x / 3840) * 100;
-        const topPct = (layer.y / 2160) * 100;
-        const wPct = (layer.width / 3840) * 100;
-        const hPct = (layer.height / 2160) * 100;
-        div.style.cssText = [
-          `background-image:url('${layer.url}')`,
-          `background-size:100% 100%`,
-          `background-repeat:no-repeat`,
-          `position:absolute`,
-          `left:${leftPct.toFixed(2)}%`,
-          `top:${topPct.toFixed(2)}%`,
-          `transform:translate(-50%,-50%)`,
-          `width:${wPct.toFixed(2)}vw`,
-          `height:${hPct.toFixed(2)}vh`,
-          `opacity:${layer.alpha}`,
-          `z-index:${z}`,
-        ].join(";");
-      }
-
-      layersContainer.appendChild(div);
-      z++;
-    }
-
-    currentWeDir = dirName;
+    if (window._webglApplyWeWallpaper) await window._webglApplyWeWallpaper(dirName);
   }
 
-  weSelect.addEventListener("change", () => {
-    const dirName = weSelect.value;
+  weSelect.addEventListener('change', function() {
+    var dirName = weSelect.value;
     applyWeWallpaper(dirName || null);
     ipc.updateWallpaper({ weWallpaperDir: dirName || null });
   });
 
-  loadWeWallpapers();
+loadWeWallpapers();
 
   document.getElementById("charArea").addEventListener("click", () => {
     sidebar.classList.toggle("open");
@@ -663,7 +613,6 @@ void main() {
             return;
         }
 
-        // Register default shader from embedded script elements
         const vertEl = document.getElementById("shader-default-vert");
         const fragEl = document.getElementById("shader-default-frag");
         if (!vertEl || !fragEl) {
@@ -671,96 +620,74 @@ void main() {
             return;
         }
         renderer.registerShader("default", vertEl.textContent, fragEl.textContent);
-
-        // Pre-compile and attach to the GL context for LayerNode.render access
-        const gl = renderer.gl;
+        var gl = renderer.gl;
         gl._defaultShader = renderer.shaderManager.get("default");
 
-        // Hide CSS-based layer rendering — WebGL canvas replaces it
-        const weLayers = document.getElementById("weLayers");
-        if (weLayers) {
-            weLayers.style.display = "none";
-        }
+        // Hide body background + CSS layers so WebGL canvas shows through
+        document.body.style.backgroundImage = "none";
+        document.body.style.backgroundColor = "#000";
+        var bgLayer = document.querySelector(".wallpaper-bg-layer");
+        if (bgLayer) bgLayer.style.display = "none";
+        var weLayers = document.getElementById("weLayers");
+        if (weLayers) weLayers.style.display = "none";
 
         renderer.start();
     }
 
-    async function applyWeWallpaper(dirName) {
+    async function applyWeWallpaperWebGL(dirName) {
         if (!renderer) return;
 
         if (!dirName) {
-            // Clear scene
-            const children = renderer._rootNode.children.slice();
+            var children = renderer._rootNode.children.slice();
             children.forEach(function (c) { c.destroy(); });
             renderer._rootNode.children = [];
             return;
         }
 
-        const ipc = new window.IpcClient();
-        const res = await ipc.loadWeWallpaper(dirName);
+        var ipc = new window.IpcClient();
+        var res = await ipc.loadWeWallpaper(dirName);
         if (!res.ok || !res.data) return;
 
-        const data = res.data;
-        const layers = data.layers || [];
-
-        // Build scene graph from WE layer data
-        const children = [];
+        var layers = res.data.layers || [];
+        var sceneChildren = [];
         layers.forEach(function (lyr, i) {
-            if (!lyr.name) {
-                // Background layer (unnamed) — fill entire scene
-                children.push({
-                    type: "Layer",
-                    name: "layer_" + i,
-                    position: [1920, 1080],
-                    alpha: lyr.alpha !== undefined ? lyr.alpha : 1,
-                    zIndex: i + 1,
-                    texture: lyr.url,
-                    width: lyr.width || 3840,
-                    height: lyr.height || 2160,
-                    anchor: [0.5, 0.5],
-                });
-            } else {
-                // Positioned layer — use WE coordinate system
-                children.push({
-                    type: "Layer",
-                    name: lyr.name,
-                    position: [lyr.x, lyr.y],
-                    alpha: lyr.alpha,
-                    zIndex: i + 1,
-                    texture: lyr.url,
-                    width: lyr.width,
-                    height: lyr.height,
-                    anchor: [0.5, 0.5],
-                });
-            }
+            sceneChildren.push({
+                type: "Layer",
+                name: lyr.name || ("layer_" + i),
+                position: [lyr.x, lyr.y],
+                alpha: lyr.alpha !== undefined ? lyr.alpha : 1,
+                zIndex: i + 1,
+                texture: lyr.url,
+                width: lyr.width,
+                height: lyr.height,
+                anchor: [0.5, 0.5],
+            });
         });
 
         await renderer.loadScene({
             camera: { x: 1920, y: 1080, width: 3840, height: 2160 },
-            children: children,
+            children: sceneChildren,
         });
     }
 
-    // Initialize on DOM ready
+    // Wire up the delegation from the CSS-side applyWeWallpaper
+    // _webglApplyWeWallpaper is defined in the main IIFE above
     document.addEventListener("DOMContentLoaded", async function () {
         await initWebGL();
 
-        // Restore current WE wallpaper setting
-        const ipc = new window.IpcClient();
-        const state = await ipc.getAppState();
+        // Wire delegation so the dropdown triggers WebGL rendering
+        // We can not access the IIFE closure directly, so set via a polling check
+        // Instead: override the function indirectly
+        // Actually, just restore saved wallpaper directly
+        var ipc = new window.IpcClient();
+        var state = await ipc.getAppState();
         if (state.ok && state.data && state.data.wallpaperSettings && state.data.wallpaperSettings.weWallpaperDir) {
-            applyWeWallpaper(state.data.wallpaperSettings.weWallpaperDir);
-        }
-
-        // Hook the WE wallpaper selector dropdown to drive WebGL rendering too
-        const weSelect = document.getElementById("weSelect");
-        if (weSelect) {
-            weSelect.addEventListener("change", function () {
-                const dirName = this.value;
-                applyWeWallpaper(dirName || null);
-            });
+            applyWeWallpaperWebGL(state.data.wallpaperSettings.weWallpaperDir);
         }
     });
+
+    // Expose the WebGL apply function globally for the main IIFE to delegate to
+    window._webglApplyWeWallpaper = applyWeWallpaperWebGL;
 })();
 </script>
 </body>

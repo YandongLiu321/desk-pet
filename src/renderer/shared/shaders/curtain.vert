@@ -15,7 +15,7 @@ void main() {
     float c = cos(uRotation);
     float s = sin(uRotation);
     vec2 rotated = vec2(aPos.x * c - aPos.y * s, aPos.x * s + aPos.y * c);
-    float sway = sin(uTime * uSwingSpeed + uSwingTimeOffset) * uSwingStrength * (1.0 - vTexCoord.y);
+    float sway = sin(uTime * uSwingSpeed + uSwingTimeOffset) * uSwingStrength * (1.0 - aTexCoord.y);
     rotated.x += sway * 100.0;
     vec2 scaled = rotated * uScale;
     vec2 worldPos = scaled + uPosition;

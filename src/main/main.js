@@ -88,6 +88,12 @@ function createTray() {
 			click: () => switchModeWithCleanup(MODE.SOFTWARE),
 		},
 		{ type: "separator" },
+		{
+			label: "壁纸编辑器",
+			type: "normal",
+			click: () => { if (editorWindowManager) editorWindowManager.open(); },
+		},
+		{ type: "separator" },
 		{ label: "退出", type: "normal", click: () => app.quit() },
 	]);
 	tray.setContextMenu(contextMenu);
