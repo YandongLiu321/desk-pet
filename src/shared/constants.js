@@ -38,11 +38,26 @@ const IPC = {
 	SETTINGS_SET_API_KEY: "settings:set-api-key",
 	SETTINGS_GET_WALLPAPER: "settings:get-wallpaper",
 	SETTINGS_UPDATE_WALLPAPER: "settings:update-wallpaper",
+	SETTINGS_GET_AUDIO_CONFIG: "settings:get-audio-config",
+
+	// Wallpaper Engine
+	WALLPAPER_LOAD_WE: "wallpaper:load-we",
+	WALLPAPER_LIST_WE: "wallpaper:list-we",
 
 	// Window
 	WINDOW_HIDE: "window:hide",
 	WINDOW_CLOSE_MODE: "window:close-mode",
 	WINDOW_MOVE_BY: "window:move-by",
+
+	// Scene
+	SCENE_LOAD: "scene:load",
+	SCENE_SAVE: "scene:save",
+	SCENE_GET: "scene:get",
+
+	// Editor
+	EDITOR_OPEN: "editor:open",
+	EDITOR_APPLY: "editor:apply",
+	EDITOR_UPDATE_PROPERTY: "editor:update-property",
 };
 
 const INTENT = {

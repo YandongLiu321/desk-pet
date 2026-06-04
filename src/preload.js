@@ -117,7 +117,40 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		updateWallpaper(partial) {
 			return ipcRenderer.invoke(IPC.SETTINGS_UPDATE_WALLPAPER, { partial });
 		},
+		getAudioConfig() {
+			return ipcRenderer.invoke(IPC.SETTINGS_GET_AUDIO_CONFIG);
+		},
 	},
+
+		wallpaper: {
+			loadWe(dirName) {
+				return ipcRenderer.invoke(IPC.WALLPAPER_LOAD_WE, { dirName });
+			},
+			listWe() {
+				return ipcRenderer.invoke(IPC.WALLPAPER_LIST_WE);
+			},
+		},
+
+		scene: {
+			get() {
+				return ipcRenderer.invoke(IPC.SCENE_GET);
+			},
+			save(filePath, data) {
+				return ipcRenderer.invoke(IPC.SCENE_SAVE, { filePath, data });
+			},
+		},
+
+		editor: {
+			open() {
+				return ipcRenderer.invoke(IPC.EDITOR_OPEN);
+			},
+			apply(sceneData) {
+				return ipcRenderer.invoke(IPC.EDITOR_APPLY, { sceneData });
+			},
+			updateProperty(node, prop, value) {
+				return ipcRenderer.invoke(IPC.EDITOR_UPDATE_PROPERTY, { node, prop, value });
+			},
+		},
 
 	window: {
 		hide() {

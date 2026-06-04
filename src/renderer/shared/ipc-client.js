@@ -129,6 +129,36 @@ class IpcClient {
 	async updateWallpaper(partial) {
 		return this._call("settings.updateWallpaper", partial);
 	}
+	async getAudioConfig() {
+		return this._call("settings.getAudioConfig");
+	}
+
+	// Wallpaper Engine
+	async loadWeWallpaper(dirName) {
+		return this._call("wallpaper.loadWe", dirName);
+	}
+	async listWeWallpapers() {
+		return this._call("wallpaper.listWe");
+	}
+
+	// Scene
+	async getScene() {
+		return this._call("scene.get");
+	}
+	async saveScene(filePath, data) {
+		return this._call("scene.save", filePath, data);
+	}
+
+	// Editor
+	async openEditor() {
+		return this._call("editor.open");
+	}
+	async applyScene(sceneData) {
+		return this._call("editor.apply", sceneData);
+	}
+	async updateProperty(node, prop, value) {
+		return this._call("editor.updateProperty", node, prop, value);
+	}
 
 	// Window
 	async hideWindow() {

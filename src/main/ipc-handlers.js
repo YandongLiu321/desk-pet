@@ -20,6 +20,10 @@ function runTask(fn) {
 }
 
 const { IPC, MODE, ERROR_CODE } = require("../shared/constants.js");
+const path = require("node:path");
+const fs = require("node:fs");
+const { pathToFileURL } = require("node:url");
+const { WallpaperEngineLoader } = require("./we-asset-loader");
 
 /**
  * @param {object} services
@@ -143,6 +147,98 @@ function registerIpcHandlers(services, deps) {
 		Object.assign(state.wallpaperSettings, partial);
 		db.updateAppState({ wallpaperSettings: state.wallpaperSettings });
 		return state.wallpaperSettings;
+	}));
+
+	ipcMain.handle(IPC.SETTINGS_GET_AUDIO_CONFIG, () => runSafe(() => {
+		const state = db.getAppState();
+		const tracks = [];
+		if (services.worldBook?.audio?.tracks) {
+			for (const track of services.worldBook.audio.tracks) {
+				const filePath = path.join(__dirname, "..", "..", "assets", "audio", track.file);
+				tracks.push({
+					id: track.id,
+					name: track.name,
+					url: pathToFileURL(filePath).href,
+				});
+			}
+		}
+		return {
+			tracks,
+			soundVolume: state.wallpaperSettings?.soundVolume ?? 0.5,
+		};
+	}));
+
+	// ── Wallpaper Engine ──
+	const weLoader = new WallpaperEngineLoader();
+	const projectRoot = path.join(__dirname, "..", "..");
+
+	ipcMain.handle(IPC.WALLPAPER_LOAD_WE, (_event, { dirName }) => runSafe(() => {
+		const weDir = path.join(projectRoot, dirName);
+		const result = weLoader.load(weDir);
+		if (!result.ok) throw new Error(result.error);
+		return result.data;
+	}));
+
+	ipcMain.handle(IPC.WALLPAPER_LIST_WE, () => runSafe(() => {
+		const entries = fs.readdirSync(projectRoot, { withFileTypes: true });
+		const wallpapers = [];
+		for (const entry of entries) {
+			if (!entry.isDirectory()) continue;
+			const pkgPath = path.join(projectRoot, entry.name, "scene.pkg");
+			const projPath = path.join(projectRoot, entry.name, "project.json");
+			if (fs.existsSync(pkgPath) && fs.existsSync(projPath)) {
+				try {
+					const meta = JSON.parse(fs.readFileSync(projPath, "utf-8"));
+					wallpapers.push({
+						dirName: entry.name,
+						title: meta.title || entry.name,
+						workshopId: meta.workshopid || null,
+						type: meta.type || null,
+					});
+				} catch {
+					wallpapers.push({ dirName: entry.name, title: entry.name, workshopId: null, type: null });
+				}
+			}
+		}
+		return wallpapers;
+	}));
+
+	// ── Scene ──
+	ipcMain.handle(IPC.SCENE_GET, () => runSafe(() => {
+		const state = db.getAppState();
+		return { wallpaperDir: state.wallpaperSettings?.weWallpaperDir || null };
+	}));
+
+	ipcMain.handle(IPC.SCENE_SAVE, (_event, { filePath, data }) => runSafe(() => {
+		const savePath = filePath || path.join(projectRoot, "data", "scenes", "current.dp-scene.json");
+		const dir = path.dirname(savePath);
+		if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+		fs.writeFileSync(savePath, JSON.stringify(data, null, 2), "utf-8");
+		return { saved: true, path: savePath };
+	}));
+
+	// ── Editor ──
+	ipcMain.handle(IPC.EDITOR_OPEN, () => runSafe(() => {
+		if (services.editorWindowManager) {
+			services.editorWindowManager.open();
+		}
+		return { ok: true };
+	}));
+
+	ipcMain.handle(IPC.EDITOR_APPLY, (_event, { sceneData }) => runSafe(() => {
+		const wallpaperWin = windowManager.getWindow("wallpaper");
+		if (wallpaperWin && !wallpaperWin.isDestroyed()) {
+			wallpaperWin.webContents.send(IPC.EDITOR_APPLY, { sceneData });
+		}
+		return { ok: true };
+	}));
+
+	ipcMain.handle(IPC.EDITOR_UPDATE_PROPERTY, (_event, { node, prop, value }) => runSafe(() => {
+		const wallpaperWin = windowManager.getWindow("wallpaper");
+		if (wallpaperWin && !wallpaperWin.isDestroyed()) {
+			wallpaperWin.webContents.send(IPC.EDITOR_UPDATE_PROPERTY, { node, prop, value });
+		}
+		return { ok: true };
 	}));
 
 	// ── Window ──

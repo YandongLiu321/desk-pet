@@ -11,6 +11,7 @@ const fs = require("node:fs");
 
 const { Database } = require("./database");
 const { WindowManager } = require("./window-manager");
+const { EditorWindowManager } = require("./editor-window");
 const { LLMService } = require("./llm-service");
 const { TaskService } = require("./task-service");
 const { RelationshipService } = require("./relationship-service");
@@ -139,6 +140,7 @@ app.whenReady().then(() => {
 
 	const preloadPath = path.join(__dirname, "..", "preload.js");
 	windowManager = new WindowManager(preloadPath, switchModeWithCleanup);
+	const editorWindowManager = new EditorWindowManager(preloadPath);
 
 	registerIpcHandlers(
 		{
@@ -149,7 +151,9 @@ app.whenReady().then(() => {
 			relationshipService,
 			pomodoroService,
 			narrativeEngine,
+			worldBook,
 			switchModeWithCleanup,
+			editorWindowManager,
 		},
 		{ ipcMain, BrowserWindow },
 	);
