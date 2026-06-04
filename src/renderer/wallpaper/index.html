@@ -12,9 +12,21 @@
     align-items: center;
     justify-content: center;
     height: 100vh;
-    background: linear-gradient(135deg, var(--color-bg-darkest), var(--color-bg-dark));
+    background: url('../../../assets/backgrounds/we_main.png') center/cover no-repeat, linear-gradient(135deg, var(--color-bg-darkest), var(--color-bg-dark));
     overflow: hidden;
     position: relative;
+  }
+
+  .we-layers {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .we-layer {
+    position: absolute;
+    inset: 0;
+    background-repeat: no-repeat;
   }
 
   .wallpaper-bg-layer {
@@ -84,23 +96,31 @@
     overflow: hidden;
   }
 
-  .wallpaper-audio-placeholder {
-    margin-top: var(--space-md);
-    opacity: 0.5;
-  }
 
-  .wallpaper-audio-placeholder select {
-    background: var(--color-bg-medium);
-    color: var(--color-text-muted);
-    border: 1px solid var(--color-bg-light);
-    border-radius: var(--radius-sm);
-    padding: var(--space-sm);
-    font-size: var(--font-sm);
+  .wallpaper-we-selector {
+    display: none;
+    margin-top: var(--space-sm);
+    gap: var(--space-sm);
+    align-items: center;
   }
-
-  .wallpaper-audio-placeholder span {
+  .wallpaper-we-selector.visible {
+    display: flex;
+  }
+  .wallpaper-we-selector label {
     font-size: var(--font-xs);
     color: var(--color-text-muted);
+    white-space: nowrap;
+  }
+  .wallpaper-we-selector select {
+    background: var(--color-bg-medium);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-bg-light);
+    border-radius: var(--radius-sm);
+    padding: var(--space-xs) var(--space-sm);
+    font-size: var(--font-sm);
+    cursor: pointer;
+    outline: none;
+    max-width: 160px;
   }
 
   .wallpaper-esc-hint {
@@ -195,17 +215,20 @@
 </head>
 <body>
 
+<canvas id="webglCanvas" style="position:absolute;inset:0;width:100%;height:100%;z-index:-1;"></canvas>
+
 <div class="wallpaper-bg-layer"></div>
 
+<div class="we-layers" id="weLayers"></div>
 <div class="wallpaper-char-area" id="charArea" title="点击露娜打开对话"></div>
 
 <div class="wallpaper-pomodoro-area" id="pomodoroArea"></div>
 
-<div class="wallpaper-audio-placeholder">
-  <select disabled>
-    <option>白噪音（即将推出）</option>
-  </select>
-  <br><span>白噪音功能开发中，敬请期待~</span>
+<div id="audioArea"></div>
+
+<div class="wallpaper-we-selector" id="weSelector">
+  <label>壁纸</label>
+  <select id="weSelect"></select>
 </div>
 
 <div class="wallpaper-chat-sidebar" id="chatSidebar">
@@ -252,9 +275,18 @@
 <script src="../shared/character-renderer.js"></script>
 <script src="../shared/conversation-panel.js"></script>
 <script src="../shared/pomodoro-timer.js"></script>
+<script src="../shared/white-noise-control.js"></script>
+<script src="../shared/webgl/math.js"></script>
+<script src="../shared/webgl/shader-manager.js"></script>
+<script src="../shared/webgl/texture-manager.js"></script>
+<script src="../shared/webgl/mesh.js"></script>
+<script src="../shared/webgl/framebuffer.js"></script>
+<script src="../shared/webgl/camera.js"></script>
+<script src="../shared/webgl/scene-graph.js"></script>
+<script src="../shared/webgl/renderer.js"></script>
 <script>
 (() => {
-  const { IpcClient, CharacterRenderer, ConversationPanel, PomodoroTimer } = window;
+  const { IpcClient, CharacterRenderer, ConversationPanel, PomodoroTimer, WhiteNoiseControl } = window;
   const { INTENT, MODE } = window;
   const ipc = new IpcClient();
   let currentPomodoroTaskId = null;
@@ -348,6 +380,121 @@
     },
   });
   convPanel.mount();
+
+  // White noise
+  let whiteNoise = null;
+  ipc.getAudioConfig().then((res) => {
+    if (res.ok && res.data.tracks.length) {
+      whiteNoise = new WhiteNoiseControl(document.getElementById("audioArea"), {
+        tracks: res.data.tracks,
+        volume: res.data.soundVolume ?? 0.5,
+        currentTrackId: null,
+        onVolumeChange: (volume) => {
+          ipc.updateWallpaper({ soundVolume: volume });
+        },
+      });
+      whiteNoise.mount();
+    }
+  });
+
+  // ── Wallpaper Engine integration ──
+  const weSelector = document.getElementById("weSelector");
+  const weSelect = document.getElementById("weSelect");
+  let currentWeDir = null;
+
+  async function loadWeWallpapers() {
+    const listRes = await ipc.listWeWallpapers();
+    if (!listRes.ok || !listRes.data.length) return;
+
+    // Populate dropdown
+    weSelect.innerHTML = '<option value="">默认背景</option>';
+    for (const wp of listRes.data) {
+      const opt = document.createElement("option");
+      opt.value = wp.dirName;
+      opt.textContent = wp.title || wp.dirName;
+      weSelect.appendChild(opt);
+    }
+    weSelector.classList.add("visible");
+
+    // Load saved choice
+    const settingsRes = await ipc.getWallpaper();
+    const savedWe = settingsRes.ok ? settingsRes.data?.weWallpaperDir : null;
+    if (savedWe) {
+      weSelect.value = savedWe;
+      applyWeWallpaper(savedWe);
+    }
+  }
+
+  async function applyWeWallpaper(dirName) {
+    const layersContainer = document.getElementById("weLayers");
+    layersContainer.innerHTML = "";
+
+    if (!dirName) {
+      document.body.style.backgroundImage = "";
+      currentWeDir = null;
+      return;
+    }
+
+    const res = await ipc.loadWeWallpaper(dirName);
+    if (!res.ok || !res.data?.layers?.length) return;
+
+    document.body.style.backgroundImage = "";
+
+    const layers = res.data.layers;
+
+    // Sort: backgrounds (unnamed) first by size, then positioned by y-coordinate
+    const sorted = [...layers].sort((a, b) => {
+      const aIsBg = !a.name;
+      const bIsBg = !b.name;
+      if (aIsBg && !bIsBg) return -1;
+      if (!aIsBg && bIsBg) return 1;
+      if (aIsBg) return (b.width * b.height) - (a.width * a.height);
+      return a.y - b.y;
+    });
+
+    let z = 1;
+    for (const layer of sorted) {
+      const div = document.createElement("div");
+      div.className = "we-layer";
+
+      if (!layer.name) {
+        // Background layer — fill screen
+        div.style.cssText = `background-image:url('${layer.url}');background-size:cover;background-position:center;z-index:${z};`;
+      } else {
+        // Positioned layer — map 4K coordinate space (3840x2160) → viewport %
+        const leftPct = (layer.x / 3840) * 100;
+        const topPct = (layer.y / 2160) * 100;
+        const wPct = (layer.width / 3840) * 100;
+        const hPct = (layer.height / 2160) * 100;
+        div.style.cssText = [
+          `background-image:url('${layer.url}')`,
+          `background-size:100% 100%`,
+          `background-repeat:no-repeat`,
+          `position:absolute`,
+          `left:${leftPct.toFixed(2)}%`,
+          `top:${topPct.toFixed(2)}%`,
+          `transform:translate(-50%,-50%)`,
+          `width:${wPct.toFixed(2)}vw`,
+          `height:${hPct.toFixed(2)}vh`,
+          `opacity:${layer.alpha}`,
+          `z-index:${z}`,
+        ].join(";");
+      }
+
+      layersContainer.appendChild(div);
+      z++;
+    }
+
+    currentWeDir = dirName;
+  }
+
+  weSelect.addEventListener("change", () => {
+    const dirName = weSelect.value;
+    applyWeWallpaper(dirName || null);
+    ipc.updateWallpaper({ weWallpaperDir: dirName || null });
+  });
+
+  loadWeWallpapers();
 
   document.getElementById("charArea").addEventListener("click", () => {
     sidebar.classList.toggle("open");
@@ -468,6 +615,151 @@
       }
     }
   });
+})();
+</script>
+
+<!-- WebGL default shader sources (embedded for synchronous access) -->
+<script type="x-shader/x-vertex" id="shader-default-vert">
+#version 300 es
+precision highp float;
+in vec2 aPos; in vec2 aTexCoord;
+uniform mat3 uViewProj; uniform vec2 uPosition; uniform vec2 uScale; uniform float uRotation;
+out vec2 vTexCoord;
+void main() {
+    float c = cos(uRotation); float s = sin(uRotation);
+    vec2 rotated = vec2(aPos.x * c - aPos.y * s, aPos.x * s + aPos.y * c);
+    vec2 scaled = rotated * uScale;
+    vec2 worldPos = scaled + uPosition;
+    vec3 clip = uViewProj * vec3(worldPos, 1.0);
+    gl_Position = vec4(clip.xy, 0.0, 1.0);
+    vTexCoord = aTexCoord;
+}
+</script>
+<script type="x-shader/x-fragment" id="shader-default-frag">
+#version 300 es
+precision highp float;
+in vec2 vTexCoord; out vec4 outColor;
+uniform sampler2D uMainTex; uniform vec4 uColorFilter; uniform float uAlpha;
+void main() {
+    vec4 texColor = texture(uMainTex, vTexCoord);
+    outColor = texColor * uColorFilter * vec4(1.0, 1.0, 1.0, uAlpha);
+}
+</script>
+
+<!-- WebGL wallpaper renderer initialization -->
+<script>
+(() => {
+    let renderer = null;
+
+    async function initWebGL() {
+        const canvas = document.getElementById("webglCanvas");
+        if (!canvas) return;
+
+        try {
+            renderer = new window.WebGLWallpaperRenderer(canvas);
+        } catch (err) {
+            console.error("WebGL init failed:", err);
+            return;
+        }
+
+        // Register default shader from embedded script elements
+        const vertEl = document.getElementById("shader-default-vert");
+        const fragEl = document.getElementById("shader-default-frag");
+        if (!vertEl || !fragEl) {
+            console.error("Shader source elements not found");
+            return;
+        }
+        renderer.registerShader("default", vertEl.textContent, fragEl.textContent);
+
+        // Pre-compile and attach to the GL context for LayerNode.render access
+        const gl = renderer.gl;
+        gl._defaultShader = renderer.shaderManager.get("default");
+
+        // Hide CSS-based layer rendering — WebGL canvas replaces it
+        const weLayers = document.getElementById("weLayers");
+        if (weLayers) {
+            weLayers.style.display = "none";
+        }
+
+        renderer.start();
+    }
+
+    async function applyWeWallpaper(dirName) {
+        if (!renderer) return;
+
+        if (!dirName) {
+            // Clear scene
+            const children = renderer._rootNode.children.slice();
+            children.forEach(function (c) { c.destroy(); });
+            renderer._rootNode.children = [];
+            return;
+        }
+
+        const ipc = new window.IpcClient();
+        const res = await ipc.loadWeWallpaper(dirName);
+        if (!res.ok || !res.data) return;
+
+        const data = res.data;
+        const layers = data.layers || [];
+
+        // Build scene graph from WE layer data
+        const children = [];
+        layers.forEach(function (lyr, i) {
+            if (!lyr.name) {
+                // Background layer (unnamed) — fill entire scene
+                children.push({
+                    type: "Layer",
+                    name: "layer_" + i,
+                    position: [1920, 1080],
+                    alpha: lyr.alpha !== undefined ? lyr.alpha : 1,
+                    zIndex: i + 1,
+                    texture: lyr.url,
+                    width: lyr.width || 3840,
+                    height: lyr.height || 2160,
+                    anchor: [0.5, 0.5],
+                });
+            } else {
+                // Positioned layer — use WE coordinate system
+                children.push({
+                    type: "Layer",
+                    name: lyr.name,
+                    position: [lyr.x, lyr.y],
+                    alpha: lyr.alpha,
+                    zIndex: i + 1,
+                    texture: lyr.url,
+                    width: lyr.width,
+                    height: lyr.height,
+                    anchor: [0.5, 0.5],
+                });
+            }
+        });
+
+        await renderer.loadScene({
+            camera: { x: 1920, y: 1080, width: 3840, height: 2160 },
+            children: children,
+        });
+    }
+
+    // Initialize on DOM ready
+    document.addEventListener("DOMContentLoaded", async function () {
+        await initWebGL();
+
+        // Restore current WE wallpaper setting
+        const ipc = new window.IpcClient();
+        const state = await ipc.getAppState();
+        if (state.ok && state.data && state.data.wallpaperSettings && state.data.wallpaperSettings.weWallpaperDir) {
+            applyWeWallpaper(state.data.wallpaperSettings.weWallpaperDir);
+        }
+
+        // Hook the WE wallpaper selector dropdown to drive WebGL rendering too
+        const weSelect = document.getElementById("weSelect");
+        if (weSelect) {
+            weSelect.addEventListener("change", function () {
+                const dirName = this.value;
+                applyWeWallpaper(dirName || null);
+            });
+        }
+    });
 })();
 </script>
 </body>
