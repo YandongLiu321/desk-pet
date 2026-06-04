@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wallpaper Editor</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #1e1e1e;
+    color: #ccc;
+    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    font-size: 13px;
+    user-select: none;
+  }
+
+  #editorLayout {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* ── Menu Bar ── */
+  #menuBar {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 4px 8px;
+    background: #2d2d2d;
+    border-bottom: 1px solid #3d3d3d;
+    flex-shrink: 0;
+  }
+
+  #menuBar button {
+    background: transparent;
+    border: 1px solid transparent;
+    color: #ccc;
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+
+  #menuBar button:hover {
+    background: #3d3d3d;
+    border-color: #555;
+  }
+
+  #menuBar .menu-separator {
+    width: 1px;
+    height: 18px;
+    background: #3d3d3d;
+    margin: 0 6px;
+  }
+
+  #menuBar .menu-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  /* ── Main Content Area ── */
+  #mainContent {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── Panel Base ── */
+  .panel {
+    display: flex;
+    flex-direction: column;
+    background: #252525;
+    border-right: 1px solid #3d3d3d;
+  }
+
+  .panel:last-child {
+    border-right: none;
+  }
+
+  .panel-header {
+    padding: 6px 10px;
+    background: #2a2a2a;
+    border-bottom: 1px solid #3d3d3d;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #999;
+    flex-shrink: 0;
+    letter-spacing: 0.5px;
+  }
+
+  .panel-body {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .panel-body::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .panel-body::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .panel-body::-webkit-scrollbar-thumb {
+    background: #3d3d3d;
+    border-radius: 3px;
+  }
+
+  .panel-body::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+
+  /* ── Scene Tree Panel ── */
+  #sceneTreePanel {
+    width: 220px;
+    min-width: 160px;
+    flex-shrink: 0;
+  }
+
+  /* ── Preview Viewport ── */
+  #viewportPanel {
+    flex: 1;
+    min-width: 320px;
+    position: relative;
+  }
+
+  #previewCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    background: #111;
+  }
+
+  /* ── Property Inspector ── */
+  #propertyPanel {
+    width: 260px;
+    min-width: 200px;
+    flex-shrink: 0;
+  }
+
+  /* ── Timeline ── */
+  #timelinePanel {
+    height: 140px;
+    min-height: 80px;
+    flex-shrink: 0;
+    border-top: 1px solid #3d3d3d;
+  }
+
+  /* ── Input / Range styling ── */
+  input[type="text"],
+  input[type="number"] {
+    background: #1a1a1a;
+    border: 1px solid #3d3d3d;
+    color: #ccc;
+    padding: 2px 4px;
+    border-radius: 2px;
+    font-size: 12px;
+    outline: none;
+    font-family: inherit;
+  }
+
+  input[type="text"]:focus,
+  input[type="number"]:focus {
+    border-color: #6b5ce7;
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 4px;
+    background: #3d3d3d;
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #6b5ce7;
+    border: none;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<div id="editorLayout">
+  <!-- Menu Bar -->
+  <div id="menuBar">
+    <button id="btnNew">New</button>
+    <button id="btnOpen">Open</button>
+    <button id="btnSave">Save</button>
+    <span class="menu-separator"></span>
+    <button id="btnImportWE">Import WE</button>
+    <span class="menu-right">
+      <button id="btnApply">Apply to Wallpaper</button>
+    </span>
+  </div>
+
+  <!-- Main Content: Scene Tree | Viewport | Inspector -->
+  <div id="mainContent">
+    <!-- Scene Tree -->
+    <div class="panel" id="sceneTreePanel">
+      <div class="panel-header">Scene Tree</div>
+      <div class="panel-body" id="sceneTree"></div>
+    </div>
+
+    <!-- Preview Viewport -->
+    <div class="panel" id="viewportPanel">
+      <canvas id="previewCanvas"></canvas>
+    </div>
+
+    <!-- Property Inspector -->
+    <div class="panel" id="propertyPanel">
+      <div class="panel-header">Inspector</div>
+      <div class="panel-body" id="propertyInspector"></div>
+    </div>
+  </div>
+
+  <!-- Timeline -->
+  <div class="panel" id="timelinePanel">
+    <div class="panel-header">Timeline</div>
+    <div class="panel-body" id="timeline"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     Scripts — WebGL modules
+     ═══════════════════════════════════════════════════════════════════ -->
+<script src="../shared/webgl/math.js"></script>
+<script src="../shared/webgl/shader-manager.js"></script>
+<script src="../shared/webgl/texture-manager.js"></script>
+<script src="../shared/webgl/mesh.js"></script>
+<script src="../shared/webgl/framebuffer.js"></script>
+<script src="../shared/webgl/camera.js"></script>
+<script src="../shared/webgl/scene-graph.js"></script>
+<script src="../shared/webgl/render-pipeline.js"></script>
+<script src="../shared/webgl/renderer.js"></script>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     Scripts — Animation modules
+     ═══════════════════════════════════════════════════════════════════ -->
+<script src="../shared/webgl/animation/timeline.js"></script>
+<script src="../shared/webgl/animation/controller.js"></script>
+<script src="../shared/webgl/animation/builtin/breathing.js"></script>
+<script src="../shared/webgl/animation/builtin/parallax.js"></script>
+<script src="../shared/webgl/animation/builtin/swing.js"></script>
+<script src="../shared/webgl/animation/builtin/pan.js"></script>
+<script src="../shared/webgl/animation/builtin/deform.js"></script>
+<script src="../shared/webgl/animation/builtin/flow.js"></script>
+<script src="../shared/webgl/animation/builtin/time-of-day.js"></script>
+<script src="../shared/webgl/animation/builtin/clock.js"></script>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     Scripts — WE converter
+     ═══════════════════════════════════════════════════════════════════ -->
+<script src="../shared/we-converter/pkg-reader.js"></script>
+<script src="../shared/we-converter/scene-converter.js"></script>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     Scripts — IPC client
+     ═══════════════════════════════════════════════════════════════════ -->
+<script src="../shared/ipc-client.js"></script>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     Scripts — Editor application & panels
+     ═══════════════════════════════════════════════════════════════════ -->
+<script src="editor-app.js"></script>
+<script src="panels/scene-tree.js"></script>
+<script src="panels/property-inspector.js"></script>
+<script src="panels/timeline.js"></script>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     Inline shader sources for the preview viewport
+     ═══════════════════════════════════════════════════════════════════ -->
+<script type="x-shader/x-vertex" id="shader-default-vert">
+#version 300 es
+precision highp float;
+in vec2 aPos;
+in vec2 aTexCoord;
+uniform mat3 uViewProj;
+uniform vec2 uPosition;
+uniform vec2 uScale;
+uniform float uRotation;
+out vec2 vTexCoord;
+void main() {
+    float c = cos(uRotation);
+    float s = sin(uRotation);
+    vec2 rotated = vec2(aPos.x * c - aPos.y * s, aPos.x * s + aPos.y * c);
+    vec2 scaled = rotated * uScale;
+    vec2 worldPos = scaled + uPosition;
+    vec3 clip = uViewProj * vec3(worldPos, 1.0);
+    gl_Position = vec4(clip.xy, 0.0, 1.0);
+    vTexCoord = aTexCoord;
+}
+</script>
+<script type="x-shader/x-fragment" id="shader-default-frag">
+#version 300 es
+precision highp float;
+in vec2 vTexCoord;
+out vec4 outColor;
+uniform sampler2D uMainTex;
+uniform vec4 uColorFilter;
+uniform float uAlpha;
+void main() {
+    vec4 texColor = texture(uMainTex, vTexCoord);
+    outColor = texColor * uColorFilter * vec4(1.0, 1.0, 1.0, uAlpha);
+}
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     Menu bar event wiring
+     ═══════════════════════════════════════════════════════════════════ -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    var app = window.editorApp;
+    if (!app) return;
+
+    document.getElementById("btnNew").addEventListener("click", function () {
+        app.fileNew();
+    });
+    document.getElementById("btnOpen").addEventListener("click", function () {
+        app.fileOpen();
+    });
+    document.getElementById("btnSave").addEventListener("click", function () {
+        app.fileSave();
+    });
+    document.getElementById("btnImportWE").addEventListener("click", function () {
+        app.importWE();
+    });
+    document.getElementById("btnApply").addEventListener("click", function () {
+        app.applyToWallpaper();
+    });
+});
+</script>
+
+</body>
+</html>
