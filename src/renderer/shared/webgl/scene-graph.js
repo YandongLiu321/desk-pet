@@ -134,6 +134,23 @@
         }
 
         /**
+         * Recursively collect visible renderable leaf nodes from this subtree.
+         * Groups are flattened — only non-group, renderable nodes are appended.
+         * @param {SceneNode[]} out - output array to push into
+         */
+        collectRenderables(out) {
+            for (var i = 0; i < this.children.length; i++) {
+                var child = this.children[i];
+                if (!child.visible) continue;
+                if (child instanceof SceneGroup) {
+                    child.collectRenderables(out);
+                } else {
+                    out.push(child);
+                }
+            }
+        }
+
+        /**
          * Recursively destroy this node and all children.
          * Sets children, parent, and cached matrices to null to help GC.
          */

@@ -36,6 +36,15 @@
             /** @type {FramebufferPool} */
             this.fboPool = new window.FramebufferPool(gl);
 
+            // Render pipeline with a default pass
+            /** @type {RenderPipeline} */
+            this._pipeline = new window.RenderPipeline(gl, this.fboPool);
+            this._pipeline.addPass(new window.RenderPass({
+                name: "default",
+                filter: function () { return true; },
+                sortMode: "back-to-front",
+            }));
+
             /** @type {Camera} */
             this.camera = new window.Camera();
             this.camera.lookAt(1920, 1080, 3840, 2160);
@@ -272,38 +281,27 @@
         }
 
         /**
-         * Render the scene: update camera, clear, sort nodes, render each.
+         * Render the scene: update camera, clear, and run the pipeline.
          * @private
          */
         _render() {
             var gl = this.gl;
             if (!gl) return;
 
-            var canvas = this.canvas;
-            var w = canvas.width;
-            var h = canvas.height;
+            var w = this.canvas.width;
+            var h = this.canvas.height;
 
             // Update camera with current screen dimensions
             this.camera.update(w, h);
 
             // Clear to transparent
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             gl.viewport(0, 0, w, h);
             gl.clearColor(0, 0, 0, 0);
             gl.clear(gl.COLOR_BUFFER_BIT);
 
-            // Collect visible nodes from the root
-            var visibleNodes = this._collectVisibleNodes(this._rootNode);
-
-            // Sort by zIndex ascending
-            visibleNodes.sort(function (a, b) {
-                return a.zIndex - b.zIndex;
-            });
-
-            // Render each node
-            for (var i = 0; i < visibleNodes.length; i++) {
-                var node = visibleNodes[i];
-                node.render(gl, this.camera);
-            }
+            // Run the render pipeline
+            this._pipeline.execute(this._rootNode, this.camera, w, h);
         }
 
         /**
