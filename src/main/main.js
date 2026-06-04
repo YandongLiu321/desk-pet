@@ -50,7 +50,7 @@ let _llmService;
 /** @type {import('./pomodoro-service').PomodoroService} */
 let _pomodoroService;
 
-function createTray() {
+function createTray(editorWindowManager) {
 	const iconPath = path.join(
 		__dirname,
 		"..",
@@ -164,7 +164,7 @@ app.whenReady().then(() => {
 		{ ipcMain, BrowserWindow },
 	);
 
-	createTray();
+	createTray(editorWindowManager);
 	proactiveTrigger.start();
 	switchModeWithCleanup(MODE.PET);
 });
