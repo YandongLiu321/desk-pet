@@ -426,26 +426,86 @@
     }
   }
 
-    // Delegate to WebGL renderer (set below by WebGL init)
+      // Render WE wallpaper via WebGL with CSS fallback
   async function applyWeWallpaper(dirName) {
     currentWeDir = dirName;
-    var layersContainer = document.getElementById('weLayers');
-    if (layersContainer) layersContainer.innerHTML = '';
-    document.body.style.backgroundImage = '';
+    var layersContainer = document.getElementById("weLayers");
+    if (layersContainer) layersContainer.innerHTML = "";
+    document.body.style.backgroundImage = "";
+
     if (!dirName) {
       if (window._webglApplyWeWallpaper) await window._webglApplyWeWallpaper(null);
       return;
     }
-    if (window._webglApplyWeWallpaper) await window._webglApplyWeWallpaper(dirName);
+
+    // Try WebGL renderer first
+    if (window._webglApplyWeWallpaper) {
+      try {
+        await window._webglApplyWeWallpaper(dirName);
+        return; // WebGL succeeded
+      } catch (e) {
+        console.warn("WebGL wallpaper render failed, falling back to CSS:", e);
+      }
+    }
+
+    // CSS fallback — load WE data and render as positioned divs
+    try {
+      var res = await ipc.loadWeWallpaper(dirName);
+      if (!res.ok || !res.data || !res.data.layers) return;
+      var layers = res.data.layers;
+      // Ensure weLayers is visible for CSS fallback
+      if (layersContainer) layersContainer.style.display = "";
+      document.body.style.backgroundImage = "";
+
+      var sorted = layers.slice().sort(function(a, b) {
+        var aIsBg = !a.name, bIsBg = !b.name;
+        if (aIsBg && !bIsBg) return -1;
+        if (!aIsBg && bIsBg) return 1;
+        if (aIsBg) return (b.width * b.height) - (a.width * a.height);
+        return a.y - b.y;
+      });
+
+      var z = 1;
+      for (var i = 0; i < sorted.length; i++) {
+        var layer = sorted[i];
+        var div = document.createElement("div");
+        div.className = "we-layer";
+        if (!layer.name) {
+          div.style.cssText = "background-image:url('" + layer.url + "');background-size:cover;background-position:center;z-index:" + z + ";";
+        } else {
+          var leftPct = (layer.x / 3840) * 100;
+          var topPct = (layer.y / 2160) * 100;
+          var wPct = (layer.width / 3840) * 100;
+          var hPct = (layer.height / 2160) * 100;
+          div.style.cssText = [
+            "background-image:url('" + layer.url + "')",
+            "background-size:100% 100%",
+            "background-repeat:no-repeat",
+            "position:absolute",
+            "left:" + leftPct.toFixed(2) + "%",
+            "top:" + topPct.toFixed(2) + "%",
+            "transform:translate(-50%,-50%)",
+            "width:" + wPct.toFixed(2) + "vw",
+            "height:" + hPct.toFixed(2) + "vh",
+            "opacity:" + layer.alpha,
+            "z-index:" + z,
+          ].join(";");
+        }
+        layersContainer.appendChild(div);
+        z++;
+      }
+    } catch (e) {
+      console.error("CSS wallpaper fallback also failed:", e);
+    }
   }
 
-  weSelect.addEventListener('change', function() {
+  weSelect.addEventListener("change", function() {
     var dirName = weSelect.value;
     applyWeWallpaper(dirName || null);
     ipc.updateWallpaper({ weWallpaperDir: dirName || null });
   });
 
-loadWeWallpapers();
+  loadWeWallpapers();
 
   document.getElementById("charArea").addEventListener("click", () => {
     sidebar.classList.toggle("open");
@@ -623,13 +683,9 @@ void main() {
         var gl = renderer.gl;
         gl._defaultShader = renderer.shaderManager.get("default");
 
-        // Hide body background + CSS layers so WebGL canvas shows through
+        // Make body transparent so WebGL canvas shows through
         document.body.style.backgroundImage = "none";
-        document.body.style.backgroundColor = "#000";
-        var bgLayer = document.querySelector(".wallpaper-bg-layer");
-        if (bgLayer) bgLayer.style.display = "none";
-        var weLayers = document.getElementById("weLayers");
-        if (weLayers) weLayers.style.display = "none";
+        document.body.style.backgroundColor = "transparent";
 
         renderer.start();
     }
