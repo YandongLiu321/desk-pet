@@ -36,10 +36,12 @@
     position: absolute;
     left: 220px;
     top: 0px;
-    max-width: 180px;
+    max-width: 220px;
+    max-height: 120px;
+    overflow-y: auto;
     padding: var(--space-xs) var(--space-sm);
-    background: var(--color-bg-medium);
-    border: 1px solid var(--color-primary-light);
+    background: var(--color-bg-glass);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: var(--radius-md);
     font-size: var(--font-sm);
     color: var(--color-text-primary);
@@ -47,19 +49,15 @@
     pointer-events: auto;
     cursor: pointer;
     -webkit-app-region: no-drag;
-    align-items: center;
-    gap: var(--space-xs);
+    word-break: break-word;
   }
 
   .pet-bubble.open {
-    display: flex;
+    display: block;
   }
 
   .pet-bubble-text {
-    flex: 1;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
+    line-height: 1.5;
   }
 
   .pet-bubble-close {
