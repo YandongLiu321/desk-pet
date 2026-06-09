@@ -42,7 +42,7 @@ class ConversationPanel {
 			"display:flex;padding:var(--space-sm);border-top:1px solid var(--color-bg-light);";
 
 		this._input = document.createElement("input");
-		this._input.className = "conv-input";
+		this._input.className = "conv-input glass-input";
 		this._input.type = "text";
 		this._input.placeholder = "和露娜说点什么吧...";
 		this._input.style.cssText = `flex:1;background:var(--color-bg-medium);border:none;color:var(--color-text-primary);padding:var(--space-sm);border-radius:var(--radius-sm);font-size:var(--font-sm);outline:none;`;

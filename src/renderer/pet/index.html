@@ -376,6 +376,7 @@
     },
   });
   convPanel.mount();
+  convContainer.classList.add("glass-panel");
 
   // ── Task mode indicator + toggle ──
   const taskIndicator = document.createElement("div");
@@ -415,6 +416,7 @@
     onViewDetail: () => {},
   });
   taskPanel.mount();
+  taskPanelContainer.classList.add("glass-panel");
 
   async function loadTasks() {
     const res = await ipc.getTasks("active");
@@ -501,6 +503,7 @@
 
   // Right-click → toggle context menu
   const ctxMenu = document.getElementById("contextMenu");
+  ctxMenu.classList.add("glass-panel");
   charArea.addEventListener("contextmenu", (e) => {
     e.preventDefault();
     e.stopPropagation();
