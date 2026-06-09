@@ -127,6 +127,21 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		},
 	},
 
+	memory: {
+		list() {
+			return ipcRenderer.invoke(IPC.MEMORY_LIST);
+		},
+		search(query, limit) {
+			return ipcRenderer.invoke(IPC.MEMORY_SEARCH, { query, limit });
+		},
+		delete(memId) {
+			return ipcRenderer.invoke(IPC.MEMORY_DELETE, { memId });
+		},
+		clear() {
+			return ipcRenderer.invoke(IPC.MEMORY_CLEAR);
+		},
+	},
+
 	settings: {
 		getApiKey() {
 			return ipcRenderer.invoke(IPC.SETTINGS_GET_API_KEY);

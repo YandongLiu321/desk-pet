@@ -136,7 +136,21 @@ class IpcClient {
 		return this.api?.proactive.onTrigger?.(cb);
 	}
 
-	// Settings
+	// Memory
+		async getMemories() {
+			return this._call("memory.list");
+		}
+		async searchMemories(query, limit) {
+			return this._call("memory.search", query, limit);
+		}
+		async deleteMemory(memId) {
+			return this._call("memory.delete", memId);
+		}
+		async clearMemories() {
+			return this._call("memory.clear");
+		}
+
+		// Settings
 	async getApiKey() {
 		return this._call("settings.getApiKey");
 	}

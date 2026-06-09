@@ -19,6 +19,7 @@ const { RelationshipService } = require("./relationship-service");
 const { PomodoroService } = require("./pomodoro-service");
 const { NarrativeEngine } = require("./narrative-engine");
 const { ProactiveService } = require("./proactive-service");
+const { MemoryService } = require("./memory-service");
 const { UserStyleAnalyzer } = require("./user-style-analyzer");
 const { registerIpcHandlers } = require("./ipc-handlers");
 const { IPC, MODE } = require("../shared/constants.js");
@@ -268,6 +269,7 @@ app.whenReady().then(() => {
 			}
 		},
 	});
+	const memoryService = new MemoryService({ db, llmService });
 	const _userStyleAnalyzer = new UserStyleAnalyzer();
 
 	const preloadPath = path.join(__dirname, "..", "preload.js");
@@ -288,6 +290,7 @@ app.whenReady().then(() => {
 			switchModeWithCleanup,
 			editorWindowManager,
 			proactiveService,
+			memoryService,
 		},
 		{ ipcMain, BrowserWindow },
 	);

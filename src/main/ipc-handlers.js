@@ -288,6 +288,24 @@ function registerIpcHandlers(services, deps) {
 		}
 	});
 
+	// ── Memory ──
+	ipcMain.handle(IPC.MEMORY_LIST, () => runSafe(() => services.memoryService ? db.getMemories() : []));
+
+	ipcMain.handle(IPC.MEMORY_SEARCH, (_event, { query, limit }) => runSafe(() => {
+		if (!services.memoryService) return [];
+		return services.memoryService.getRelevantMemories(query, limit || 5);
+	}));
+
+	ipcMain.handle(IPC.MEMORY_DELETE, (_event, { memId }) => runSafe(() => {
+		db.deleteMemory(memId);
+		return null;
+	}));
+
+	ipcMain.handle(IPC.MEMORY_CLEAR, () => runSafe(() => {
+		db.clearMemories();
+		return null;
+	}));
+
 	// ── Window ──
 	ipcMain.handle(IPC.WINDOW_HIDE, () => runSafe(() => { windowManager.getCurrentWindow()?.hide(); return null; }));
 	ipcMain.handle(IPC.WINDOW_CLOSE_MODE, () => runSafe(() => { services.switchModeWithCleanup(MODE.PET); return null; }));
