@@ -70,6 +70,11 @@ const IPC = {
 	EDITOR_OPEN: "editor:open",
 	EDITOR_APPLY: "editor:apply",
 	EDITOR_UPDATE_PROPERTY: "editor:update-property",
+
+	// Proactive
+	PROACTIVE_TRIGGER: "proactive:trigger",
+	PROACTIVE_GET_STATE: "proactive:get-state",
+	PROACTIVE_SET_CONFIG: "proactive:set-config",
 };
 
 const INTENT = {
