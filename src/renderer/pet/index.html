@@ -237,6 +237,16 @@
   ipc.onSettingsChanged((settings) => {
     if (settings.theme) themeManager.setTheme(settings.theme);
   });
+
+  // Proactive trigger listener
+  ipc.onProactiveTrigger((text) => {
+    showBubble(text);
+  });
+
+  // Mark user interaction for idle detection
+  document.addEventListener("mousedown", () => ipc.markInteraction());
+  document.addEventListener("keydown", () => ipc.markInteraction());
+
   let isTaskMode = false;
   let bubbleTimer = null;
 
@@ -302,6 +312,8 @@
   const convPanel = new ConversationPanel(convContainer, {
     position: "bottom",
     onSend: async (text) => {
+      ipc.markInteraction();
+
       // Check API key before sending
       const keyRes = await ipc.getApiKey();
       if (!keyRes.ok || !keyRes.data?.apiKey) {
