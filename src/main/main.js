@@ -43,6 +43,10 @@ function switchModeWithCleanup(mode) {
 	const win = windowManager.getCurrentWindow();
 	if (win && !win.isDestroyed()) {
 		win.webContents.send(IPC.MODE_ACTIVATED, { mode });
+			if (mode === MODE.PET) {
+				const settings = db.getSettings();
+				win.setIgnoreMouseEvents(settings.clickThrough, { forward: true });
+			}
 	}
 }
 
@@ -115,6 +119,19 @@ function createTray(editorWindowManager, settingsWindow) {
 					const win = windowManager.getCurrentWindow();
 					if (win && !win.isDestroyed()) {
 						win.setAlwaysOnTop(mi.checked, "screen-saver");
+					}
+					broadcastSettings();
+				},
+			},
+			{
+				label: "点击穿透",
+				type: "checkbox",
+				checked: settings.clickThrough,
+				click: (mi) => {
+					db.updateSettings({ clickThrough: mi.checked });
+					const petWin = windowManager.getWindow("pet");
+					if (petWin && !petWin.isDestroyed()) {
+						petWin.setIgnoreMouseEvents(mi.checked, { forward: true });
 					}
 					broadcastSettings();
 				},

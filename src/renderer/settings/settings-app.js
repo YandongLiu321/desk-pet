@@ -1,6 +1,12 @@
 (() => {
-  const { IpcClient } = window;
+  const { IpcClient, ThemeManager } = window;
   const ipc = new IpcClient();
+  const themeManager = new ThemeManager();
+  themeManager.init(ipc);
+
+  ipc.onSettingsChanged((settings) => {
+    if (settings.theme) themeManager.setTheme(settings.theme);
+  });
 
   // Tab switching
   const tabs = document.querySelectorAll('.settings-tab');

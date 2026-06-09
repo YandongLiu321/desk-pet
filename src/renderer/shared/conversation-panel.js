@@ -21,7 +21,7 @@ class ConversationPanel {
 		this.container.innerHTML = "";
 		this.container.style.flexDirection = "column";
 		this.container.style.height = "100%";
-		this.container.style.background = "var(--color-bg-dark)";
+		// background handled by .glass-panel CSS class
 		this.container.style.borderRadius = "var(--radius-md)";
 		this.container.style.overflow = "hidden";
 

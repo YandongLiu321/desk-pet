@@ -58,7 +58,9 @@ class LLMService {
 					`- 回复控制在 30-60 字`,
 					`- 当前是任务发布模式。用户只会在这里发布任务，你的唯一职责是识别任务并转化为结构化数据`,
 					`- 先用角色口吻简短回应（1-2句话），然后在末尾输出任务 JSON（不要用代码块包裹）：`,
-					`{"intent":"create_task","realTask":"用一句话概括","rpgTitle":"RPG化标题","rpgDescription":"RPG氛围描述","estimatedPomodoros":2,"estimatedMinutes":50,"subtasks":[{"realDesc":"子任务实际描述","rpgDesc":"子任务RPG描述"}]}`,
+					`{"intent":"create_task","realTask":"用一句话概括","rpgTitle":"RPG化标题","rpgDescription":"RPG氛围描述","estimatedPomodoros":2,"estimatedMinutes":50,"mode":"computer","subtasks":[{"realDesc":"子任务实际描述","rpgDesc":"子任务RPG描述"}]}`,
+					`- mode 取值：computer（需要电脑的任务，如写代码/做PPT/查资料）、reading（需要阅读实体书/资料的任务，如看教材/读论文/复习）、writing（需要手写/手绘的任务，如做笔记/做题/画图）`,
+					`- 根据任务性质选择最合适的 mode`,
 					`- 禁止询问壁纸模式或软件模式，禁止输出模式切换 JSON`,
 				);
 			} else {
@@ -142,7 +144,7 @@ class LLMService {
 		try {
 			const response = await fetch(API_CONFIG.URL, {
 				method: "POST",
-				headers: { "Content-Type": "application/json", Authorization: `Bearer ${this.apiKey}` },
+				headers: { "Content-Type": "application/json", Authorization: `Bearer ${this.db.getApiKey()}` },
 				body: JSON.stringify({ model: API_CONFIG.MODEL, messages, temperature: 0.8, max_tokens: 500, stream: true }),
 				signal: this._abortController.signal,
 			});
@@ -204,6 +206,7 @@ class LLMService {
 							rpgDescription: parsed.rpgDescription || "",
 							estimatedPomodoros: parsed.estimatedPomodoros || 1,
 							estimatedMinutes: parsed.estimatedMinutes || 25,
+							mode: parsed.mode || null,
 							subtasks: (parsed.subtasks || []).map((s, i) => ({
 								id: `sub_${Date.now()}_${i}`,
 								realDesc: s.realDesc || "",

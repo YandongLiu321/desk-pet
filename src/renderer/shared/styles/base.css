@@ -39,23 +39,6 @@ body {
 	color: var(--color-text-primary);
 }
 
-/* ===== Click-through ===== */
-body.pet-mode {
-	pointer-events: none;
-}
-
-body.pet-mode .pet-char-area,
-body.pet-mode .pet-bubble,
-body.pet-mode .pet-conv-container,
-body.pet-mode .pet-context-menu,
-body.pet-mode .pet-task-panel {
-	pointer-events: auto;
-}
-
-body.pet-mode.interactive {
-	pointer-events: auto;
-}
-
 /* ===== Glassmorphism ===== */
 .glass-panel {
   background: var(--color-bg-glass);
