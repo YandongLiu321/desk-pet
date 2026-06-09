@@ -68,6 +68,10 @@ class LLMService {
 					`- 回复控制在 50-100 字，主动互动时保持简短`,
 					`- 根据对话自然判断用户意图：用户有专注/做事意愿时，以角色口吻询问是否进入壁纸模式；用户想看进度/数据时，询问是否打开软件模式`,
 					`- 用户同意后，在回复末尾输出模式切换 JSON：{"intent":"switch_mode","mode":"wallpaper"} 或 {"intent":"switch_mode","mode":"software"}`,
+					`- 在回复末尾输出 JSON（不要用代码块包裹）`,
+					`- 格式：{"displayText":"你的回复","expression":"happy|surprised|thinking|shy"}`,
+					`- expression 根据你的情感选择：happy（开心）, surprised（惊讶）, thinking（思考）, shy（害羞）`,
+					`- 如果用户表达了模式切换意图，只有这时才加 intent 字段`,
 				);
 		}
 
@@ -200,6 +204,7 @@ class LLMService {
 				if (parsed.intent === INTENT.CREATE_TASK) {
 					return {
 						intent: INTENT.CREATE_TASK,
+						expression: parsed.expression || null,
 						taskPayload: {
 							realTitle: parsed.realTask || "",
 							rpgTitle: parsed.rpgTitle || "",
@@ -231,11 +236,22 @@ class LLMService {
 					return {
 						intent: INTENT.SWITCH_MODE,
 						switchTarget: parsed.mode,
+						expression: parsed.expression || null,
 					};
 				}
 			}
 		} catch {
 			// JSON parse failure → return as plain text
+		}
+		// Try to extract expression from general chat JSON (no intent)
+		try {
+			const generalMatch = text.match(/\{[\s\S]*"expression"[\s\S]*\}/);
+			if (generalMatch) {
+				const parsed = JSON.parse(generalMatch[0]);
+				return { expression: parsed.expression || null };
+			}
+		} catch {
+			// JSON parse failure, return as plain text
 		}
 		return {};
 	}
