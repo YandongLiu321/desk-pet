@@ -63,6 +63,9 @@ class IpcClient {
 	async getTaskById(taskId) {
 		return this._call("task.getById", taskId);
 	}
+	async getTaskMode(taskId) {
+		return this._call("task.getMode", taskId);
+	}
 	async createTask(data) {
 		return this._call("task.create", data);
 	}
@@ -74,6 +77,9 @@ class IpcClient {
 	}
 	async completeTask(taskId) {
 		return this._call("task.complete", taskId);
+	}
+	async updateTaskProgress(taskId, percent, note) {
+		return this._call("task.updateProgress", taskId, percent, note);
 	}
 	async deleteTask(taskId) {
 		return this._call("task.delete", taskId);
@@ -133,6 +139,22 @@ class IpcClient {
 		return this._call("settings.getAudioConfig");
 	}
 
+	async getSettings() {
+		return this._call("settings.getAll");
+	}
+	async updateSettings(partial) {
+		return this._call("settings.update", partial);
+	}
+	async getTheme() {
+		return this._call("settings.getTheme");
+	}
+	async setTheme(theme) {
+		return this._call("settings.setTheme", theme);
+	}
+	onSettingsChanged(cb) {
+		return this.api?.settings.onChanged?.(cb);
+	}
+
 	// Wallpaper Engine
 	async loadWeWallpaper(dirName) {
 		return this._call("wallpaper.loadWe", dirName);
@@ -176,6 +198,10 @@ class IpcClient {
 	}
 	moveWindowBy(dx, dy) {
 		this.api?.window.moveBy(dx, dy);
+	}
+
+	async setIgnoreMouseEvents(ignore, forward) {
+		return this._call("window.setIgnoreMouseEvents", ignore, forward);
 	}
 }
 

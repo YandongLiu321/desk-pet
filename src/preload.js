@@ -41,6 +41,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		getById(taskId) {
 			return ipcRenderer.invoke(IPC.TASK_GET_BY_ID, { taskId });
 		},
+		getMode(taskId) {
+			return ipcRenderer.invoke(IPC.TASK_GET_MODE, { taskId });
+		},
 		create(data) {
 			return ipcRenderer.invoke(IPC.TASK_CREATE, { data });
 		},
@@ -52,6 +55,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		},
 		complete(taskId) {
 			return ipcRenderer.invoke(IPC.TASK_COMPLETE, { taskId });
+		},
+		updateProgress(taskId, percent, note) {
+			return ipcRenderer.invoke(IPC.TASK_UPDATE_PROGRESS, { taskId, percent, note });
 		},
 		delete(taskId) {
 			return ipcRenderer.invoke(IPC.TASK_DELETE, { taskId });
@@ -120,6 +126,23 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		getAudioConfig() {
 			return ipcRenderer.invoke(IPC.SETTINGS_GET_AUDIO_CONFIG);
 		},
+		getAll() {
+			return ipcRenderer.invoke(IPC.SETTINGS_GET);
+		},
+		update(partial) {
+			return ipcRenderer.invoke(IPC.SETTINGS_SET, { partial });
+		},
+		getTheme() {
+			return ipcRenderer.invoke(IPC.THEME_GET);
+		},
+		setTheme(theme) {
+			return ipcRenderer.invoke(IPC.THEME_SET, { theme });
+		},
+		onChanged(cb) {
+			const handler = (_event, data) => cb(data);
+			ipcRenderer.on(IPC.SETTINGS_CHANGED, handler);
+			return () => ipcRenderer.removeListener(IPC.SETTINGS_CHANGED, handler);
+		},
 	},
 
 		wallpaper: {
@@ -171,6 +194,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		},
 		moveBy(dx, dy) {
 			ipcRenderer.send(IPC.WINDOW_MOVE_BY, { dx, dy });
+		},
+		setIgnoreMouseEvents(ignore, forward) {
+			return ipcRenderer.invoke(IPC.WINDOW_SET_IGNORE_MOUSE_EVENTS, { ignore, forward });
 		},
 	},
 });

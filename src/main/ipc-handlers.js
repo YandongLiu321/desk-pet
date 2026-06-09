@@ -91,6 +91,15 @@ function registerIpcHandlers(services, deps) {
 		return { ...result, relationshipUpgrade: upgrade };
 	}));
 
+	ipcMain.handle(IPC.TASK_GET_MODE, (_event, { taskId }) => runSafe(() => {
+		if (!taskService.classifier) return null;
+		return taskService.classifier.getMode(taskId);
+	}));
+
+	ipcMain.handle(IPC.TASK_UPDATE_PROGRESS, (_event, { taskId, percent, note }) => runTask(() => {
+		return taskService.updateProgress(taskId, percent, note);
+	}));
+
 	ipcMain.handle(IPC.TASK_DELETE, (_event, { taskId }) => runSafe(() => { taskService.deleteTask(taskId); return null; }));
 
 	// ── App / Mode ──
@@ -168,6 +177,28 @@ function registerIpcHandlers(services, deps) {
 		};
 	}));
 
+
+	// ── Settings (complete) ──
+	ipcMain.handle(IPC.SETTINGS_GET, () => runSafe(() => db.getSettings()));
+
+	ipcMain.handle(IPC.SETTINGS_SET, (_event, { partial }) => runSafe(() => {
+		const updated = db.updateSettings(partial);
+		// Broadcast to all windows
+		BrowserWindow.getAllWindows().forEach((w) => {
+			if (!w.isDestroyed()) w.webContents.send(IPC.SETTINGS_CHANGED, updated);
+		});
+		return updated;
+	}));
+
+	ipcMain.handle(IPC.THEME_GET, () => runSafe(() => db.getSettings().theme));
+
+	ipcMain.handle(IPC.THEME_SET, (_event, { theme }) => runSafe(() => {
+		const updated = db.updateSettings({ theme });
+		BrowserWindow.getAllWindows().forEach((w) => {
+			if (!w.isDestroyed()) w.webContents.send(IPC.SETTINGS_CHANGED, updated);
+		});
+		return updated;
+	}));
 	// ── Wallpaper Engine ──
 	const weLoader = new WallpaperEngineLoader();
 	const projectRoot = path.join(__dirname, "..", "..");
@@ -250,6 +281,14 @@ function registerIpcHandlers(services, deps) {
 			const [x, y] = win.getPosition();
 			win.setPosition(x + Math.round(dx), y + Math.round(dy));
 		}
+	});
+
+	ipcMain.handle(IPC.WINDOW_SET_IGNORE_MOUSE_EVENTS, (event, { ignore, forward }) => {
+		const win = BrowserWindow.fromWebContents(event.sender);
+		if (win && !win.isDestroyed()) {
+			win.setIgnoreMouseEvents(ignore, { forward: !!forward });
+		}
+		return { ok: true, data: null };
 	});
 }
 
