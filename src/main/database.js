@@ -99,6 +99,7 @@ class Database {
 				milestoneProgress: {},
 			},
 			conversations: [],
+			conversationMemory: [],
 		};
 	}
 
@@ -282,6 +283,39 @@ class Database {
 		Object.assign(this._data.appState.settings, partial);
 		this._persist();
 		return this._data.appState.settings;
+	}
+
+	getMemories() {
+		this._load();
+		return this._data.conversationMemory || [];
+	}
+
+	addMemory(summary, keywords, sourceConvId, msgRangeStart, msgRangeEnd) {
+		this._load();
+		const mem = {
+			id: `mem_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+			createdAt: new Date().toISOString(),
+			summary,
+			keywords,
+			sourceConversationId: sourceConvId,
+			messageRange: [msgRangeStart, msgRangeEnd],
+		};
+		if (!this._data.conversationMemory) this._data.conversationMemory = [];
+		this._data.conversationMemory.push(mem);
+		this._persist();
+		return mem;
+	}
+
+	deleteMemory(memId) {
+		this._load();
+		this._data.conversationMemory = (this._data.conversationMemory || []).filter(m => m.id !== memId);
+		this._persist();
+	}
+
+	clearMemories() {
+		this._load();
+		this._data.conversationMemory = [];
+		this._persist();
 	}
 }
 

@@ -75,6 +75,12 @@ const IPC = {
 	PROACTIVE_TRIGGER: "proactive:trigger",
 	PROACTIVE_GET_STATE: "proactive:get-state",
 	PROACTIVE_SET_CONFIG: "proactive:set-config",
+
+	// Memory
+	MEMORY_LIST: "memory:list",
+	MEMORY_SEARCH: "memory:search",
+	MEMORY_DELETE: "memory:delete",
+	MEMORY_CLEAR: "memory:clear",
 };
 
 const INTENT = {
