@@ -270,6 +270,7 @@ app.whenReady().then(() => {
 		},
 	});
 	const memoryService = new MemoryService({ db, llmService });
+	llmService._memoryService = memoryService;
 	const _userStyleAnalyzer = new UserStyleAnalyzer();
 
 	const preloadPath = path.join(__dirname, "..", "preload.js");

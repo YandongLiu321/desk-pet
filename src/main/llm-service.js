@@ -11,6 +11,7 @@ class LLMService {
 		this.apiKey = config.apiKey;
 		this.db = config.db;
 		this.worldBook = config.worldBook;
+		this._memoryService = config.memoryService || null;
 		this._abortController = null;
 		this._retried = false;
 	}
@@ -75,6 +76,15 @@ class LLMService {
 				);
 		}
 
+		// Inject relevant memories
+		if (this._memoryService && context.userMessage) {
+			const memories = this._memoryService.getRelevantMemories(context.userMessage, 3);
+			if (memories.length > 0) {
+				sections.push("");
+				sections.push(this._memoryService.formatMemoriesForPrompt(memories));
+			}
+		}
+
 		return sections.join("\n");
 	}
 
@@ -88,6 +98,20 @@ class LLMService {
 		this._abortController = new AbortController();
 		this._retried = false;
 		await this._doChat(options, onChunk, onDone, onError);
+
+		// Auto-summarize if threshold reached
+		if (this._memoryService) {
+			const conv = this.db.getActiveConversation();
+			if (conv && this._memoryService.shouldSummarize(conv.id)) {
+				this._memoryService.summarizeRecent(conv.id).then((result) => {
+					if (result && result.summary) {
+						const allMsgs = conv.messages;
+						const startIdx = Math.max(0, allMsgs.length - 16);
+						this.db.addMemory(result.summary, result.keywords, conv.id, startIdx, allMsgs.length);
+					}
+				}).catch(() => {});
+			}
+		}
 	}
 
 	_buildChatMessages(options) {
@@ -97,6 +121,7 @@ class LLMService {
 			currentMode: appState.currentMode,
 			activeTask,
 			enableTaskCreation: options.enableTaskCreation,
+			userMessage: options.message,
 		});
 		const conv = this.db.getActiveConversation();
 		const history = this.db.getRecentMessages(conv.id, 20);
