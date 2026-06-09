@@ -91,10 +91,23 @@ class ConversationPanel {
 		this._msgList.scrollTop = this._msgList.scrollHeight;
 	}
 
+	createAssistantMessageElement() {
+		const msgEl = document.createElement("div");
+		msgEl.className = "conv-msg conv-msg--assistant";
+		msgEl.style.cssText = "margin:var(--space-xs) 0;padding:var(--space-xs) var(--space-sm);border-radius:var(--radius-sm);max-width:85%;font-size:var(--font-sm);word-break:break-word;align-self:flex-start;background:var(--color-bg-tertiary, var(--color-bg-medium));";
+		this._msgList.appendChild(msgEl);
+		this._msgList.scrollTop = this._msgList.scrollHeight;
+		return msgEl;
+	}
+
 	appendToLastMessage(role, text) {
 		const msgs = this._msgList.querySelectorAll(`.conv-msg--${role}`);
 		const last = msgs[msgs.length - 1];
-		if (last) last.textContent += text;
+		if (last) {
+			last.textContent += text;
+			this._msgList.scrollTop = this._msgList.scrollHeight;
+		}
+		return last;
 	}
 
 	showTyping() {

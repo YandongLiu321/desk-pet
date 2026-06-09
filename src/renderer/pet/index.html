@@ -220,6 +220,7 @@
 <script src="../../shared/constants.js"></script>
 <script src="../shared/ipc-client.js"></script>
 <script src="../shared/theme-manager.js"></script>
+<script src="../shared/typewriter-controller.js"></script>
 <script src="../shared/dom-utils.js"></script>
 <script src="../shared/state-manager.js"></script>
 <script src="../shared/character-renderer.js"></script>
@@ -229,7 +230,7 @@
 <script src="../shared/task-panel.js"></script>
 <script>
 (() => {
-  const { IpcClient, CharacterRenderer, ConversationPanel, TaskPanel, ThemeManager } = window;
+  const { IpcClient, CharacterRenderer, ConversationPanel, TaskPanel, ThemeManager, TypewriterController } = window;
   const { INTENT, MODE } = window;
   const ipc = new IpcClient();
   const themeManager = new ThemeManager();
@@ -251,19 +252,33 @@
     setTaskMode(false);
   }
 
-  // Bubble
+  // Bubble with typewriter
   const bubble = document.getElementById("bubble");
-  const bubbleText = document.getElementById("bubbleText");
   const bubbleClose = document.getElementById("bubbleClose");
+  const bubbleText = document.getElementById("bubbleText");
+  const typewriter = new TypewriterController(bubbleText, {
+    speed: 35,
+    onChar: () => {
+      if (charRenderer._model && charRenderer._model.setParameterValueById) {
+        charRenderer._model.setParameterValueById('ParamMouthOpenY', 0.3 + Math.random() * 0.5);
+        setTimeout(() => {
+          if (charRenderer._model && charRenderer._model.setParameterValueById) {
+            charRenderer._model.setParameterValueById('ParamMouthOpenY', 0);
+          }
+        }, 50);
+      }
+    },
+  });
 
   function showBubble(text) {
-    bubbleText.textContent = text;
+    typewriter.reset();
     bubble.classList.add("open");
-    if (bubbleTimer) clearTimeout(bubbleTimer);
-    bubbleTimer = setTimeout(() => hideBubble(), 5000);
+    typewriter.appendChunk(text);
+    typewriter.finalize();
   }
 
   function hideBubble() {
+    typewriter.finishNow();
     bubble.classList.remove("open");
     if (bubbleTimer) { clearTimeout(bubbleTimer); bubbleTimer = null; }
   }
@@ -298,16 +313,42 @@
       }
 
       convPanel.showTyping();
-      let currentMsg = null;
+      let msgEl = null;
+      let convTypewriter = null;
+
       const unsubChunk = ipc.onChunk((chunk) => {
-        if (!currentMsg) { currentMsg = true; }
-      });
-      const unsubDone = ipc.onDone((data) => {
         convPanel.hideTyping();
+        if (!msgEl) {
+          msgEl = convPanel.createAssistantMessageElement();
+          convTypewriter = new TypewriterController(msgEl, {
+            speed: 35,
+            showCursor: true,
+            onChar: () => {
+              if (charRenderer._model && charRenderer._model.setParameterValueById) {
+                charRenderer._model.setParameterValueById('ParamMouthOpenY', 0.3 + Math.random() * 0.5);
+                setTimeout(() => {
+                  if (charRenderer._model && charRenderer._model.setParameterValueById) {
+                    charRenderer._model.setParameterValueById('ParamMouthOpenY', 0);
+                  }
+                }, 50);
+              }
+            },
+          });
+        }
+        convTypewriter.appendChunk(chunk);
+      });
+
+      const unsubDone = ipc.onDone((data) => {
         unsubChunk();
         unsubDone();
-        if (data.displayText) {
+        if (convTypewriter) {
+          convTypewriter.finalize();
+          if (data.displayText) {
+            showBubble(data.displayText);
+          }
+        } else if (data.displayText) {
           convPanel.addMessage("assistant", data.displayText);
+          showBubble(data.displayText);
         }
         if (data.intent === INTENT.CREATE_TASK && data.taskPayload) {
           ipc.createTask(data.taskPayload).then((res) => {
