@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>设置 — Desk Pet</title>
+<link rel="stylesheet" href="../shared/styles/base.css">
+<style>
+  body {
+    display: flex;
+    height: 100vh;
+    background: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    font-family: var(--font-main);
+    margin: 0;
+    overflow: hidden;
+  }
+
+  .settings-sidebar {
+    width: 180px;
+    background: var(--color-bg-secondary);
+    border-right: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-md) 0;
+    flex-shrink: 0;
+  }
+
+  .settings-sidebar-title {
+    padding: var(--space-sm) var(--space-md);
+    font-size: var(--font-lg);
+    font-weight: 700;
+    color: var(--color-text-primary);
+    margin-bottom: var(--space-md);
+  }
+
+  .settings-tab {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    font-size: var(--font-sm);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    border: none;
+    background: none;
+    text-align: left;
+    transition: all var(--transition-fast);
+    border-left: 3px solid transparent;
+    font-family: inherit;
+  }
+
+  .settings-tab:hover {
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+  }
+
+  .settings-tab.active {
+    color: var(--color-accent);
+    background: rgba(124, 58, 237, 0.1);
+    border-left-color: var(--color-accent);
+  }
+
+  .settings-tab-icon { font-size: var(--font-lg); width: 24px; text-align: center; }
+
+  .settings-content {
+    flex: 1;
+    padding: var(--space-lg);
+    overflow-y: auto;
+  }
+
+  .settings-page { display: none; }
+  .settings-page.active { display: block; }
+
+  .settings-page h2 {
+    font-size: var(--font-xl);
+    margin: 0 0 var(--space-xs) 0;
+    color: var(--color-text-primary);
+  }
+
+  .settings-page .subtitle {
+    font-size: var(--font-sm);
+    color: var(--color-text-muted);
+    margin: 0 0 var(--space-lg) 0;
+  }
+
+  .settings-field {
+    margin-bottom: var(--space-md);
+  }
+
+  .settings-field label {
+    display: block;
+    font-size: var(--font-sm);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-xs);
+  }
+
+  .settings-field input[type="text"],
+  .settings-field input[type="password"],
+  .settings-field input[type="number"],
+  .settings-field select {
+    width: 100%;
+    max-width: 400px;
+    padding: var(--space-sm);
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-primary);
+    font-size: var(--font-sm);
+    outline: none;
+    transition: border-color var(--transition-fast);
+    box-sizing: border-box;
+    font-family: inherit;
+  }
+
+  .settings-field input:focus,
+  .settings-field select:focus {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 2px var(--color-accent-glow);
+  }
+
+  .settings-field input[type="range"] {
+    width: 100%;
+    max-width: 400px;
+    accent-color: var(--color-accent);
+  }
+
+  .settings-field .range-value {
+    display: inline-block;
+    margin-left: var(--space-sm);
+    font-size: var(--font-sm);
+    color: var(--color-accent);
+    min-width: 40px;
+  }
+
+  .settings-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 400px;
+    padding: var(--space-sm) 0;
+  }
+
+  .settings-toggle label { cursor: pointer; }
+
+  .settings-toggle input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--color-accent);
+    cursor: pointer;
+  }
+
+  .theme-cards {
+    display: flex;
+    gap: var(--space-md);
+    flex-wrap: wrap;
+  }
+
+  .theme-card {
+    width: 140px;
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    border: 2px solid transparent;
+    text-align: center;
+    transition: all var(--transition-fast);
+    font-size: var(--font-sm);
+  }
+
+  .theme-card:hover { border-color: var(--color-border-light); }
+  .theme-card.selected { border-color: var(--color-accent); box-shadow: 0 0 12px var(--color-accent-glow); }
+
+  .theme-card-starry { background: linear-gradient(135deg, #0a0e17, #1a1f2e); color: #e2e8f0; }
+  .theme-card-forest { background: linear-gradient(135deg, #0a1a0f, #162e1f); color: #e8f0e8; }
+  .theme-card-ocean { background: linear-gradient(135deg, #0a0e2e, #162048); color: #e0e8f8; }
+
+  .theme-card .swatch {
+    width: 32px; height: 32px; border-radius: 50%;
+    margin: 0 auto var(--space-sm);
+  }
+  .swatch-starry { background: #7c3aed; }
+  .swatch-forest { background: #22c55e; }
+  .swatch-ocean { background: #3b82f6; }
+
+  .settings-btn-row {
+    display: flex;
+    gap: var(--space-sm);
+    margin-top: var(--space-xl);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--color-border);
+  }
+
+  .btn {
+    padding: var(--space-sm) var(--space-lg);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-family: inherit;
+  }
+
+  .btn-primary { background: var(--color-accent); color: white; }
+  .btn-primary:hover { filter: brightness(1.1); }
+  .btn-secondary { background: var(--color-bg-tertiary); color: var(--color-text-primary); }
+  .btn-secondary:hover { background: var(--color-bg-secondary); }
+  .btn-danger { background: transparent; color: var(--color-text-muted); }
+  .btn-danger:hover { color: var(--color-danger); }
+
+  .test-result {
+    font-size: var(--font-sm);
+    margin-top: var(--space-xs);
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-sm);
+  }
+  .test-result.success { color: var(--color-success); background: rgba(34,197,94,0.1); }
+  .test-result.fail { color: var(--color-danger); background: rgba(239,68,68,0.1); }
+</style>
+</head>
+<body>
+
+<div class="settings-sidebar">
+  <div class="settings-sidebar-title">设置</div>
+  <button class="settings-tab active" data-tab="api">
+    <span class="settings-tab-icon">🔑</span> API 配置
+  </button>
+  <button class="settings-tab" data-tab="appearance">
+    <span class="settings-tab-icon">🎨</span> 外观
+  </button>
+  <button class="settings-tab" data-tab="interaction">
+    <span class="settings-tab-icon">💬</span> 交互
+  </button>
+  <button class="settings-tab" data-tab="pomodoro">
+    <span class="settings-tab-icon">🍅</span> 番茄钟
+  </button>
+</div>
+
+<div class="settings-content" id="settingsContent">
+  <div class="settings-page active" data-page="api">
+    <h2>API 配置</h2>
+    <p class="subtitle">配置 AI 服务连接参数</p>
+    <div class="settings-field">
+      <label>API Key</label>
+      <input type="password" id="apiKey" placeholder="sk-...">
+    </div>
+    <div class="settings-field">
+      <label>API Base URL</label>
+      <input type="text" id="apiBaseUrl" value="https://api.deepseek.com/v1/chat/completions">
+    </div>
+    <div class="settings-field">
+      <label>Model</label>
+      <input type="text" id="apiModel" value="deepseek-chat">
+    </div>
+    <button class="btn btn-secondary" id="testConnectionBtn" style="margin-top:var(--space-sm);">测试连接</button>
+    <div id="testResult"></div>
+  </div>
+
+  <div class="settings-page" data-page="appearance">
+    <h2>外观</h2>
+    <p class="subtitle">自定义视觉效果</p>
+    <div class="settings-field">
+      <label>主题</label>
+      <div class="theme-cards">
+        <div class="theme-card theme-card-starry" data-theme="starry">
+          <div class="swatch swatch-starry"></div>
+          星空
+        </div>
+        <div class="theme-card theme-card-forest" data-theme="forest">
+          <div class="swatch swatch-forest"></div>
+          森林
+        </div>
+        <div class="theme-card theme-card-ocean" data-theme="ocean">
+          <div class="swatch swatch-ocean"></div>
+          海洋
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="settings-page" data-page="interaction">
+    <h2>交互</h2>
+    <p class="subtitle">对话和字幕设置</p>
+    <div class="settings-toggle">
+      <label>显示字幕</label>
+      <input type="checkbox" id="subtitleEnabled" checked>
+    </div>
+    <div class="settings-field">
+      <label>打字机速度 <span class="range-value" id="typewriterSpeedVal">35ms</span></label>
+      <input type="range" id="typewriterSpeed" min="10" max="100" value="35" step="5">
+    </div>
+    <div class="settings-toggle">
+      <label>点击穿透</label>
+      <input type="checkbox" id="clickThrough" checked>
+    </div>
+    <div class="settings-toggle">
+      <label>窗口置顶</label>
+      <input type="checkbox" id="alwaysOnTop" checked>
+    </div>
+  </div>
+
+  <div class="settings-page" data-page="pomodoro">
+    <h2>番茄钟</h2>
+    <p class="subtitle">专注计时参数</p>
+    <div class="settings-field">
+      <label>工作时长 (分钟)</label>
+      <input type="number" id="pomodoroWorkDuration" min="5" max="120" value="25">
+    </div>
+    <div class="settings-field">
+      <label>短休时长 (分钟)</label>
+      <input type="number" id="pomodoroShortBreak" min="1" max="30" value="5">
+    </div>
+    <div class="settings-field">
+      <label>长休时长 (分钟)</label>
+      <input type="number" id="pomodoroLongBreak" min="5" max="60" value="15">
+    </div>
+    <div class="settings-field">
+      <label>长休间隔 (几个番茄后)</label>
+      <input type="number" id="pomodoroLongBreakInterval" min="1" max="10" value="4">
+    </div>
+  </div>
+
+  <div class="settings-btn-row">
+    <button class="btn btn-primary" id="saveBtn">保存</button>
+    <button class="btn btn-secondary" id="cancelBtn">取消</button>
+    <button class="btn btn-danger" id="resetBtn">恢复默认</button>
+  </div>
+</div>
+
+<script src="../../shared/constants.js"></script>
+<script src="../shared/ipc-client.js"></script>
+<script src="settings-app.js"></script>
+</body>
+</html>
