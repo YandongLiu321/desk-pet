@@ -102,11 +102,20 @@ class CharacterRenderer {
 	/** @param {string} name */
 	setMotion(name) {
 		if (this.assetType === "live2d" && this._live2dModel) {
-			if (name === "bounce") {
-				this._live2dModel.startMotion("Flick", 0);
+			const motionMap = {
+				happy:     { group: "Flick",     index: 0 },
+				surprised: { group: "FlickDown", index: 0 },
+				thinking:  { group: "Idle",      index: Math.floor(Math.random() * 3) },
+				shy:       { group: "TapBody",   index: Math.floor(Math.random() * 3) },
+				bounce:    { group: "Flick",     index: 0 },
+			};
+			const motion = motionMap[name];
+			if (motion) {
+				this._live2dModel.startMotion(motion.group, motion.index);
 			}
 			return;
 		}
+		// CSS fallback
 		const wrapper = this.container.querySelector(".character-wrapper");
 		if (wrapper) {
 			wrapper.style.animation =
