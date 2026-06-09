@@ -18,7 +18,7 @@ const { TaskClassifier } = require("./task-classifier");
 const { RelationshipService } = require("./relationship-service");
 const { PomodoroService } = require("./pomodoro-service");
 const { NarrativeEngine } = require("./narrative-engine");
-const { ProactiveTrigger } = require("./proactive-trigger");
+const { ProactiveService } = require("./proactive-service");
 const { UserStyleAnalyzer } = require("./user-style-analyzer");
 const { registerIpcHandlers } = require("./ipc-handlers");
 const { IPC, MODE } = require("../shared/constants.js");
@@ -258,7 +258,16 @@ app.whenReady().then(() => {
 	const pomodoroService = new PomodoroService();
 	_pomodoroService = pomodoroService;
 	const narrativeEngine = new NarrativeEngine(llmService);
-	const proactiveTrigger = new ProactiveTrigger();
+	const proactiveService = new ProactiveService({
+		db,
+		llmService,
+		onTrigger: (text) => {
+			const win = windowManager.getWindow("pet");
+			if (win && !win.isDestroyed()) {
+				win.webContents.send(IPC.PROACTIVE_TRIGGER, { text });
+			}
+		},
+	});
 	const _userStyleAnalyzer = new UserStyleAnalyzer();
 
 	const preloadPath = path.join(__dirname, "..", "preload.js");
@@ -278,12 +287,13 @@ app.whenReady().then(() => {
 			worldBook,
 			switchModeWithCleanup,
 			editorWindowManager,
+			proactiveService,
 		},
 		{ ipcMain, BrowserWindow },
 	);
 
 	createTray(editorWindowManager, settingsWindowManager);
-	proactiveTrigger.start();
+	proactiveService.start();
 	switchModeWithCleanup(MODE.PET);
 });
 

@@ -272,6 +272,22 @@ function registerIpcHandlers(services, deps) {
 		return { ok: true };
 	}));
 
+	// ── Proactive ──
+	ipcMain.handle(IPC.PROACTIVE_GET_STATE, () => runSafe(() => ({
+		lastTriggerAt: services.proactiveService ? services.proactiveService._lastTriggerAt : 0,
+		lastInteractionAt: services.proactiveService ? services.proactiveService._lastInteractionAt : 0,
+	})));
+
+	ipcMain.handle(IPC.PROACTIVE_SET_CONFIG, (_event, { partial }) => runSafe(() => {
+		return db.updateSettings(Object.assign(db.getSettings(), partial));
+	}));
+
+	ipcMain.on(IPC.PROACTIVE_TRIGGER, () => {
+		if (services.proactiveService) {
+			services.proactiveService.markInteraction();
+		}
+	});
+
 	// ── Window ──
 	ipcMain.handle(IPC.WINDOW_HIDE, () => runSafe(() => { windowManager.getCurrentWindow()?.hide(); return null; }));
 	ipcMain.handle(IPC.WINDOW_CLOSE_MODE, () => runSafe(() => { services.switchModeWithCleanup(MODE.PET); return null; }));

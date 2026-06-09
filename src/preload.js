@@ -110,6 +110,23 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		},
 	},
 
+	proactive: {
+		getState() {
+			return ipcRenderer.invoke(IPC.PROACTIVE_GET_STATE);
+		},
+		setConfig(partial) {
+			return ipcRenderer.invoke(IPC.PROACTIVE_SET_CONFIG, { partial });
+		},
+		markInteraction() {
+			ipcRenderer.send(IPC.PROACTIVE_TRIGGER);
+		},
+		onTrigger(cb) {
+			const handler = (_event, data) => cb(data.text);
+			ipcRenderer.on(IPC.PROACTIVE_TRIGGER, handler);
+			return function() { ipcRenderer.removeListener(IPC.PROACTIVE_TRIGGER, handler); };
+		},
+	},
+
 	settings: {
 		getApiKey() {
 			return ipcRenderer.invoke(IPC.SETTINGS_GET_API_KEY);

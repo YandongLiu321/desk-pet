@@ -122,6 +122,20 @@ class IpcClient {
 		this.api?.pomodoro.removeAllListeners?.();
 	}
 
+	// Proactive
+	async getProactiveState() {
+		return this._call("proactive.getState");
+	}
+	async setProactiveConfig(partial) {
+		return this._call("proactive.setConfig", partial);
+	}
+	markInteraction() {
+		this.api?.proactive.markInteraction();
+	}
+	onProactiveTrigger(cb) {
+		return this.api?.proactive.onTrigger?.(cb);
+	}
+
 	// Settings
 	async getApiKey() {
 		return this._call("settings.getApiKey");
