@@ -14,6 +14,7 @@ const { WindowManager } = require("./window-manager");
 const { EditorWindowManager } = require("./editor-window");
 const { LLMService } = require("./llm-service");
 const { TaskService } = require("./task-service");
+const { TaskClassifier } = require("./task-classifier");
 const { RelationshipService } = require("./relationship-service");
 const { PomodoroService } = require("./pomodoro-service");
 const { NarrativeEngine } = require("./narrative-engine");
@@ -50,7 +51,7 @@ let _llmService;
 /** @type {import('./pomodoro-service').PomodoroService} */
 let _pomodoroService;
 
-function createTray(editorWindowManager) {
+function createTray(editorWindowManager, settingsWindow) {
 	const iconPath = path.join(
 		__dirname,
 		"..",
@@ -71,33 +72,96 @@ function createTray(editorWindowManager) {
 	tray = new Tray(icon);
 	tray.setToolTip("Desk Pet — 露娜·月语");
 
-	const contextMenu = Menu.buildFromTemplate([
-		{
-			label: "桌宠模式",
-			type: "normal",
-			click: () => switchModeWithCleanup(MODE.PET),
-		},
-		{
-			label: "壁纸模式",
-			type: "normal",
-			click: () => switchModeWithCleanup(MODE.WALLPAPER),
-		},
-		{
-			label: "软件模式",
-			type: "normal",
-			click: () => switchModeWithCleanup(MODE.SOFTWARE),
-		},
-		{ type: "separator" },
-		{
-			label: "壁纸编辑器",
-			type: "normal",
-			click: () => { if (editorWindowManager) editorWindowManager.open(); },
-		},
-		{ type: "separator" },
-		{ label: "退出", type: "normal", click: () => app.quit() },
-	]);
+	const buildMenu = () => {
+		const settings = db.getSettings();
+		return Menu.buildFromTemplate([
+			{
+				label: "桌宠模式",
+				type: "normal",
+				click: () => switchModeWithCleanup(MODE.PET),
+			},
+			{
+				label: "壁纸模式",
+				type: "normal",
+				click: () => switchModeWithCleanup(MODE.WALLPAPER),
+			},
+			{
+				label: "软件模式",
+				type: "normal",
+				click: () => switchModeWithCleanup(MODE.SOFTWARE),
+			},
+			{ type: "separator" },
+			{
+				label: "壁纸编辑器",
+				type: "normal",
+				click: () => { if (editorWindowManager) editorWindowManager.open(); },
+			},
+			{ type: "separator" },
+			{
+				label: "显示字幕",
+				type: "checkbox",
+				checked: settings.subtitleEnabled,
+				click: (mi) => {
+					db.updateSettings({ subtitleEnabled: mi.checked });
+					broadcastSettings();
+				},
+			},
+			{
+				label: "窗口置顶",
+				type: "checkbox",
+				checked: settings.alwaysOnTop,
+				click: (mi) => {
+					db.updateSettings({ alwaysOnTop: mi.checked });
+					const win = windowManager.getCurrentWindow();
+					if (win && !win.isDestroyed()) {
+						win.setAlwaysOnTop(mi.checked, "screen-saver");
+					}
+					broadcastSettings();
+				},
+			},
+			{
+				label: "静音",
+				type: "checkbox",
+				checked: settings.mute,
+				click: (mi) => {
+					db.updateSettings({ mute: mi.checked });
+					broadcastSettings();
+				},
+			},
+			{ type: "separator" },
+			{
+				label: "设置...",
+				type: "normal",
+				click: () => { if (settingsWindow) settingsWindow.open(); },
+			},
+			{
+				label: "对话历史",
+				type: "normal",
+				click: () => switchModeWithCleanup(MODE.SOFTWARE),
+			},
+			{ type: "separator" },
+			{ label: "退出", type: "normal", click: () => app.quit() },
+		]);
+	};
+
+	const contextMenu = buildMenu();
 	tray.setContextMenu(contextMenu);
+
+	// Refresh menu periodically to update checkbox states
+	setInterval(() => {
+		const newMenu = buildMenu();
+		tray.setContextMenu(newMenu);
+	}, 10000);
+
 	tray.on("click", () => switchModeWithCleanup(MODE.PET));
+}
+
+// Helper: broadcast settings changes to all windows
+function broadcastSettings() {
+	const settings = db.getSettings();
+	BrowserWindow.getAllWindows().forEach((w) => {
+		if (!w.isDestroyed()) w.webContents.send(IPC.SETTINGS_CHANGED, settings);
+	});
 }
 
 function loadWorldBook() {
@@ -136,7 +200,8 @@ app.whenReady().then(() => {
 	const apiKey = db.getApiKey();
 	const llmService = new LLMService({ apiKey, db, worldBook });
 	_llmService = llmService;
-	const taskService = new TaskService({ db, worldBook });
+	const classifier = new TaskClassifier(path.join(__dirname, "..", "..", "data"));
+	const taskService = new TaskService({ db, worldBook, classifier });
 	const relationshipService = new RelationshipService(db);
 	const pomodoroService = new PomodoroService();
 	_pomodoroService = pomodoroService;
@@ -164,7 +229,7 @@ app.whenReady().then(() => {
 		{ ipcMain, BrowserWindow },
 	);
 
-	createTray(editorWindowManager);
+	createTray(editorWindowManager, null);  // settings window added in Task 12
 	proactiveTrigger.start();
 	switchModeWithCleanup(MODE.PET);
 });
