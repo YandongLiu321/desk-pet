@@ -72,7 +72,7 @@ class WindowManager {
 		if (mode === MODE.PET) {
 			win.setAlwaysOnTop(true, "screen-saver");
 			win.setVisibleOnAllWorkspaces(true);
-			win.setIgnoreMouseEvents(false);
+			win.setIgnoreMouseEvents(true, { forward: true });
 		}
 		if (mode === MODE.WALLPAPER) {
 			win.setAlwaysOnTop(false);

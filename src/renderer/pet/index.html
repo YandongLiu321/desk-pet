@@ -196,7 +196,7 @@
   }
 </style>
 </head>
-<body>
+<body class="pet-mode">
 
 <div class="pet-bubble" id="bubble">
   <span class="pet-bubble-text" id="bubbleText"></span>
@@ -246,6 +246,7 @@
     document.getElementById("convContainer").classList.remove("open");
     document.getElementById("taskPanel").classList.remove("open");
     document.getElementById("contextMenu").classList.remove("open");
+    document.body.classList.remove("interactive");
     hideBubble();
     setTaskMode(false);
   }
@@ -445,8 +446,13 @@
     if (wasLongPress) return;
     e.stopPropagation();
     setTaskMode(false);
-    convContainer.classList.toggle("open");
+    const convOpen = convContainer.classList.toggle("open");
     taskPanelContainer.classList.remove("open");
+    if (convOpen) {
+      document.body.classList.add("interactive");
+    } else {
+      document.body.classList.remove("interactive");
+    }
     charRenderer.setMotion("bounce");
     setTimeout(() => charRenderer.setMotion("idle"), 300);
     loadTasks();
@@ -468,12 +474,18 @@
       if (action === "create-task") {
         setTaskMode(true);
         convContainer.classList.add("open");
+        document.body.classList.add("interactive");
         taskPanelContainer.classList.remove("open");
       } else if (action === MODE.WALLPAPER || action === MODE.SOFTWARE) {
         await ipc.switchMode(action);
       } else if (action === "tasks") {
-        taskPanelContainer.classList.toggle("open");
+        const taskOpen = taskPanelContainer.classList.toggle("open");
         convContainer.classList.remove("open");
+        if (taskOpen) {
+          document.body.classList.add("interactive");
+        } else {
+          document.body.classList.remove("interactive");
+        }
       } else if (action === "quit") {
         ipc.hideWindow();
       }
