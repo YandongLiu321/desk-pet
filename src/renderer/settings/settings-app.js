@@ -79,6 +79,21 @@
     document.getElementById('pomodoroLongBreakInterval').value = s.pomodoroLongBreakInterval || 4;
   }
 
+  // Toast
+  function showToast(msg) {
+    let toast = document.getElementById('saveToast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'saveToast';
+      toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--color-accent);color:#fff;padding:10px 24px;border-radius:20px;font-size:14px;z-index:999;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:nowrap;';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = msg;
+    toast.style.opacity = '1';
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(() => { toast.style.opacity = '0'; }, 2000);
+  }
+
   // Save
   document.getElementById('saveBtn').addEventListener('click', async () => {
     const partial = {
@@ -97,7 +112,7 @@
     if (apiKey) await ipc.setApiKey(apiKey);
 
     await ipc.updateSettings(partial);
-    window.close();
+    showToast('已保存');
   });
 
   // Cancel
