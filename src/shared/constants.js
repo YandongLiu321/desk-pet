@@ -13,10 +13,12 @@ const IPC = {
 	// Tasks
 	TASK_GET_ALL: "task:get-all",
 	TASK_GET_BY_ID: "task:get-by-id",
+	TASK_GET_MODE: "task:get-mode",
 	TASK_CREATE: "task:create",
 	TASK_UPDATE: "task:update",
 	TASK_TOGGLE_SUBTASK: "task:toggle-subtask",
 	TASK_COMPLETE: "task:complete",
+	TASK_UPDATE_PROGRESS: "task:update-progress",
 	TASK_DELETE: "task:delete",
 
 	// App / Mode
@@ -33,12 +35,22 @@ const IPC = {
 	POMODORO_TICK: "pomodoro:tick",
 	POMODORO_END: "pomodoro:end",
 
-	// Settings
+	// Settings (完整)
+	SETTINGS_GET: "settings:get",
+	SETTINGS_SET: "settings:set",
 	SETTINGS_GET_API_KEY: "settings:get-api-key",
 	SETTINGS_SET_API_KEY: "settings:set-api-key",
 	SETTINGS_GET_WALLPAPER: "settings:get-wallpaper",
 	SETTINGS_UPDATE_WALLPAPER: "settings:update-wallpaper",
 	SETTINGS_GET_AUDIO_CONFIG: "settings:get-audio-config",
+	SETTINGS_CHANGED: "settings:changed",
+
+	// Theme
+	THEME_GET: "theme:get",
+	THEME_SET: "theme:set",
+
+	// Window control
+	WINDOW_SET_IGNORE_MOUSE_EVENTS: "window:set-ignore-mouse-events",
 
 	// Wallpaper Engine
 	WALLPAPER_LOAD_WE: "wallpaper:load-we",

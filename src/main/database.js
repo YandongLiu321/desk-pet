@@ -57,6 +57,19 @@ class Database {
 					soundVolume: 0.5,
 					weWallpaperDir: null,
 				},
+				settings: {
+					theme: "starry",
+					subtitleEnabled: true,
+					typewriterSpeed: 35,
+					bubbleAutoHideMs: 0,
+					clickThrough: true,
+					alwaysOnTop: true,
+					mute: false,
+					pomodoroWorkDuration: 25,
+					pomodoroShortBreak: 5,
+					pomodoroLongBreak: 15,
+					pomodoroLongBreakInterval: 4,
+				},
 				pomodoro: null,
 				apiKey: "",
 			},
@@ -246,6 +259,18 @@ class Database {
 		this._load();
 		this._data.appState.apiKey = key;
 		this._persist();
+	}
+
+	getSettings() {
+		this._load();
+		return this._data.appState.settings;
+	}
+
+	updateSettings(partial) {
+		this._load();
+		Object.assign(this._data.appState.settings, partial);
+		this._persist();
+		return this._data.appState.settings;
 	}
 }
 
