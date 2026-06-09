@@ -164,6 +164,41 @@ function broadcastSettings() {
 	});
 }
 
+class SettingsWindowManager {
+	constructor(preloadPath) {
+		this._preloadPath = preloadPath;
+		this._win = null;
+	}
+
+	open() {
+		if (this._win && !this._win.isDestroyed()) {
+			this._win.focus();
+			return;
+		}
+
+		this._win = new BrowserWindow({
+			width: 800,
+			height: 600,
+			minWidth: 640,
+			minHeight: 480,
+			resizable: true,
+			title: "设置 — Desk Pet",
+			show: false,
+			webPreferences: {
+				preload: this._preloadPath,
+				contextIsolation: true,
+				nodeIntegration: false,
+				sandbox: false,
+			},
+		});
+
+		const indexPath = path.join(__dirname, "..", "renderer", "settings", "index.html");
+		this._win.loadFile(indexPath);
+		this._win.once("ready-to-show", () => this._win.show());
+		this._win.on("closed", () => { this._win = null; });
+	}
+}
+
 function loadWorldBook() {
 	const wbPath = path.join(
 		__dirname,
@@ -212,6 +247,7 @@ app.whenReady().then(() => {
 	const preloadPath = path.join(__dirname, "..", "preload.js");
 	windowManager = new WindowManager(preloadPath, switchModeWithCleanup);
 	const editorWindowManager = new EditorWindowManager(preloadPath);
+	const settingsWindowManager = new SettingsWindowManager(preloadPath);
 
 	registerIpcHandlers(
 		{
@@ -229,7 +265,7 @@ app.whenReady().then(() => {
 		{ ipcMain, BrowserWindow },
 	);
 
-	createTray(editorWindowManager, null);  // settings window added in Task 12
+	createTray(editorWindowManager, settingsWindowManager);
 	proactiveTrigger.start();
 	switchModeWithCleanup(MODE.PET);
 });
