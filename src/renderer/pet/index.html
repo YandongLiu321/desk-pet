@@ -219,6 +219,7 @@
 
 <script src="../../shared/constants.js"></script>
 <script src="../shared/ipc-client.js"></script>
+<script src="../shared/theme-manager.js"></script>
 <script src="../shared/dom-utils.js"></script>
 <script src="../shared/state-manager.js"></script>
 <script src="../shared/character-renderer.js"></script>
@@ -228,9 +229,16 @@
 <script src="../shared/task-panel.js"></script>
 <script>
 (() => {
-  const { IpcClient, CharacterRenderer, ConversationPanel, TaskPanel } = window;
+  const { IpcClient, CharacterRenderer, ConversationPanel, TaskPanel, ThemeManager } = window;
   const { INTENT, MODE } = window;
   const ipc = new IpcClient();
+  const themeManager = new ThemeManager();
+  themeManager.init(ipc);
+
+  // Listen for settings changes to sync theme across windows
+  ipc.onSettingsChanged((settings) => {
+    if (settings.theme) themeManager.setTheme(settings.theme);
+  });
   let isTaskMode = false;
   let bubbleTimer = null;
 
