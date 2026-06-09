@@ -263,11 +263,18 @@ class Database {
 
 	getSettings() {
 		this._load();
+		if (!this._data.appState.settings) {
+			this._data.appState.settings = this._defaults().appState.settings;
+			this._persist();
+		}
 		return this._data.appState.settings;
 	}
 
 	updateSettings(partial) {
 		this._load();
+		if (!this._data.appState.settings) {
+			this._data.appState.settings = this._defaults().appState.settings;
+		}
 		Object.assign(this._data.appState.settings, partial);
 		this._persist();
 		return this._data.appState.settings;
