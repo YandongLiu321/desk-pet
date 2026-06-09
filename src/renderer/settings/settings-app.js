@@ -77,6 +77,13 @@
     document.getElementById('pomodoroShortBreak').value = s.pomodoroShortBreak || 5;
     document.getElementById('pomodoroLongBreak').value = s.pomodoroLongBreak || 15;
     document.getElementById('pomodoroLongBreakInterval').value = s.pomodoroLongBreakInterval || 4;
+
+    // Proactive
+    document.getElementById('proactiveEnabled').checked = s.proactiveEnabled !== false;
+    document.getElementById('proactiveIdleThresholdMin').value = s.proactiveIdleThresholdMin || 15;
+    var cooldownMin = Math.round((s.proactiveCooldownMs || 600000) / 60000);
+    document.getElementById('proactiveCooldownMin').value = cooldownMin;
+    document.getElementById('proactiveScreenAnalysis').checked = s.proactiveScreenAnalysis === true;
   }
 
   // Toast
@@ -106,6 +113,10 @@
       pomodoroShortBreak: parseInt(document.getElementById('pomodoroShortBreak').value, 10),
       pomodoroLongBreak: parseInt(document.getElementById('pomodoroLongBreak').value, 10),
       pomodoroLongBreakInterval: parseInt(document.getElementById('pomodoroLongBreakInterval').value, 10),
+      proactiveEnabled: document.getElementById('proactiveEnabled').checked,
+      proactiveIdleThresholdMin: parseInt(document.getElementById('proactiveIdleThresholdMin').value, 10),
+      proactiveCooldownMs: parseInt(document.getElementById('proactiveCooldownMin').value, 10) * 60000,
+      proactiveScreenAnalysis: document.getElementById('proactiveScreenAnalysis').checked,
     };
 
     const apiKey = document.getElementById('apiKey').value.trim();
@@ -180,6 +191,39 @@
       resultEl.className = 'test-result fail';
     }
   });
+
+  // Memory tab
+  async function refreshMemories() {
+    var res = await ipc.getMemories();
+    var container = document.getElementById('memoryList');
+    if (!res.ok || !res.data || !res.data.length) {
+      container.innerHTML = '<p style="color:var(--color-text-muted);font-size:var(--font-sm);">暂无记忆</p>';
+      return;
+    }
+    container.innerHTML = res.data.map(function(m) {
+      return '<div style="background:var(--color-bg-secondary);border-radius:var(--radius-sm);padding:var(--space-sm);margin-bottom:var(--space-xs);"><div style="font-size:var(--font-sm);color:var(--color-text-primary);">' + m.summary + '</div><div style="font-size:var(--font-xs);color:var(--color-text-muted);margin-top:4px;">' + m.keywords.join(', ') + ' · ' + (m.createdAt || '').slice(0, 10) + '<button data-mem-id="' + m.id + '" class="delete-mem-btn" style="float:right;background:none;border:none;color:var(--color-danger);cursor:pointer;font-size:var(--font-xs);">删除</button></div></div>';
+    }).join('');
+
+    container.querySelectorAll('.delete-mem-btn').forEach(function(btn) {
+      btn.addEventListener('click', async function() {
+        await ipc.deleteMemory(btn.dataset.memId);
+        refreshMemories();
+      });
+    });
+  }
+
+  document.getElementById('refreshMemoriesBtn').addEventListener('click', refreshMemories);
+  document.getElementById('clearMemoriesBtn').addEventListener('click', async function() {
+    await ipc.clearMemories();
+    refreshMemories();
+    showToast('记忆已清空');
+  });
+
+  // Load memories when switching to memory tab
+  var memoryTab = document.querySelector('[data-tab="memory"]');
+  if (memoryTab) {
+    memoryTab.addEventListener('click', refreshMemories);
+  }
 
   loadSettings();
 })();

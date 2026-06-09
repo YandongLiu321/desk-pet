@@ -233,6 +233,12 @@
   <button class="settings-tab" data-tab="pomodoro">
     <span class="settings-tab-icon">🍅</span> 番茄钟
   </button>
+  <button class="settings-tab" data-tab="proactive">
+    <span class="settings-tab-icon">🔔</span> 主动交互
+  </button>
+  <button class="settings-tab" data-tab="memory">
+    <span class="settings-tab-icon">🧠</span> 记忆
+  </button>
 </div>
 
 <div class="settings-content" id="settingsContent">
@@ -316,6 +322,37 @@
     <div class="settings-field">
       <label>长休间隔 (几个番茄后)</label>
       <input type="number" id="pomodoroLongBreakInterval" min="1" max="10" value="4">
+    </div>
+  </div>
+
+  <div class="settings-page" data-page="proactive">
+    <h2>主动交互</h2>
+    <p class="subtitle">宠物主动问候和提醒设置</p>
+    <div class="settings-toggle">
+      <label>启用主动交互</label>
+      <input type="checkbox" id="proactiveEnabled" checked>
+    </div>
+    <div class="settings-field">
+      <label>空闲触发阈值 (分钟)</label>
+      <input type="number" id="proactiveIdleThresholdMin" min="5" max="120" value="15">
+    </div>
+    <div class="settings-field">
+      <label>触发冷却 (分钟)</label>
+      <input type="number" id="proactiveCooldownMin" min="1" max="60" value="10">
+    </div>
+    <div class="settings-toggle">
+      <label>截图分析 (隐私敏感，默认关闭)</label>
+      <input type="checkbox" id="proactiveScreenAnalysis">
+    </div>
+  </div>
+
+  <div class="settings-page" data-page="memory">
+    <h2>记忆</h2>
+    <p class="subtitle">AI 自动生成的对话摘要记忆</p>
+    <div id="memoryList" style="max-height:300px;overflow-y:auto;"></div>
+    <div style="margin-top:var(--space-md);display:flex;gap:var(--space-sm);">
+      <button class="btn btn-secondary" id="refreshMemoriesBtn">刷新</button>
+      <button class="btn btn-danger" id="clearMemoriesBtn">清空全部记忆</button>
     </div>
   </div>
 
