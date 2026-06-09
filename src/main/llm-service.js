@@ -123,13 +123,18 @@ class LLMService {
 			enableTaskCreation: options.enableTaskCreation,
 			userMessage: options.message,
 		});
-		const conv = this.db.getActiveConversation();
-		const history = this.db.getRecentMessages(conv.id, 20);
-		return [
-			{ role: "system", content: systemPrompt },
-			...history.map((m) => ({ role: m.role, content: m.content })),
-			{ role: "user", content: options.message },
-		];
+		const messages = [{ role: "system", content: systemPrompt }];
+
+		if (!options.enableTaskCreation) {
+			const conv = this.db.getActiveConversation();
+			const history = this.db.getRecentMessages(conv.id, 20);
+			for (const m of history) {
+				messages.push({ role: m.role, content: m.content });
+			}
+		}
+
+		messages.push({ role: "user", content: options.message });
+		return messages;
 	}
 
 	_extractSSEContent(trimmed) {

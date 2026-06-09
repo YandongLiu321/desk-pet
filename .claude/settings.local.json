@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(export ELECTRON_MIRROR=\"http://npm.taobao.org/mirrors/electron/\")",
+      "Bash(npm install *)",
+      "Bash(export ELECTRON_MIRROR=\"https://npmmirror.com/mirrors/electron/\")",
+      "Bash(npx install-electron *)",
+      "Bash(npm start *)",
+      "Bash(git *)",
+      "Bash(sed -i '152s/.*/\\\\t\\\\t\\\\t\\\\tworldBook,/' \"C:/Users/Skyward/Desktop/desk-pet/src/main/main.js\")",
+      "Bash(sed -n '151,153p' \"C:/Users/Skyward/Desktop/desk-pet/src/main/main.js\")",
+      "Bash(wsl file *)",
+      "WebSearch",
+      "Bash(npm search *)",
+      "Bash(npm view *)",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:github.com)",
+      "Bash(npm pack *)",
+      "Bash(curl *)",
+      "Bash(npx esbuild *)",
+      "Bash(xxd)",
+      "Bash(node -e ' *)",
+      "Bash(sed -i '207d' \"C:/Users/Skyward/Desktop/desk-pet/src/renderer/wallpaper/index.html\")",
+      "Bash(sed -i '239a\\\\<div class=\"we-layers\" id=\"weLayers\"></div>' \"C:/Users/Skyward/Desktop/desk-pet/src/renderer/wallpaper/index.html\")",
+      "Bash(node *)",
+      "Skill(superpowers:systematic-debugging)",
+      "Skill(superpowers:brainstorming)",
+      "Skill(superpowers:writing-plans)",
+      "Skill(superpowers:subagent-driven-development)",
+      "Bash(cygpath -w /tmp/fix-regex.js)",
+      "Bash(python3 *)"
+    ]
+  }
+}

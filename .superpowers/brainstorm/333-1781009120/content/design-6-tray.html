@@ -1,0 +1,83 @@
+<h2>Step 5: 增强托盘菜单</h2>
+<p class="subtitle">丰富托盘右键菜单 + 动态状态切换</p>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">当前托盘菜单</div>
+    <div class="mockup-body" style="font-size:13px;line-height:1.8">
+      <p>Pet Mode</p>
+      <p>Wallpaper Mode</p>
+      <p>Software Mode</p>
+      <p>Wallpaper Editor</p>
+      <p style="border-top:1px solid rgba(255,255,255,0.1);padding-top:8px">Exit</p>
+    </div>
+  </div>
+  <div class="mockup">
+    <div class="mockup-header">改造后托盘菜单</div>
+    <div class="mockup-body" style="font-size:13px;line-height:1.8">
+      <p>🏠 Pet Mode</p>
+      <p>🖼️ Wallpaper Mode</p>
+      <p>💻 Software Mode</p>
+      <p style="border-top:1px solid rgba(255,255,255,0.1);padding-top:8px">✏️ Wallpaper Editor</p>
+      <p style="border-top:1px solid rgba(255,255,255,0.1);padding-top:8px">💬 Show/Hide Subtitles</p>
+      <p>📌 Always on Top &nbsp;<span style="color:var(--accent)">✓</span></p>
+      <p>🔊 Mute</p>
+      <p>🕐 Pomodoro: 12:34</p>
+      <p style="border-top:1px solid rgba(255,255,255,0.1);padding-top:8px">⚙️ Settings...</p>
+      <p>📋 Chat History</p>
+      <p style="border-top:1px solid rgba(255,255,255,0.1);padding-top:8px">❌ Exit</p>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>新增菜单项详解</h3>
+  <table style="width:100%;font-size:13px;border-collapse:collapse">
+    <tr style="background:var(--bg-card)">
+      <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border-color)">菜单项</th>
+      <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border-color)">类型</th>
+      <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border-color)">行为</th>
+    </tr>
+    <tr>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">Show/Hide Subtitles</td>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">toggle</td>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">控制气泡字幕显示/隐藏，状态写入 db</td>
+    </tr>
+    <tr>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">Always on Top</td>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">toggle</td>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">切换 window.setAlwaysOnTop()，显示 ✓</td>
+    </tr>
+    <tr>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">Mute</td>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">toggle</td>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">静音白噪音/TTS，状态写入 db</td>
+    </tr>
+    <tr>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">Pomodoro</td>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">info</td>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">显示当前番茄钟剩余时间（运行时更新）</td>
+    </tr>
+    <tr>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">Settings...</td>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">action</td>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">打开设置窗口（Step 6）</td>
+    </tr>
+    <tr>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">Chat History</td>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">action</td>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">打开对话历史窗口（在 software 模式中查看）</td>
+    </tr>
+  </table>
+</div>
+
+<div class="section">
+  <h3>实现要点</h3>
+  <ul>
+    <li>在 <code>main.js</code> 的 <code>createTray()</code> 中扩展 Menu.buildFromTemplate</li>
+    <li>Toggle 项使用 <code>type: 'checkbox'</code>，状态从 db 读取</li>
+    <li>Pomodoro 显示项通过 <code>setInterval</code> 定期更新 label</li>
+    <li>菜单 click 事件通过 IPC 通知 renderer 执行对应操作</li>
+    <li>菜单位于模式切换项后方，功能性分组用 separator 分隔</li>
+  </ul>
+</div>

@@ -1,0 +1,44 @@
+<h2>实现策略方案对比</h2>
+<p class="subtitle">三种不同的实现组织方式</p>
+
+<div class="options">
+  <div class="option" data-choice="approach-incremental" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>渐进式（推荐）</h3>
+      <p><strong>策略：</strong>按依赖关系和影响范围排序，逐功能实现并测试。</p>
+      <p><strong>顺序：</strong>主题系统 → 点击穿透 → 打字机字幕 → 毛玻璃输入框 → 托盘菜单 → 设置界面</p>
+      <p><strong>理由：</strong>主题系统是视觉基础（CSS 变量重构），后续所有 UI 都依赖它。点击穿透是最小的独立改动。打字机和毛玻璃改动中等。托盘和设置依赖前面的 UI 组件。</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>优势</h4><ul><li>每步可验证，风险低</li><li>后续功能建立在已有基础上</li><li>出现问题时容易定位</li></ul></div>
+        <div class="cons"><h4>劣势</h4><ul><li>需要多次切换上下文</li><li>总时间可能稍长</li></ul></div>
+      </div>
+    </div>
+  </div>
+  <div class="option" data-choice="approach-bundled" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>分组式</h3>
+      <p><strong>策略：</strong>分成两个大块——UI 基础设施 + 功能增强，每组内并行开发。</p>
+      <p><strong>分组：</strong></p>
+      <p><strong>第一组（UI 基础）：</strong>主题系统 + 点击穿透 + 打字机字幕 + 毛玻璃 → 一次性改造 pet 窗口</p>
+      <p><strong>第二组（功能）：</strong>设置界面 + 托盘菜单 → 统一的应用配置入口</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>优势</h4><ul><li>分两波交付，节奏清晰</li><li>组内改动可互相配合</li></ul></div>
+        <div class="cons"><h4>劣势</h4><ul><li>每组改动量大，容易引入 bug</li><li>组内同时改动多文件容易冲突</li></ul></div>
+      </div>
+    </div>
+  </div>
+  <div class="option" data-choice="approach-newmode" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>新建重构式</h3>
+      <p><strong>策略：</strong>创建一个新的 pet-v2 模式窗口，在新窗口中实现所有改进，保留旧窗口作为 fallback。</p>
+      <p><strong>理由：</strong>完全不影响现有功能，可以大胆重构。开发完成后一键切换到 v2。</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>优势</h4><ul><li>零风险，不影响现有功能</li><li>可以彻底重构架构</li><li>A/B 对比测试方便</li></ul></div>
+        <div class="cons"><h4>劣势</h4><ul><li>大量代码重复</li><li>维护两套窗口</li><li>过度工程化</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>

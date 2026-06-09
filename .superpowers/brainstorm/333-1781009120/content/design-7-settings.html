@@ -1,0 +1,89 @@
+<h2>Step 6: 设置界面</h2>
+<p class="subtitle">独立设置窗口 + 多标签页 + IPC 读写配置</p>
+
+<div class="section">
+  <h3>窗口设计</h3>
+  <ul>
+    <li>独立的 <code>BrowserWindow</code>（800x600，可调整大小，非透明）</li>
+    <li>左侧标签导航（60px 宽图标栏） + 右侧内容区</li>
+    <li>底部：Save / Cancel / Reset to Defaults 按钮</li>
+    <li>通过托盘菜单 "Settings..." 或 pet 右键菜单打开</li>
+    <li>单例模式：重复点击打开同一窗口，focus 而非新建</li>
+  </ul>
+</div>
+
+<div class="section">
+  <h3>标签页结构</h3>
+</div>
+
+<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:13px">
+  <div style="flex:1;min-width:180px;background:var(--bg-card);border-radius:8px;padding:16px">
+    <span class="label">Tab 1</span>
+    <h4>API 配置</h4>
+    <ul style="font-size:12px;color:var(--text-secondary);padding-left:16px">
+      <li>API Key (password field)</li>
+      <li>API Base URL</li>
+      <li>Model 选择</li>
+      <li>Test Connection 按钮</li>
+    </ul>
+  </div>
+  <div style="flex:1;min-width:180px;background:var(--bg-card);border-radius:8px;padding:16px">
+    <span class="label">Tab 2</span>
+    <h4>外观</h4>
+    <ul style="font-size:12px;color:var(--text-secondary);padding-left:16px">
+      <li>主题选择器（3套预设预览）</li>
+      <li>角色缩放滑块</li>
+      <li>字幕速度滑块</li>
+      <li>字体大小</li>
+    </ul>
+  </div>
+  <div style="flex:1;min-width:180px;background:var(--bg-card);border-radius:8px;padding:16px">
+    <span class="label">Tab 3</span>
+    <h4>交互</h4>
+    <ul style="font-size:12px;color:var(--text-secondary);padding-left:16px">
+      <li>字幕开关</li>
+      <li>打字机速度</li>
+      <li>气泡自动消失时间</li>
+      <li>点击穿透开关</li>
+    </ul>
+  </div>
+  <div style="flex:1;min-width:180px;background:var(--bg-card);border-radius:8px;padding:16px">
+    <span class="label">Tab 4</span>
+    <h4>番茄钟</h4>
+    <ul style="font-size:12px;color:var(--text-secondary);padding-left:16px">
+      <li>默认时长</li>
+      <li>短休/长休时长</li>
+      <li>长休间隔</li>
+      <li>结束提醒开关</li>
+    </ul>
+  </div>
+</div>
+
+<div class="section">
+  <h3>数据流</h3>
+  <pre style="background:var(--bg-card);padding:16px;border-radius:8px;font-size:12px;overflow-x:auto"><code>// 读取设置
+Renderer                          Main Process
+  │                                  │
+  │── ipc.invoke('settings:get') ──→│
+  │                                  │── db.data.settings
+  │←── { ok, data: settings } ──────│
+  │                                  │
+// 保存设置
+  │── ipc.invoke('settings:set',    │
+  │     { theme: 'ocean' }) ──────→ │
+  │                                  │── db.update('settings', ...)
+  │                                  │── broadcast 'settings:changed'
+  │←── { ok, data: null } ───────── │
+  │                                  │
+// 所有窗口收到 settings:changed → 更新 UI</code></pre>
+</div>
+
+<div class="section">
+  <h3>实现文件</h3>
+  <ul>
+    <li><code>renderer/settings/index.html</code> — 设置窗口 HTML + CSS</li>
+    <li><code>renderer/settings/settings-app.js</code> — 标签切换 + 表单 + IPC 调用</li>
+    <li><code>src/main/ipc-handlers.js</code> — 新增 handlers</li>
+    <li><code>src/main/main.js</code> — createSettingsWindow() + 托盘菜单触发</li>
+  </ul>
+</div>

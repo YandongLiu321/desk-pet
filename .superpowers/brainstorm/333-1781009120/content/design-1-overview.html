@@ -1,0 +1,120 @@
+<h2>整体设计概览</h2>
+<p class="subtitle">实现顺序与架构总览</p>
+
+<div class="section">
+  <h3>实现顺序（按依赖关系）</h3>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:13px">
+    <div style="flex:1;min-width:140px;background:var(--bg-card);border-radius:8px;padding:16px;border:1px solid var(--border-color)">
+      <span class="label">Step 1</span>
+      <h4>主题配色系统</h4>
+      <p style="color:var(--text-secondary)">CSS 变量重构 + 多主题切换 + 存盘</p>
+      <p style="font-size:12px;color:var(--accent)">← 所有后续 UI 的视觉基础</p>
+    </div>
+    <div style="flex:1;min-width:140px;background:var(--bg-card);border-radius:8px;padding:16px;border:1px solid var(--border-color)">
+      <span class="label">Step 2</span>
+      <h4>点击穿透</h4>
+      <p style="color:var(--text-secondary)">pointer-events 控制 + 交互区域标记</p>
+      <p style="font-size:12px;color:var(--text-secondary)">小改动，独立性强</p>
+    </div>
+    <div style="flex:1;min-width:140px;background:var(--bg-card);border-radius:8px;padding:16px;border:1px solid var(--border-color)">
+      <span class="label">Step 3</span>
+      <h4>打字机字幕</h4>
+      <p style="color:var(--text-secondary)">逐字显示 + Live2D 嘴部同步 + 气泡动画</p>
+    </div>
+    <div style="flex:1;min-width:140px;background:var(--bg-card);border-radius:8px;padding:16px;border:1px solid var(--border-color)">
+      <span class="label">Step 4</span>
+      <h4>毛玻璃输入框</h4>
+      <p style="color:var(--text-secondary)">backdrop-filter 玻璃拟态 + 对话面板风格统一</p>
+    </div>
+    <div style="flex:1;min-width:140px;background:var(--bg-card);border-radius:8px;padding:16px;border:1px solid var(--border-color)">
+      <span class="label">Step 5</span>
+      <h4>增强托盘菜单</h4>
+      <p style="color:var(--text-secondary)">丰富菜单项 + 动态状态切换</p>
+    </div>
+    <div style="flex:1;min-width:140px;background:var(--bg-card);border-radius:8px;padding:16px;border:1px solid var(--border-color)">
+      <span class="label">Step 6</span>
+      <h4>设置界面</h4>
+      <p style="color:var(--text-secondary)">新建设置窗口 + 多标签页 + IPC 读写</p>
+      <p style="font-size:12px;color:var(--text-secondary)">最大改动，最后做</p>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>文件改动范围</h3>
+  <table style="width:100%;font-size:13px;border-collapse:collapse">
+    <tr style="background:var(--bg-card)">
+      <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border-color)">文件</th>
+      <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border-color)">改动类型</th>
+      <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border-color)">说明</th>
+    </tr>
+    <tr>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">styles/variables.css</td>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">重写</td>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">主题色系统，多主题定义</td>
+    </tr>
+    <tr>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">styles/base.css</td>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">修改</td>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">点击穿透 + 玻璃拟态全局样式</td>
+    </tr>
+    <tr>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">styles/animations.css</td>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">新增</td>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">打字机光标闪烁、气泡动画</td>
+    </tr>
+    <tr>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">shared/conversation-panel.js</td>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">重写</td>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">打字机显示 + 毛玻璃样式</td>
+    </tr>
+    <tr>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">shared/ipc-client.js</td>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">修改</td>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">新增主题/settings相关方法</td>
+    </tr>
+    <tr>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">shared/constants.js</td>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">新增</td>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">主题、设置相关IPC channel</td>
+    </tr>
+    <tr>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">main/ipc-handlers.js</td>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">新增</td>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">设置读写、主题切换handlers</td>
+    </tr>
+    <tr>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">main/main.js</td>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">修改</td>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">托盘菜单增强、设置窗口创建</td>
+    </tr>
+    <tr>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">main/database.js</td>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">修改</td>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">主题/设置持久化字段</td>
+    </tr>
+    <tr>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">renderer/pet/index.html</td>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">重写</td>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">新的pet窗口布局</td>
+    </tr>
+    <tr>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">renderer/settings/index.html</td>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">新建</td>
+      <td style="padding:8px;border-bottom:1px solid var(--border-color)">设置窗口</td>
+    </tr>
+  </table>
+</div>
+
+<div class="section">
+  <h3>不打破现有功能的原则</h3>
+  <ul>
+    <li>IPC 通信保持 <code>{ ok, data }</code> / <code>{ ok, error }</code> 模式</li>
+    <li>三模式架构不变（pet/wallpaper/software）</li>
+    <li>WebGL 壁纸引擎不动</li>
+    <li>Live2D 渲染管线不动（只增加嘴部同步参数调用）</li>
+    <li>番茄钟、任务、关系系统不改</li>
+    <li>lowdb 数据库结构只增字段，不删不改</li>
+  </ul>
+</div>
+
