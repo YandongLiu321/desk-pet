@@ -41,6 +41,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		getById(taskId) {
 			return ipcRenderer.invoke(IPC.TASK_GET_BY_ID, { taskId });
 		},
+		getMode(taskId) {
+			return ipcRenderer.invoke(IPC.TASK_GET_MODE, { taskId });
+		},
 		create(data) {
 			return ipcRenderer.invoke(IPC.TASK_CREATE, { data });
 		},
@@ -52,6 +55,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		},
 		complete(taskId) {
 			return ipcRenderer.invoke(IPC.TASK_COMPLETE, { taskId });
+		},
+		updateProgress(taskId, percent, note, subtaskId) {
+			return ipcRenderer.invoke(IPC.TASK_UPDATE_PROGRESS, { taskId, percent, note, subtaskId });
 		},
 		delete(taskId) {
 			return ipcRenderer.invoke(IPC.TASK_DELETE, { taskId });

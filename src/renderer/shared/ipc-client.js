@@ -63,6 +63,9 @@ class IpcClient {
 	async getTaskById(taskId) {
 		return this._call("task.getById", taskId);
 	}
+	async getTaskMode(taskId) {
+		return this._call("task.getMode", taskId);
+	}
 	async createTask(data) {
 		return this._call("task.create", data);
 	}
@@ -74,6 +77,9 @@ class IpcClient {
 	}
 	async completeTask(taskId) {
 		return this._call("task.complete", taskId);
+	}
+	async updateTaskProgress(taskId, percent, note, subtaskId) {
+		return this._call("task.updateProgress", taskId, percent, note, subtaskId);
 	}
 	async deleteTask(taskId) {
 		return this._call("task.delete", taskId);

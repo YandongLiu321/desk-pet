@@ -13,10 +13,12 @@ const IPC = {
 	// Tasks
 	TASK_GET_ALL: "task:get-all",
 	TASK_GET_BY_ID: "task:get-by-id",
+	TASK_GET_MODE: "task:get-mode",
 	TASK_CREATE: "task:create",
 	TASK_UPDATE: "task:update",
 	TASK_TOGGLE_SUBTASK: "task:toggle-subtask",
 	TASK_COMPLETE: "task:complete",
+	TASK_UPDATE_PROGRESS: "task:update-progress",
 	TASK_DELETE: "task:delete",
 
 	// App / Mode

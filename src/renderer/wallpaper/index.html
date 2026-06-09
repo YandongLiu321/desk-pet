@@ -36,6 +36,28 @@
     pointer-events: none;
   }
 
+  /* ── Mode label ── */
+  .wallpaper-mode-label {
+    position: absolute;
+    top: 8%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    pointer-events: none;
+  }
+  .wallpaper-mode-label-text {
+    font-size: 48px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.85);
+    text-shadow: 0 0 40px rgba(107,92,231,0.6), 0 4px 12px rgba(0,0,0,0.5);
+    letter-spacing: 8px;
+    transition: all 0.6s ease;
+  }
+  .wallpaper-mode-label-text.mode--rest { color: rgba(180,200,220,0.85); text-shadow: 0 0 30px rgba(100,140,180,0.4), 0 4px 12px rgba(0,0,0,0.5); }
+  .wallpaper-mode-label-text.mode--computer { color: rgba(120,200,255,0.9); text-shadow: 0 0 40px rgba(70,130,255,0.6), 0 4px 12px rgba(0,0,0,0.5); }
+  .wallpaper-mode-label-text.mode--reading { color: rgba(160,230,160,0.9); text-shadow: 0 0 40px rgba(80,180,80,0.6), 0 4px 12px rgba(0,0,0,0.5); }
+  .wallpaper-mode-label-text.mode--writing { color: rgba(255,200,130,0.9); text-shadow: 0 0 40px rgba(220,150,50,0.6), 0 4px 12px rgba(0,0,0,0.5); }
+
   .wallpaper-char-area {
     width: var(--char-wallpaper-size);
     height: var(--char-wallpaper-size);
@@ -49,6 +71,101 @@
     align-items: center;
     gap: var(--space-md);
     margin-bottom: var(--space-lg);
+  }
+
+  /* ── Task selection ── */
+  .wallpaper-task-select {
+    position: absolute;
+    bottom: 18%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    background: rgba(20,20,40,0.85);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: var(--radius-lg);
+    padding: var(--space-md) var(--space-lg);
+    min-width: 320px;
+    max-width: 420px;
+    max-height: 260px;
+    overflow-y: auto;
+    backdrop-filter: blur(10px);
+  }
+  .wallpaper-task-select-title {
+    font-size: var(--font-sm);
+    color: var(--color-text-muted);
+    text-align: center;
+    margin-bottom: var(--space-sm);
+    letter-spacing: 2px;
+  }
+  .wallpaper-task-select-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-sm) var(--space-md);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: background 0.2s;
+    color: var(--color-text-primary);
+    font-size: var(--font-sm);
+  }
+  .wallpaper-task-select-item:hover {
+    background: rgba(107,92,231,0.2);
+  }
+  .wallpaper-task-select-item.subtask {
+    padding-left: var(--space-xl);
+    font-size: var(--font-xs);
+    color: var(--color-text-secondary);
+  }
+  .wallpaper-task-select-item.subtask:hover {
+    background: rgba(107,92,231,0.25);
+  }
+  .wallpaper-task-select-item.completed-subtask {
+    opacity: 0.4;
+    text-decoration: line-through;
+    cursor: default;
+    pointer-events: none;
+  }
+  .wallpaper-task-select-item-meta {
+    font-size: var(--font-xs);
+    color: var(--color-text-muted);
+    margin-left: var(--space-sm);
+    white-space: nowrap;
+  }
+  .wallpaper-task-select-expand {
+    font-size: var(--font-xs);
+    color: var(--color-text-muted);
+    margin-left: auto;
+    transition: transform 0.2s;
+  }
+  .wallpaper-task-select-expand.open {
+    transform: rotate(90deg);
+  }
+
+  /* ── Selected task badge ── */
+  .wallpaper-selected-task {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-xs) var(--space-md);
+    background: rgba(107,92,231,0.2);
+    border: 1px solid rgba(107,92,231,0.35);
+    border-radius: var(--radius-full, 20px);
+    font-size: var(--font-sm);
+    color: var(--color-text-primary);
+    margin-bottom: var(--space-sm);
+  }
+  .wallpaper-change-task-btn {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: var(--color-text-muted);
+    font-size: var(--font-xs);
+    padding: 2px var(--space-sm);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+  }
+  .wallpaper-change-task-btn:hover {
+    background: rgba(255,255,255,0.2);
+    color: var(--color-text-primary);
   }
 
   .wallpaper-chat-sidebar {
@@ -183,33 +300,36 @@
     color: var(--color-text-primary);
   }
 
-  .wallpaper-exit-subtask-list {
-    text-align: left;
-    max-height: 200px;
-    overflow-y: auto;
-    margin: var(--space-sm) 0;
-  }
-  .wallpaper-exit-subtask-item {
+  .wallpaper-exit-progress-row {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: var(--space-xs);
-    padding: var(--space-xs) 0;
+    margin: var(--space-sm) 0;
+  }
+  .wallpaper-exit-progress-label {
     font-size: var(--font-sm);
     color: var(--color-text-secondary);
+    white-space: nowrap;
   }
-
-  .wallpaper-exit-textarea {
-    width: 100%;
-    height: 80px;
+  .wallpaper-exit-progress-input {
+    width: 64px;
     background: var(--color-bg-medium);
     border: 1px solid var(--color-bg-light);
     border-radius: var(--radius-sm);
     color: var(--color-text-primary);
-    padding: var(--space-sm);
+    padding: var(--space-xs) var(--space-sm);
     font-size: var(--font-sm);
-    resize: none;
-    margin: var(--space-sm) 0;
+    text-align: center;
     box-sizing: border-box;
+  }
+  .wallpaper-exit-progress-input::-webkit-inner-spin-button,
+  .wallpaper-exit-progress-input::-webkit-outer-spin-button {
+    opacity: 1;
+  }
+  .wallpaper-exit-progress-unit {
+    font-size: var(--font-sm);
+    color: var(--color-text-secondary);
   }
 </style>
 </head>
@@ -220,7 +340,25 @@
 <div class="wallpaper-bg-layer"></div>
 
 <div class="we-layers" id="weLayers"></div>
+
+<!-- Mode label -->
+<div class="wallpaper-mode-label" id="modeLabel">
+  <span class="wallpaper-mode-label-text mode--rest" id="modeLabelText">休息模式</span>
+</div>
+
 <div class="wallpaper-char-area" id="charArea" title="点击露娜打开对话"></div>
+
+<!-- Task selection area -->
+<div class="wallpaper-task-select" id="taskSelectArea" style="display:none;">
+  <div class="wallpaper-task-select-title">选择任务开始专注</div>
+  <div id="taskSelectList"></div>
+</div>
+
+<!-- Selected task badge -->
+<div class="wallpaper-selected-task" id="selectedTaskBadge" style="display:none;">
+  <span id="selectedTaskName"></span>
+  <button class="wallpaper-change-task-btn" id="changeTaskBtn">更换</button>
+</div>
 
 <div class="wallpaper-pomodoro-area" id="pomodoroArea"></div>
 
@@ -247,28 +385,21 @@
 
 <div class="wallpaper-exit-overlay" id="exitOverlay"></div>
 <div class="wallpaper-exit-panel" id="exitPanel">
-  <!-- State 1: initial inquiry -->
+  <!-- State 1: inquiry -->
   <div id="exitStateInquiry">
-    <p>专注时间结束了，旅者完成了目标吗？</p>
+    <p>专注时间结束了~</p>
     <button class="wallpaper-exit-btn-primary" id="exitCompletedBtn">完成了</button>
-    <button class="wallpaper-exit-btn-secondary" id="exitNotYetBtn">还没</button>
+    <button class="wallpaper-exit-btn-secondary" id="exitNotYetBtn">还没完成</button>
+    <button class="wallpaper-exit-btn-secondary" id="exitExtendBtn">再延 25 分钟</button>
   </div>
-  <!-- State 2: subtask checklist -->
-  <div id="exitStateSubtasks" style="display:none">
-    <p>勾选已完成的子任务：</p>
-    <div class="wallpaper-exit-subtask-list" id="exitSubtaskList"></div>
-    <button class="wallpaper-exit-btn-primary" id="exitSubtaskConfirmBtn">确认返回</button>
-  </div>
-  <!-- State 3: extend confirmation -->
-  <div id="exitStateExtend" style="display:none">
-    <p>要再延 25 分钟继续吗？</p>
-    <button class="wallpaper-exit-btn-primary" id="exitExtendYesBtn">是，继续专注</button>
-    <button class="wallpaper-exit-btn-secondary" id="exitExtendNoBtn">否，记录进度</button>
-  </div>
-  <!-- State 4: progress note -->
+  <!-- State 2: progress note -->
   <div id="exitStateNote" style="display:none">
     <p>记录一下进度吧~</p>
-    <textarea class="wallpaper-exit-textarea" id="exitProgressInput" placeholder="输入你的进度..."></textarea>
+    <div class="wallpaper-exit-progress-row">
+      <label class="wallpaper-exit-progress-label">完成进度</label>
+      <input type="number" class="wallpaper-exit-progress-input" id="exitProgressPercentInput" min="0" max="100" step="5" value="0">
+      <span class="wallpaper-exit-progress-unit">%</span>
+    </div>
     <button class="wallpaper-exit-btn-primary" id="exitProgressSaveBtn">保存并返回</button>
   </div>
 </div>
@@ -294,6 +425,31 @@
   const { IpcClient, CharacterRenderer, ConversationPanel, PomodoroTimer, WhiteNoiseControl } = window;
   const { INTENT, MODE } = window;
   const ipc = new IpcClient();
+
+  // Mode label constants
+  const MODE_LABELS = {
+    rest: '休息模式',
+    computer: '电脑模式',
+    reading: '看书模式',
+    writing: '写字模式',
+  };
+  const MODE_CSS_CLASS = {
+    rest: 'mode--rest',
+    computer: 'mode--computer',
+    reading: 'mode--reading',
+    writing: 'mode--writing',
+  };
+
+  // ── State ──
+  let activeTasks = [];
+  let selectedTaskId = null;
+  let selectedSubtaskId = null;  // null = parent task itself is the work unit
+  let expandedTaskId = null;     // which parent's subtasks are expanded in the list
+  let selectedTaskMode = 'rest'; // 'rest' | 'computer' | 'reading' | 'writing'
+  let currentPomodoroTaskId = null;
+  let isExitingWithTask = false;
+  let isPomodoroRunning = false;
+
   // Listen for scene updates from the editor
   ipc.onEditorApply(function(sceneData) {
     console.log("Received scene from editor:", sceneData);
@@ -302,14 +458,122 @@
     }
   });
 
-  let currentPomodoroTaskId = null;
-  let isExitingWithTask = false;
+  // ── Mode label ──
+  const modeLabelText = document.getElementById("modeLabelText");
+  function setModeLabel(mode) {
+    selectedTaskMode = mode;
+    modeLabelText.textContent = MODE_LABELS[mode] || MODE_LABELS.rest;
+    modeLabelText.className = 'wallpaper-mode-label-text ' + (MODE_CSS_CLASS[mode] || MODE_CSS_CLASS.rest);
+  }
+  setModeLabel('rest');
 
-  // Character
+  // ── Task selection ──
+  const taskSelectArea = document.getElementById("taskSelectArea");
+  const taskSelectList = document.getElementById("taskSelectList");
+  const selectedTaskBadge = document.getElementById("selectedTaskBadge");
+  const selectedTaskName = document.getElementById("selectedTaskName");
+
+  function renderTaskSelectList() {
+    taskSelectList.innerHTML = '';
+    if (isPomodoroRunning || selectedTaskId) {
+      taskSelectArea.style.display = 'none';
+      return;
+    }
+    if (activeTasks.length === 0) {
+      taskSelectArea.style.display = 'none';
+      return;
+    }
+    taskSelectArea.style.display = '';
+    for (const task of activeTasks) {
+      const incompleteSubtasks = (task.subtasks || []).filter(s => !s.completed);
+      const hasSubtasks = incompleteSubtasks.length > 0;
+      const isExpanded = task.id === expandedTaskId;
+
+      // Parent task row
+      const parentItem = document.createElement('div');
+      parentItem.className = 'wallpaper-task-select-item';
+      const titleSpan = document.createElement('span');
+      titleSpan.textContent = task.rpgTitle || task.realTitle;
+      const metaSpan = document.createElement('span');
+      metaSpan.className = 'wallpaper-task-select-item-meta';
+      const subCount = incompleteSubtasks.length;
+      const perSubMin = subCount > 0 ? Math.round((task.estimatedMinutes || 25) / subCount) : (task.estimatedMinutes || 25);
+      metaSpan.textContent = (task.estimatedPomodoros || 1) + '🍅 ' + perSubMin + 'min';
+      parentItem.appendChild(titleSpan);
+      if (hasSubtasks) {
+        const expandSpan = document.createElement('span');
+        expandSpan.className = 'wallpaper-task-select-expand' + (isExpanded ? ' open' : '');
+        expandSpan.textContent = '▶';
+        parentItem.appendChild(expandSpan);
+      }
+      parentItem.appendChild(metaSpan);
+      parentItem.addEventListener('click', () => {
+        if (hasSubtasks) {
+          expandedTaskId = isExpanded ? null : task.id;
+          renderTaskSelectList();
+        } else {
+          selectTask(task, null);
+        }
+      });
+      taskSelectList.appendChild(parentItem);
+
+      // Subtask rows (if expanded)
+      if (isExpanded && hasSubtasks) {
+        for (const sub of incompleteSubtasks) {
+          const subItem = document.createElement('div');
+          subItem.className = 'wallpaper-task-select-item subtask';
+          const subTitle = document.createElement('span');
+          subTitle.textContent = '└ ' + (sub.rpgDesc || sub.realDesc);
+          subItem.appendChild(subTitle);
+          subItem.addEventListener('click', (e) => {
+            e.stopPropagation();
+            selectTask(task, sub);
+          });
+          taskSelectList.appendChild(subItem);
+        }
+      }
+    }
+  }
+
+  async function selectTask(task, subtask) {
+    selectedTaskId = task.id;
+    selectedSubtaskId = subtask ? subtask.id : null;
+    expandedTaskId = null;
+
+    const displayName = subtask
+      ? (task.rpgTitle || task.realTitle) + ' › ' + (subtask.rpgDesc || subtask.realDesc)
+      : (task.rpgTitle || task.realTitle);
+    selectedTaskName.textContent = displayName;
+    selectedTaskBadge.style.display = '';
+    taskSelectArea.style.display = 'none';
+
+    const modeRes = await ipc.getTaskMode(task.id);
+    const mode = (modeRes.ok && modeRes.data) ? modeRes.data : 'rest';
+    setModeLabel(mode);
+
+    // Suggest per-subtask duration (editable before starting)
+    const incompleteCount = (task.subtasks || []).filter(s => !s.completed).length || 1;
+    const perSubMin = Math.round((task.estimatedMinutes || 25) / incompleteCount);
+    pomodoroTimer.setEditableDuration(perSubMin);
+
+    renderTaskSelectList();
+  }
+
+  function deselectTask() {
+    selectedTaskId = null;
+    selectedSubtaskId = null;
+    expandedTaskId = null;
+    selectedTaskBadge.style.display = 'none';
+    setModeLabel('rest');
+    pomodoroTimer.stop();
+    renderTaskSelectList();
+  }
+
+  // ── Character ──
   const charRenderer = new CharacterRenderer(document.getElementById("charArea"), { mode: "wallpaper", size: 200 });
   charRenderer.mount();
 
-  // Pomodoro helpers
+  // ── Pomodoro helpers ──
   let pomodoroTickUnsub = null;
   let pomodoroEndUnsub = null;
 
@@ -325,21 +589,36 @@
     if (!res.ok) return;
     pomodoroTimer.start(durationSeconds);
     currentPomodoroTaskId = taskId || null;
+    isPomodoroRunning = true;
+    document.getElementById("changeTaskBtn").style.display = "none";
+    // Set mode to task's mode (or rest if no task)
+    if (taskId && selectedTaskMode !== 'rest') {
+      setModeLabel(selectedTaskMode);
+    }
     pomodoroTickUnsub = ipc.onPomodoroTick((data) => {
       if (data.remaining >= 0) pomodoroTimer.update(data.remaining);
     });
     pomodoroEndUnsub = ipc.onPomodoroEnd(() => {
       clearPomodoroListeners();
       pomodoroTimer.stop();
+      isPomodoroRunning = false;
+      document.getElementById("changeTaskBtn").style.display = "";
+      setModeLabel('rest');
     });
   }
 
-  // Pomodoro timer
+  // ── Pomodoro timer ──
   const pomodoroTimer = new PomodoroTimer(document.getElementById("pomodoroArea"), {
-    onStart: () => startPomodoroFlow(25 * 60, currentPomodoroTaskId),
+    onStart: () => {
+      startPomodoroFlow(pomodoroTimer.getCurrentMinutes() * 60, selectedTaskId);
+    },
     onPause: async () => {
       await ipc.stopPomodoro();
       clearPomodoroListeners();
+      isPomodoroRunning = false;
+      document.getElementById("changeTaskBtn").style.display = "";
+      // Switch to rest mode when paused
+      setModeLabel('rest');
     },
     onResume: () => {
       const remaining = pomodoroTimer.getRemaining();
@@ -348,13 +627,16 @@
     onStop: async () => {
       await ipc.stopPomodoro();
       clearPomodoroListeners();
-      currentPomodoroTaskId = null;
-      pomodoroTimer.stop();
+      isPomodoroRunning = false;
+      setModeLabel('rest');
+      if (currentPomodoroTaskId) {
+        showExitPanel(currentPomodoroTaskId);
+      }
     },
   });
   pomodoroTimer.mount();
 
-  // Conversation sidebar
+  // ── Conversation sidebar ──
   const sidebar = document.getElementById("chatSidebar");
   const chatContent = document.getElementById("chatContent");
   const convPanel = new ConversationPanel(chatContent, {
@@ -376,7 +658,7 @@
           sidebar.classList.remove("open");
           const statusRes = await ipc.getPomodoroStatus();
           if (statusRes.ok && statusRes.data.taskId) {
-            showExitPanel(statusRes.data.taskId);
+            showExitPanel(statusRes.data.taskId, data.switchTarget);
           } else {
             await ipc.switchMode(data.switchTarget);
           }
@@ -394,7 +676,7 @@
   });
   convPanel.mount();
 
-  // White noise
+  // ── White noise ──
   let whiteNoise = null;
   ipc.getAudioConfig().then((res) => {
     if (res.ok && res.data.tracks.length) {
@@ -419,7 +701,6 @@
     const listRes = await ipc.listWeWallpapers();
     if (!listRes.ok || !listRes.data.length) return;
 
-    // Populate dropdown
     weSelect.innerHTML = '<option value="">默认背景</option>';
     for (const wp of listRes.data) {
       const opt = document.createElement("option");
@@ -429,7 +710,6 @@
     }
     weSelector.classList.add("visible");
 
-    // Load saved choice
     const settingsRes = await ipc.getWallpaper();
     const savedWe = settingsRes.ok ? settingsRes.data?.weWallpaperDir : null;
     if (savedWe) {
@@ -438,7 +718,6 @@
     }
   }
 
-      // Render WE wallpaper via WebGL with CSS fallback
   async function applyWeWallpaper(dirName) {
     currentWeDir = dirName;
     var layersContainer = document.getElementById("weLayers");
@@ -450,22 +729,19 @@
       return;
     }
 
-    // Try WebGL renderer first
     if (window._webglApplyWeWallpaper) {
       try {
         await window._webglApplyWeWallpaper(dirName);
-        return; // WebGL succeeded
+        return;
       } catch (e) {
         console.warn("WebGL wallpaper render failed, falling back to CSS:", e);
       }
     }
 
-    // CSS fallback — load WE data and render as positioned divs
     try {
       var res = await ipc.loadWeWallpaper(dirName);
       if (!res.ok || !res.data || !res.data.layers) return;
       var layers = res.data.layers;
-      // Ensure weLayers is visible for CSS fallback
       if (layersContainer) layersContainer.style.display = "";
       document.body.style.backgroundImage = "";
 
@@ -518,7 +794,7 @@
   });
 
   loadWeWallpapers();
-  // Open editor button
+
   var editorBtnArea = document.getElementById("editorBtnArea");
   var openEditorBtn = document.getElementById("openEditorBtn");
   if (openEditorBtn) {
@@ -527,18 +803,13 @@
     });
   }
 
-  // Show editor button when WE wallpapers are available
-  var showEditorBtn = function() {
-    if (editorBtnArea) editorBtnArea.style.display = "flex";
-  };
-  // Show it once we know WE wallpapers exist
-  if (currentWeDir) showEditorBtn();
-
-  // Also listen for scene updates from the editor via polling
-  // The main process sends editor:apply to the wallpaper window
-  // But with contextIsolation, we need to handle this differently.
-  // For now, the editor communicates via file save/load.
-
+  // ── Change task button ──
+  document.getElementById("changeTaskBtn").addEventListener("click", () => {
+    if (!isPomodoroRunning) {
+      deselectTask();
+      currentPomodoroTaskId = null;
+    }
+  });
 
   document.getElementById("charArea").addEventListener("click", () => {
     sidebar.classList.toggle("open");
@@ -552,113 +823,165 @@
   const exitOverlay = document.getElementById("exitOverlay");
   const exitPanel = document.getElementById("exitPanel");
   const exitStateInquiry = document.getElementById("exitStateInquiry");
-  const exitStateSubtasks = document.getElementById("exitStateSubtasks");
-  const exitStateExtend = document.getElementById("exitStateExtend");
   const exitStateNote = document.getElementById("exitStateNote");
-  const exitSubtaskList = document.getElementById("exitSubtaskList");
-  const exitProgressInput = document.getElementById("exitProgressInput");
+  const exitProgressPercentInput = document.getElementById("exitProgressPercentInput");
 
-  function showExitPanel(taskId) {
+  function showExitPanel(taskId, targetMode) {
     isExitingWithTask = true;
     showState("inquiry");
     exitOverlay.classList.add("open");
     exitPanel.classList.add("open");
     window._exitTaskId = taskId;
+    window._exitTargetMode = targetMode || null;
   }
 
-  function hideExitPanel() {
+  async function hideExitPanelAndRefresh(toMode) {
     isExitingWithTask = false;
+    isPomodoroRunning = false;
+    clearPomodoroListeners();
     exitOverlay.classList.remove("open");
     exitPanel.classList.remove("open");
+    setModeLabel('rest');
+    pomodoroTimer.stop();
+
+    // Reload tasks to reflect completed subtasks / tasks
+    const tasksRes = await ipc.getTasks("active");
+    if (tasksRes.ok) {
+      activeTasks = tasksRes.data;
+    }
+
+    // Clear selection so user can pick the next subtask
+    selectedTaskId = null;
+    selectedSubtaskId = null;
+    currentPomodoroTaskId = null;
+    selectedTaskBadge.style.display = 'none';
+    const targetMode = toMode || window._exitTargetMode;
     window._exitTaskId = null;
+    window._exitTargetMode = null;
+
+    if (targetMode) {
+      await ipc.switchMode(targetMode);
+      return;
+    }
+
+    renderTaskSelectList();
   }
 
   function showState(name) {
     exitStateInquiry.style.display = name === "inquiry" ? "" : "none";
-    exitStateSubtasks.style.display = name === "subtasks" ? "" : "none";
-    exitStateExtend.style.display = name === "extend" ? "" : "none";
     exitStateNote.style.display = name === "note" ? "" : "none";
   }
 
+  // "完成了" — toggle current subtask, check if parent is fully done
   document.getElementById("exitCompletedBtn").addEventListener("click", async () => {
     const taskId = window._exitTaskId;
-    if (!taskId) return;
-    const res = await ipc.getTaskById(taskId);
-    if (!res.ok || !res.data) { hideExitPanel(); await ipc.switchMode(MODE.PET); return; }
-    const task = res.data;
-    exitSubtaskList.innerHTML = "";
-    for (const sub of (task.subtasks || [])) {
-      const row = document.createElement("div");
-      row.className = "wallpaper-exit-subtask-item";
-      const cb = document.createElement("input");
-      cb.type = "checkbox";
-      cb.checked = sub.completed;
-      cb.addEventListener("change", () => ipc.toggleSubtask(taskId, sub.id));
-      row.appendChild(cb);
-      row.appendChild(document.createTextNode(sub.rpgDesc || sub.realDesc));
-      exitSubtaskList.appendChild(row);
+    if (!taskId) { await hideExitPanelAndRefresh(); return; }
+
+    // Toggle the current subtask (or the parent itself if no subtask selected)
+    if (selectedSubtaskId) {
+      await ipc.toggleSubtask(taskId, selectedSubtaskId);
     }
-    showState("subtasks");
+
+    // Reload task to check completion state
+    const res = await ipc.getTaskById(taskId);
+    if (res.ok && res.data) {
+      const allDone = (res.data.subtasks || []).every(s => s.completed);
+      if (allDone) await ipc.completeTask(taskId);
+    }
+
+    // Always back to pet mode after completing
+    await hideExitPanelAndRefresh(MODE.PET);
   });
 
-  document.getElementById("exitSubtaskConfirmBtn").addEventListener("click", async () => {
+  // "还没" — record progress percentage
+  document.getElementById("exitNotYetBtn").addEventListener("click", async () => {
     const taskId = window._exitTaskId;
     if (taskId) {
       const res = await ipc.getTaskById(taskId);
       if (res.ok && res.data) {
-        const allDone = (res.data.subtasks || []).every((s) => s.completed);
-        if (allDone) await ipc.completeTask(taskId);
+        let prev = 0;
+        if (selectedSubtaskId) {
+          const sub = (res.data.subtasks || []).find(s => s.id === selectedSubtaskId);
+          prev = sub ? (sub.cumulativeProgress || 0) : 0;
+        } else {
+          prev = res.data.cumulativeProgress || 0;
+        }
+        exitProgressPercentInput.min = prev;
+        exitProgressPercentInput.value = prev;
       }
     }
-    hideExitPanel();
-    await ipc.switchMode(MODE.PET);
-  });
-
-  document.getElementById("exitNotYetBtn").addEventListener("click", () => {
-    showState("extend");
-  });
-
-  document.getElementById("exitExtendYesBtn").addEventListener("click", async () => {
-    hideExitPanel();
-    await startPomodoroFlow(25 * 60, window._exitTaskId);
-  });
-
-  document.getElementById("exitExtendNoBtn").addEventListener("click", () => {
     showState("note");
   });
 
-  document.getElementById("exitProgressSaveBtn").addEventListener("click", async () => {
-    const note = exitProgressInput.value.trim();
-    exitProgressInput.value = "";
-    hideExitPanel();
-    if (note) {
-      convPanel.addMessage("user", note);
-      await ipc.sendMessage(note);
-    }
-    await ipc.switchMode(MODE.PET);
+  // "再延 25 分钟" — extend pomodoro
+  document.getElementById("exitExtendBtn").addEventListener("click", async () => {
+    const taskId = window._exitTaskId;
+    isExitingWithTask = false;
+    exitOverlay.classList.remove("open");
+    exitPanel.classList.remove("open");
+    window._exitTaskId = null;
+    await startPomodoroFlow(25 * 60, taskId);
   });
 
-  exitOverlay.addEventListener("click", () => hideExitPanel());
+  // Progress save — clamped to never go below previous
+  document.getElementById("exitProgressSaveBtn").addEventListener("click", async () => {
+    const percent = parseInt(exitProgressPercentInput.value, 10) || 0;
+    const clampedPercent = Math.min(100, Math.max(0, percent));
+    const taskId = window._exitTaskId;
+    if (taskId) {
+      await ipc.updateTaskProgress(taskId, clampedPercent, null, selectedSubtaskId);
+    }
+    await hideExitPanelAndRefresh(MODE.PET);
+  });
+
+  exitOverlay.addEventListener("click", () => hideExitPanelAndRefresh());
 
   // ── Keyboard ──
   document.addEventListener("keydown", async (e) => {
     if (e.key === "Escape") {
       if (isExitingWithTask) {
-        hideExitPanel();
+        await hideExitPanelAndRefresh();
         return;
       }
       if (sidebar.classList.contains("open")) {
         sidebar.classList.remove("open");
         return;
       }
-      const statusRes = await ipc.getPomodoroStatus();
-      if (statusRes.ok && statusRes.data.taskId) {
-        showExitPanel(statusRes.data.taskId);
+      if (currentPomodoroTaskId) {
+        showExitPanel(currentPomodoroTaskId);
       } else {
         await ipc.switchMode(MODE.PET);
       }
     }
   });
+
+  // ── Init: load tasks and decide initial state ──
+  async function initWallpaper() {
+    const tasksRes = await ipc.getTasks("active");
+    if (tasksRes.ok && tasksRes.data.length > 0) {
+      activeTasks = tasksRes.data;
+      if (!isPomodoroRunning) {
+        renderTaskSelectList();
+      }
+    } else {
+      activeTasks = [];
+      if (!isPomodoroRunning) {
+        taskSelectArea.style.display = 'none';
+        selectedTaskBadge.style.display = 'none';
+        selectedTaskId = null;
+        setModeLabel('rest');
+      }
+    }
+  }
+
+  // Re-load tasks whenever wallpaper mode is activated (user switches back)
+  ipc.onModeActivated((data) => {
+    if (data.mode === MODE.WALLPAPER) {
+      initWallpaper();
+    }
+  });
+
+  initWallpaper();
 })();
 </script>
 
@@ -716,19 +1039,16 @@ void main() {
         var gl = renderer.gl;
         gl._defaultShader = renderer.shaderManager.get("default");
 
-        // Make body transparent so WebGL canvas shows through
         document.body.style.backgroundImage = "none";
         document.body.style.backgroundColor = "transparent";
 
         renderer.start();
     }
 
-        // arg can be: (string) WE wallpaper dir name, (object) direct scene data, or (null) to clear
     async function applyWeWallpaperWebGL(arg) {
         if (!renderer) return;
 
         if (!arg) {
-            // Clear scene
             var children = renderer._rootNode.children.slice();
             children.forEach(function (c) { c.destroy(); });
             renderer._rootNode.children = [];
@@ -738,14 +1058,12 @@ void main() {
         var sceneData;
 
         if (typeof arg === "string") {
-            // WE wallpaper dir name — load via IPC
             var ipc = new window.IpcClient();
             var res = await ipc.loadWeWallpaper(arg);
             if (!res.ok || !res.data) return;
             var layers = res.data.layers || [];
             var sceneChildren = [];
             layers.forEach(function (lyr, i) {
-                // WE uses CSS coords (y=0 at TOP). WebGL uses OpenGL (y=0 at BOTTOM).
                 sceneChildren.push({
                     type: "Layer",
                     name: lyr.name || ("layer_" + i),
@@ -763,9 +1081,7 @@ void main() {
                 children: sceneChildren,
             };
         } else if (typeof arg === "object") {
-            // Direct scene data from editor
             sceneData = arg;
-            // Flip Y in all child positions if they come from WE data
             if (sceneData.children) {
                 sceneData.children.forEach(function (c) {
                     if (c.position && c._weYFlip !== false) {
@@ -781,15 +1097,8 @@ void main() {
         await renderer.loadScene(sceneData);
     }
 
-    // Wire up the delegation// Wire up the delegation from the CSS-side applyWeWallpaper
-    // _webglApplyWeWallpaper is defined in the main IIFE above
     document.addEventListener("DOMContentLoaded", async function () {
         await initWebGL();
-
-        // Wire delegation so the dropdown triggers WebGL rendering
-        // We can not access the IIFE closure directly, so set via a polling check
-        // Instead: override the function indirectly
-        // Actually, just restore saved wallpaper directly
         var ipc = new window.IpcClient();
         var state = await ipc.getAppState();
         if (state.ok && state.data && state.data.wallpaperSettings && state.data.wallpaperSettings.weWallpaperDir) {
@@ -797,20 +1106,12 @@ void main() {
         }
     });
 
-    // Expose the WebGL apply function globally for the main IIFE to delegate to
     window._webglApplyWeWallpaper = applyWeWallpaperWebGL;
-    // Listen for scene updates from the editor
-    if (window.electronAPI && window.electronAPI.editor) {
-        // The editor forwards via main process which sends IPC.EDITOR_APPLY
-        // We need to listen on ipcRenderer — but with contextIsolation,
-        // we need a preload API for this. Use the IpcClient polling approach instead.
-    }
     window._onEditorSceneApplied = function(sceneData) {
         if (renderer && sceneData) {
             applyWeWallpaperWebGL(sceneData);
         }
     };
-
 })();
 </script>
 </body>

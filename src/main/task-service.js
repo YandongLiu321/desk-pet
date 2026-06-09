@@ -8,10 +8,12 @@ class TaskService {
 	 * @param {object} deps
 	 * @param {import('./database').Database} deps.db
 	 * @param {object} deps.worldBook
+	 * @param {import('./task-classifier').TaskClassifier} [deps.classifier]
 	 */
-	constructor({ db, worldBook }) {
+	constructor({ db, worldBook, classifier }) {
 		this.db = db;
 		this.worldBook = worldBook;
+		this.classifier = classifier || null;
 	}
 
 	/** @param {Partial<Task>} data */
@@ -19,7 +21,14 @@ class TaskService {
 		if (!data.realTitle || !data.realTitle.trim()) {
 			throw new Error("TASK_CREATE_INVALID: realTitle is required");
 		}
-		return this.db.createTask(data);
+		// Extract mode hint before persisting (mode is not a DB field)
+		const mode = data.mode || null;
+		delete data.mode;
+		const task = this.db.createTask(data);
+		if (this.classifier) {
+			this.classifier.classify(task, mode);
+		}
+		return task;
 	}
 
 	/**
@@ -64,7 +73,14 @@ class TaskService {
 				completed: s.completed || false,
 			})),
 		};
-		return this.db.createTask(taskData);
+		const task = this.db.createTask(taskData);
+		if (this.classifier) {
+			const llmMode = ["computer", "reading", "writing"].includes(payload.mode)
+				? payload.mode
+				: null;
+			this.classifier.classify(task, llmMode);
+		}
+		return task;
 	}
 
 	/** @returns {Task[]} */
@@ -155,6 +171,68 @@ class TaskService {
 		});
 
 		return { task: this.db.getTaskById(taskId), isFullyCompleted: true, milestoneProgress };
+	}
+
+	/**
+	 * Update cumulative progress after an incomplete session.
+	 * Progress only increases; new percent < old percent is clamped.
+	 * estimatedMinutes is recalculated from the original estimate.
+	 * @returns {{ task: Task, progressClamped: boolean }}
+	 */
+	updateProgress(taskId, percent, note, subtaskId) {
+		const task = this.db.getTaskById(taskId);
+		if (!task) throw new Error(`Task not found: ${taskId}`);
+
+		// Preserve the original AI-estimated duration
+		if (task.originalEstimatedMinutes == null) {
+			task.originalEstimatedMinutes = task.estimatedMinutes;
+		}
+
+		if (subtaskId && task.subtasks.length > 0) {
+			const sub = task.subtasks.find((s) => s.id === subtaskId);
+			if (!sub) throw new Error(`Subtask not found: ${subtaskId}`);
+
+			const oldProgress = sub.cumulativeProgress || 0;
+			const clamped = Math.min(100, Math.max(oldProgress, percent));
+			const progressClamped = clamped !== percent;
+			sub.cumulativeProgress = clamped;
+			sub.progressNote = note || null;
+
+			const totalProgress = task.subtasks.reduce(
+				(sum, s) => sum + (s.cumulativeProgress || 0),
+				0,
+			);
+			const avgProgress = Math.round(totalProgress / task.subtasks.length);
+
+			const remainingRatio = (100 - avgProgress) / 100;
+			const newEstimate = Math.max(
+				1,
+				Math.round(task.originalEstimatedMinutes * remainingRatio),
+			);
+
+			this.db.updateTask(taskId, {
+				cumulativeProgress: avgProgress,
+				estimatedMinutes: newEstimate,
+				subtasks: task.subtasks,
+			});
+
+			return { task: this.db.getTaskById(taskId), progressClamped };
+		}
+
+		const oldProgress = task.cumulativeProgress || 0;
+		const clamped = Math.min(100, Math.max(oldProgress, percent));
+		const progressClamped = clamped !== percent;
+
+		const remainingRatio = (100 - clamped) / 100;
+		const newEstimate = Math.max(1, Math.round(task.originalEstimatedMinutes * remainingRatio));
+
+		this.db.updateTask(taskId, {
+			cumulativeProgress: clamped,
+			estimatedMinutes: newEstimate,
+			progressNote: note || null,
+		});
+
+		return { task: this.db.getTaskById(taskId), progressClamped };
 	}
 
 	deleteTask(taskId) {

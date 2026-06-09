@@ -112,6 +112,10 @@ class Database {
 
 	createTask(taskData) {
 		this._load();
+		const subtasks = (taskData.subtasks || []).map((s) => ({
+			cumulativeProgress: 0,
+			...s,
+		}));
 		const task = {
 			id: `task_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
 			createdAt: new Date().toISOString(),
@@ -120,8 +124,8 @@ class Database {
 			followUpPromptAt: null,
 			followUpCompleted: false,
 			followUpResult: "",
-			subtasks: [],
 			...taskData,
+			subtasks,
 		};
 		this._data.tasks.push(task);
 		this._persist();

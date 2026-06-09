@@ -13,6 +13,7 @@ class PomodoroTimer {
 		this._remaining = 0;
 		this._running = false;
 		this._paused = false;
+		this._editableMinutes = 25;
 	}
 
 	mount() {
@@ -52,6 +53,48 @@ class PomodoroTimer {
 		this._timeDisplay.style.cssText =
 			"font-size:var(--font-2xl);color:var(--color-text-primary);font-family:var(--font-mono);";
 		this._timeDisplay.textContent = "25:00";
+
+		// Time editor (shown after task selection, hidden during countdown)
+		this._timeEditor = document.createElement("div");
+		this._timeEditor.style.cssText = "display:none;align-items:center;gap:var(--space-sm);";
+
+		this._minusBtn = document.createElement("button");
+		this._minusBtn.textContent = "−";
+		this._minusBtn.style.cssText = "width:32px;height:32px;border-radius:50%;border:1px solid var(--color-bg-light);background:var(--color-bg-medium);color:var(--color-text-primary);cursor:pointer;font-size:var(--font-lg);line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0;";
+		this._minusBtn.addEventListener("click", () => {
+			this._editableMinutes = Math.max(1, this._editableMinutes - 5);
+			this._minutesInput.value = this._editableMinutes;
+		});
+
+		this._minutesInput = document.createElement("input");
+		this._minutesInput.type = "number";
+		this._minutesInput.min = 1;
+		this._minutesInput.max = 480;
+		this._minutesInput.step = 1;
+		this._minutesInput.style.cssText = "width:56px;background:var(--color-bg-medium);border:1px solid var(--color-bg-light);border-radius:var(--radius-sm);color:var(--color-text-primary);font-size:var(--font-xl);text-align:center;font-family:var(--font-mono);padding:var(--space-xs);";
+		this._minutesInput.addEventListener("input", () => {
+			const val = parseInt(this._minutesInput.value, 10);
+			if (!isNaN(val) && val > 0) {
+				this._editableMinutes = Math.min(480, Math.max(1, val));
+			}
+		});
+
+		this._plusBtn = document.createElement("button");
+		this._plusBtn.textContent = "+";
+		this._plusBtn.style.cssText = "width:32px;height:32px;border-radius:50%;border:1px solid var(--color-bg-light);background:var(--color-bg-medium);color:var(--color-text-primary);cursor:pointer;font-size:var(--font-lg);line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0;";
+		this._plusBtn.addEventListener("click", () => {
+			this._editableMinutes = Math.min(480, this._editableMinutes + 5);
+			this._minutesInput.value = this._editableMinutes;
+		});
+
+		this._unitLabel = document.createElement("span");
+		this._unitLabel.textContent = "min";
+		this._unitLabel.style.cssText = "font-size:var(--font-sm);color:var(--color-text-muted);";
+
+		this._timeEditor.appendChild(this._minusBtn);
+		this._timeEditor.appendChild(this._minutesInput);
+		this._timeEditor.appendChild(this._plusBtn);
+		this._timeEditor.appendChild(this._unitLabel);
 
 		// Controls
 		const controls = document.createElement("div");
@@ -104,6 +147,7 @@ class PomodoroTimer {
 
 		this.container.appendChild(this._svg);
 		this.container.appendChild(this._timeDisplay);
+		this.container.appendChild(this._timeEditor);
 		this.container.appendChild(controls);
 	}
 
@@ -114,12 +158,40 @@ class PomodoroTimer {
 		this._stopBtn.style.display = state === "paused" ? "" : "none";
 	}
 
+	_showEditor() {
+		this._timeDisplay.style.display = "none";
+		this._timeEditor.style.display = "flex";
+	}
+
+	_hideEditor() {
+		this._timeDisplay.style.display = "";
+		this._timeEditor.style.display = "none";
+	}
+
+	/** @param {number} minutes — AI-suggested duration, shown as editable */
+	setEditableDuration(minutes) {
+		this._editableMinutes = Math.min(480, Math.max(1, Math.round(minutes)));
+		this._minutesInput.value = this._editableMinutes;
+		this._showEditor();
+		this.showControls("idle");
+	}
+
+	/** @returns {number} user-adjusted minutes (or default 25) */
+	getCurrentMinutes() {
+		return this._editableMinutes;
+	}
+
 	/** @param {number} remaining seconds */
 	update(remaining) {
 		this._remaining = remaining;
-		const mins = Math.floor(remaining / 60);
+		const hours = Math.floor(remaining / 3600);
+		const mins = Math.floor((remaining % 3600) / 60);
 		const secs = remaining % 60;
-		this._timeDisplay.textContent = `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+		if (hours > 0) {
+			this._timeDisplay.textContent = `${hours}:${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+		} else {
+			this._timeDisplay.textContent = `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+		}
 
 		const circumference = 2 * Math.PI * 52;
 		const offset = circumference * (1 - remaining / this._total);
@@ -130,6 +202,7 @@ class PomodoroTimer {
 		this._total = totalSeconds;
 		this._running = true;
 		this._paused = false;
+		this._hideEditor();
 		this.update(totalSeconds);
 		this.showControls("running");
 	}
@@ -137,6 +210,8 @@ class PomodoroTimer {
 	stop() {
 		this._running = false;
 		this._paused = false;
+		this._editableMinutes = 25;
+		this._hideEditor();
 		this._timeDisplay.textContent = "25:00";
 		this._ring.setAttribute("stroke-dashoffset", "0");
 		this.showControls("idle");

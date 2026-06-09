@@ -73,6 +73,11 @@ function registerIpcHandlers(services, deps) {
 		return task;
 	}));
 
+	ipcMain.handle(IPC.TASK_GET_MODE, (_event, { taskId }) => runSafe(() => {
+		if (!taskService.classifier) return null;
+		return taskService.classifier.getMode(taskId);
+	}));
+
 	ipcMain.handle(IPC.TASK_CREATE, (_event, { data }) => {
 		if (!data?.realTitle || !data.rpgTitle) {
 			return { ok: false, error: { code: ERROR_CODE.TASK_CREATE_INVALID, message: "realTitle and rpgTitle are required" } };
@@ -89,6 +94,10 @@ function registerIpcHandlers(services, deps) {
 		relationshipService.incrementStat("tasksCompleted");
 		const upgrade = relationshipService.checkAndUpgrade();
 		return { ...result, relationshipUpgrade: upgrade };
+	}));
+
+	ipcMain.handle(IPC.TASK_UPDATE_PROGRESS, (_event, { taskId, percent, note, subtaskId }) => runTask(() => {
+		return taskService.updateProgress(taskId, percent, note, subtaskId);
 	}));
 
 	ipcMain.handle(IPC.TASK_DELETE, (_event, { taskId }) => runSafe(() => { taskService.deleteTask(taskId); return null; }));
