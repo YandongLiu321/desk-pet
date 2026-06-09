@@ -2,3 +2,10 @@ node_modules/
 data/
 dist/
 *.logSakura/
+Sakura/
+.claude/
+.idea/
+.superpowers/
+pet_temp.png
+temp.md
+wallpaper_temp.png
