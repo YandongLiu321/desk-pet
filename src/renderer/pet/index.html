@@ -347,6 +347,10 @@
           convPanel.addMessage("assistant", data.displayText);
           showBubble(data.displayText);
         }
+        // Trigger Live2D expression
+        if (data.expression) {
+          charRenderer.setMotion(data.expression);
+        }
         if (data.intent === INTENT.CREATE_TASK && data.taskPayload) {
           ipc.createTask(data.taskPayload).then((res) => {
             if (res.ok) {
