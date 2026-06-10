@@ -120,6 +120,25 @@
   --color-input-border: rgba(255, 255, 255, 0.08);
 }
 
+/* ===== Warm color tokens (for desktop habitat UI) ===== */
+:root {
+  --color-paper: #faf5eb;
+  --color-paper-dark: #ede0cc;
+  --color-ink: #5c4030;
+  --color-ink-light: #8b7355;
+  --color-ink-muted: #b0a090;
+  --color-leather: #3d2b1f;
+  --color-leather-light: #5c4030;
+  --color-gold: #c9a84c;
+  --color-gold-light: #d4ba6a;
+  --color-wood: #8b7355;
+  --color-wood-dark: #5c4030;
+  --color-lamp-warm: rgba(255, 200, 130, 0.3);
+  --color-night-blue: rgba(30, 40, 70, 0.6);
+  --color-morning-gold: rgba(255, 220, 150, 0.3);
+  --color-evening-orange: rgba(255, 180, 100, 0.25);
+}
+
 /* ===== Legacy aliases (向后兼容) ===== */
 :root {
   --color-primary: var(--color-accent);
