@@ -3,127 +3,796 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>软件模式 — 埃瑟利亚大陆</title>
+<title>柚子房间</title>
 <link rel="stylesheet" href="../shared/styles/base.css">
 <style>
   body {
     display: flex;
     flex-direction: column;
     height: 100vh;
-    background: var(--color-bg-darkest);
     overflow: hidden;
+    background: #2a2218;
   }
 
-  .soft-titlebar {
-    display: flex;
-    align-items: center;
-    padding: var(--space-sm) var(--space-md);
-    background: var(--color-bg-dark);
-    border-bottom: 1px solid var(--color-bg-light);
-    -webkit-app-region: drag;
-    user-select: none;
-  }
-
-  .soft-titlebar h1 {
-    font-size: var(--font-lg);
-    color: var(--color-accent);
-    margin: 0;
-  }
-
-  .soft-main {
-    display: flex;
+  /* ===== Room Scene Container ===== */
+  .room-scene {
+    position: relative;
     flex: 1;
     overflow: hidden;
   }
 
-  .soft-sidebar {
-    width: 60px;
-    background: var(--color-bg-dark);
+  /* ===== Top Info Bar ===== */
+  .top-info-bar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 36px;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    padding-top: var(--space-md);
-    gap: var(--space-xs);
-    border-right: 1px solid var(--color-bg-light);
+    justify-content: space-between;
+    padding: 0 var(--space-md);
+    background: rgba(0,0,0,0.25);
+    backdrop-filter: blur(6px);
+    z-index: 10;
+    font-size: var(--font-sm);
+    color: var(--color-text-secondary);
   }
 
-  .sidebar-spacer {
-    flex: 1;
+  .top-info-bar .time-display {
+    font-family: var(--font-mono);
+    color: var(--color-text-primary);
+    font-size: var(--font-base);
   }
 
-  .soft-sidebar-btn {
-    width: 44px;
-    height: 44px;
+  .top-info-bar .room-title {
+    color: var(--color-gold, #c9a84c);
+    font-size: var(--font-sm);
+  }
+
+  /* ===== Wall ===== */
+  .room-wall {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 58%;
+    background: linear-gradient(180deg,
+      #f5ede0 0%,
+      #efe4d2 40%,
+      #e8d9c0 100%
+    );
+  }
+
+  /* Wallpaper texture overlay */
+  .room-wall::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 3px,
+        rgba(139, 115, 85, 0.03) 3px,
+        rgba(139, 115, 85, 0.03) 4px
+      );
+    pointer-events: none;
+  }
+
+  /* ===== Floor ===== */
+  .room-floor {
+    position: absolute;
+    bottom: 48px; left: 0; right: 0;
+    height: 34%;
+    background: linear-gradient(180deg,
+      #c4a06a 0%,
+      #b8935e 30%,
+      #a88250 100%
+    );
+  }
+
+  .room-floor::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 60px,
+        rgba(0,0,0,0.06) 60px,
+        rgba(0,0,0,0.06) 62px
+      );
+    pointer-events: none;
+  }
+
+  /* Floor perspective line */
+  .room-floor::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: rgba(0,0,0,0.12);
+  }
+
+  /* ===== Baseboard ===== */
+  .room-baseboard {
+    position: absolute;
+    top: 58%; left: 0; right: 0;
+    height: 8px;
+    background: var(--color-wood-dark, #5c4030);
+    z-index: 1;
+  }
+
+  /* ===== Window ===== */
+  .room-window {
+    position: absolute;
+    top: 60px;
+    left: 60px;
+    width: 220px;
+    height: 280px;
+    cursor: pointer;
+    z-index: 2;
+    transition: transform var(--transition-normal);
+  }
+
+  .room-window:hover {
+    transform: scale(1.03);
+  }
+
+  .room-window-frame {
+    position: absolute;
+    inset: 0;
+    border: 8px solid var(--color-wood-dark, #5c4030);
+    border-radius: 4px;
+    box-shadow:
+      inset 0 0 0 2px rgba(0,0,0,0.1),
+      0 4px 16px rgba(0,0,0,0.2);
+  }
+
+  .room-window-sky {
+    position: absolute;
+    inset: 8px;
+    background: linear-gradient(180deg,
+      #0a0a2e 0%,
+      #12123a 40%,
+      #1a1a4e 70%,
+      #252560 100%
+    );
+    overflow: hidden;
+    border-radius: 2px;
+  }
+
+  /* Moon */
+  .room-window-moon {
+    position: absolute;
+    top: 24px;
+    right: 32px;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: #f5e6b8;
+    box-shadow:
+      0 0 16px rgba(245, 230, 184, 0.5),
+      0 0 40px rgba(245, 230, 184, 0.2),
+      inset 0 0 8px rgba(255, 245, 220, 0.6);
+    z-index: 1;
+  }
+
+  /* Crescent cutout */
+  .room-window-moon::after {
+    content: '';
+    position: absolute;
+    top: -6px;
+    right: -10px;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: #12123a;
+  }
+
+  /* Stars */
+  .room-window-stars {
+    position: absolute;
+    inset: 0;
+  }
+
+  .room-window-stars::before {
+    content: '';
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow:
+      20px 30px 0 #fff,
+      55px 18px 0 #fff,
+      90px 50px 0 #fff,
+      140px 25px 0 #fff,
+      170px 60px 0 #fff,
+      40px 80px 0 #fff,
+      100px 90px 0 rgba(255,255,255,0.7),
+      155px 110px 0 rgba(255,255,255,0.6),
+      30px 130px 0 rgba(255,255,255,0.5),
+      70px 150px 0 #fff,
+      120px 140px 0 rgba(255,255,255,0.8),
+      180px 160px 0 rgba(255,255,255,0.5),
+      50px 190px 0 rgba(255,255,255,0.6),
+      110px 200px 0 #fff,
+      160px 190px 0 rgba(255,255,255,0.4);
+  }
+
+  /* Twinkling stars */
+  .room-window-twinkle {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: #fff;
+    animation: starTwinkle 2s ease-in-out infinite;
+  }
+
+  .room-window-twinkle:nth-child(1) { top: 45px; left: 65px; animation-delay: 0s; }
+  .room-window-twinkle:nth-child(2) { top: 95px; left: 130px; animation-delay: 0.7s; }
+  .room-window-twinkle:nth-child(3) { top: 160px; left: 40px; animation-delay: 1.4s; }
+
+  /* Window sill */
+  .room-window-sill {
+    position: absolute;
+    bottom: 0; left: -4px; right: -4px;
+    height: 10px;
+    background: var(--color-wood-dark, #5c4030);
+    border-radius: 2px;
+    z-index: 3;
+  }
+
+  /* Window shine */
+  .room-window-shine {
+    position: absolute;
+    top: 10px; left: 10px;
+    width: 80px;
+    height: 40px;
+    background: linear-gradient(135deg,
+      rgba(255,255,255,0.08) 0%,
+      transparent 100%
+    );
+    pointer-events: none;
+    z-index: 2;
+    border-radius: 2px;
+  }
+
+  /* ===== Photo Frame ===== */
+  .room-photo {
+    position: absolute;
+    top: 90px;
+    left: 340px;
+    width: 110px;
+    height: 130px;
+    cursor: pointer;
+    z-index: 2;
+    transition: transform var(--transition-normal);
+  }
+
+  .room-photo:hover {
+    transform: scale(1.05) rotate(-1deg);
+  }
+
+  .room-photo-frame {
+    position: absolute;
+    inset: 0;
+    border: 6px solid var(--color-wood, #8b7355);
+    border-radius: 3px;
+    box-shadow:
+      0 3px 12px rgba(0,0,0,0.2),
+      inset 0 0 0 8px #faf5eb;
+    background: #ede0cc;
+  }
+
+  .room-photo-inner {
+    position: absolute;
+    inset: 14px;
+    background: linear-gradient(135deg, #d4ba6a 0%, #c9a84c 50%, #b8993a 100%);
     display: flex;
     align-items: center;
     justify-content: center;
-    background: transparent;
-    border: none;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    font-size: var(--font-xl);
-    color: var(--color-text-muted);
-    transition: all var(--transition-fast);
+    font-size: 36px;
+    border-radius: 1px;
   }
 
-  .soft-sidebar-btn:hover {
-    background: var(--color-bg-medium);
+  /* ===== Bookshelf ===== */
+  .room-bookshelf {
+    position: absolute;
+    top: 60px;
+    right: 80px;
+    width: 180px;
+    height: 320px;
+    cursor: pointer;
+    z-index: 2;
+    transition: transform var(--transition-normal);
+  }
+
+  .room-bookshelf:hover {
+    transform: scale(1.02);
+  }
+
+  .bookshelf-body {
+    position: absolute;
+    inset: 0;
+    background: var(--color-wood-dark, #5c4030);
+    border-radius: 3px;
+    box-shadow:
+      0 4px 16px rgba(0,0,0,0.3),
+      inset 0 0 0 3px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    padding: 8px;
+    gap: 3px;
+  }
+
+  .bookshelf-shelf {
+    flex: 1;
+    background: var(--color-wood, #8b7355);
+    border-radius: 2px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-around;
+    padding: 0 4px 3px;
+    position: relative;
+  }
+
+  .bookshelf-shelf::after {
+    content: '';
+    position: absolute;
+    bottom: -3px; left: 0; right: 0;
+    height: 3px;
+    background: rgba(0,0,0,0.15);
+  }
+
+  .book {
+    width: 16px;
+    border-radius: 2px 2px 0 0;
+    transition: transform var(--transition-fast);
+  }
+
+  .bookshelf-shelf:hover .book {
+    transform: translateY(-2px);
+  }
+
+  .book-red { height: 50px; background: #c0392b; }
+  .book-blue { height: 44px; background: #2980b9; }
+  .book-green { height: 48px; background: #27ae60; }
+  .book-yellow { height: 40px; background: #d4a017; }
+  .book-purple { height: 46px; background: #8e44ad; }
+  .book-teal { height: 38px; background: #16a085; }
+  .book-orange { height: 42px; background: #e67e22; }
+  .book-pink { height: 36px; background: #c2185b; }
+
+  .book-stack {
+    display: flex;
+    gap: 1px;
+  }
+
+  .book-leaning {
+    width: 16px;
+    height: 52px;
+    border-radius: 2px 2px 0 0;
+    transform: rotate(12deg);
+    transform-origin: bottom center;
+  }
+
+  /* ===== Yuzu Area ===== */
+  .room-yuzu {
+    position: absolute;
+    bottom: 34%;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 3;
+    cursor: pointer;
+    transition: transform var(--transition-normal);
+  }
+
+  .room-yuzu:hover {
+    transform: translateX(-50%) scale(1.04);
+  }
+
+  .room-yuzu-glow {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle,
+      rgba(255, 200, 130, 0.15) 0%,
+      rgba(255, 200, 130, 0.05) 50%,
+      transparent 70%
+    );
+    pointer-events: none;
+  }
+
+  .yuzu-label {
+    margin-top: -10px;
+    font-size: var(--font-sm);
+    color: var(--color-text-secondary);
+    background: rgba(0,0,0,0.3);
+    padding: 2px 10px;
+    border-radius: 10px;
+  }
+
+  .yuzu-relation {
+    font-size: var(--font-xs);
+    color: var(--color-gold, #c9a84c);
+    margin-top: 2px;
+  }
+
+  /* ===== Desk ===== */
+  .room-desk {
+    position: absolute;
+    bottom: 48px;
+    left: 0; right: 0;
+    height: 14%;
+    z-index: 4;
+  }
+
+  .desk-surface {
+    position: absolute;
+    inset: 0 0 0 0;
+    background: linear-gradient(180deg,
+      #b8915c 0%,
+      #a67c4a 40%,
+      #8b6914 100%
+    );
+    border-top: 4px solid #c4a06a;
+    box-shadow:
+      0 -2px 8px rgba(0,0,0,0.15),
+      inset 0 2px 0 rgba(255,255,255,0.08);
+  }
+
+  .desk-surface::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 70px,
+        rgba(0,0,0,0.03) 70px,
+        rgba(0,0,0,0.03) 72px
+      );
+    pointer-events: none;
+  }
+
+  /* ===== Desk Items ===== */
+  .desk-item {
+    position: absolute;
+    bottom: 4px;
+    cursor: pointer;
+    transition: transform var(--transition-fast);
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .desk-item:hover {
+    transform: translateY(-4px);
+  }
+
+  .desk-item-icon {
+    font-size: 28px;
+    transition: transform var(--transition-fast);
+  }
+
+  .desk-item:hover .desk-item-icon {
+    transform: scale(1.15);
+  }
+
+  .desk-item-label {
+    font-size: 9px;
+    color: var(--color-ink-light, #8b7355);
+    margin-top: 2px;
+    white-space: nowrap;
+  }
+
+  /* Plant */
+  .desk-plant {
+    right: 60px;
+  }
+
+  .desk-plant .desk-item-icon {
+    font-size: 36px;
+  }
+
+  /* Mug */
+  .desk-mug {
+    right: 160px;
+  }
+
+  /* Laptop */
+  .desk-laptop {
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 2px;
+  }
+
+  .desk-laptop:hover {
+    transform: translateX(-50%) translateY(-4px);
+  }
+
+  .laptop-screen {
+    width: 120px;
+    height: 80px;
+    background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+    border-radius: 6px 6px 0 0;
+    border: 3px solid #333;
+    border-bottom: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: #4a9;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+  }
+
+  .laptop-screen::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 30px;
+    background: linear-gradient(180deg,
+      rgba(255,255,255,0.06) 0%,
+      transparent 100%
+    );
+  }
+
+  .laptop-base {
+    width: 140px;
+    height: 6px;
+    background: #444;
+    border-radius: 0 0 4px 4px;
+  }
+
+  /* Notebook */
+  .desk-notebook {
+    left: 38%;
+    transform: translateX(-50%);
+    bottom: 2px;
+  }
+
+  .desk-notebook:hover {
+    transform: translateX(-50%) translateY(-4px);
+  }
+
+  .notebook-visual {
+    width: 60px;
+    height: 44px;
+    background: #faf5eb;
+    border-radius: 3px 6px 6px 3px;
+    border: 2px solid #d4c5a0;
+    position: relative;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+
+  .notebook-visual::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    width: 4px;
+    background: var(--color-leather, #3d2b1f);
+    border-radius: 1px 0 0 1px;
+  }
+
+  .notebook-visual::after {
+    content: '';
+    position: absolute;
+    top: 8px; left: 12px; right: 8px;
+    height: 1px;
+    background: rgba(0,0,0,0.1);
+    box-shadow:
+      0 8px 0 rgba(0,0,0,0.1),
+      0 16px 0 rgba(0,0,0,0.1),
+      0 24px 0 rgba(0,0,0,0.1);
+  }
+
+  /* Clock */
+  .desk-clock {
+    right: 280px;
+  }
+
+  .clock-visual {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: #faf5eb;
+    border: 3px solid var(--color-wood, #8b7355);
+    position: relative;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  }
+
+  .clock-visual::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 3px;
+    height: 16px;
+    background: var(--color-ink, #5c4030);
+    transform-origin: bottom center;
+    transform: translate(-50%, -100%) rotate(30deg);
+    border-radius: 2px;
+  }
+
+  .clock-visual::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 2px;
+    height: 12px;
+    background: var(--color-ink, #5c4030);
+    transform-origin: bottom center;
+    transform: translate(-50%, -100%) rotate(-50deg);
+    border-radius: 2px;
+  }
+
+  .clock-dot {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--color-ink, #5c4030);
+    transform: translate(-50%, -50%);
+  }
+
+  /* ===== Room items tooltip ===== */
+  .room-tooltip {
+    position: absolute;
+    padding: 4px 10px;
+    background: rgba(0,0,0,0.75);
+    color: #fff;
+    font-size: 11px;
+    border-radius: 4px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+    white-space: nowrap;
+    z-index: 20;
+  }
+
+  .room-tooltip.visible {
+    opacity: 1;
+  }
+
+  /* ===== Bottom Navigation ===== */
+  .bottom-nav {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    background: rgba(0,0,0,0.35);
+    backdrop-filter: blur(10px);
+    z-index: 10;
+    padding: 0 var(--space-md);
+  }
+
+  .bottom-nav-btn {
+    padding: 6px 20px;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: var(--radius-md);
+    background: rgba(255,255,255,0.05);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    font-size: var(--font-sm);
+    font-family: var(--font-main);
+    transition: all var(--transition-fast);
+    white-space: nowrap;
+  }
+
+  .bottom-nav-btn:hover {
+    background: rgba(255,255,255,0.12);
+    color: var(--color-text-primary);
+    border-color: rgba(255,255,255,0.2);
+  }
+
+  .bottom-nav-btn.active {
+    background: var(--color-accent);
+    color: #fff;
+    border-color: var(--color-accent);
+    box-shadow: 0 2px 12px var(--color-accent-glow);
+  }
+
+  .bottom-nav-btn.room-btn {
+    background: rgba(255,255,255,0.1);
+    font-weight: bold;
+  }
+
+  .bottom-nav-btn.room-btn:hover {
+    background: rgba(255,255,255,0.18);
+  }
+
+  /* ===== Panel Overlay ===== */
+  .panel-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.2s ease;
+  }
+
+  .panel-overlay.open {
+    display: flex;
+  }
+
+  /* ===== Panel Cards ===== */
+  .panel-card {
+    display: none;
+    width: 520px;
+    max-height: 85vh;
+    background: var(--color-bg-glass);
+    border-radius: var(--radius-lg);
+    box-shadow:
+      0 16px 48px rgba(0,0,0,0.5),
+      0 0 0 1px rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
+    overflow: hidden;
+    animation: panelSlideIn 0.25s ease;
+  }
+
+  .panel-card.open {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-md);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    flex-shrink: 0;
+  }
+
+  .panel-header h2 {
+    font-size: var(--font-lg);
+    color: var(--color-text-primary);
+    margin: 0;
+  }
+
+  .panel-close {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.05);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+    line-height: 1;
+  }
+
+  .panel-close:hover {
+    background: rgba(255,255,255,0.15);
     color: var(--color-text-primary);
   }
 
-  .soft-sidebar-btn.active {
-    background: var(--color-primary);
-    color: white;
-  }
-
-  .soft-content {
+  .panel-body {
     flex: 1;
     overflow-y: auto;
     padding: var(--space-md);
   }
 
-  .soft-right-panel {
-    width: 280px;
-    background: var(--color-bg-dark);
-    border-left: 1px solid var(--color-bg-light);
-    display: flex;
-    flex-direction: column;
-  }
-
-  .soft-char-display {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: var(--space-md);
-    border-bottom: 1px solid var(--color-bg-light);
-  }
-
-  .soft-char-display .char-img {
-    width: var(--char-software-size);
-    height: var(--char-software-size);
-  }
-
-  .soft-char-name {
-    margin-top: var(--space-sm);
-    font-size: var(--font-lg);
-    color: var(--color-text-primary);
-  }
-
-  .soft-char-stage {
-    font-size: var(--font-sm);
-    color: var(--color-text-secondary);
-    margin-top: var(--space-xs);
-  }
-
-  .soft-conv-panel {
-    flex: 1;
-    overflow: hidden;
-  }
-
-  /* Tab content styles */
-  .tab-content { display: none; }
-  .tab-content.active { display: block; }
-
+  /* ===== Task Detail (inside panel) ===== */
   .task-detail {
     background: var(--color-bg-medium);
     border-radius: var(--radius-md);
@@ -152,6 +821,7 @@
     border-radius: var(--radius-sm);
     cursor: pointer;
     font-size: var(--font-base);
+    font-family: var(--font-main);
     transition: background var(--transition-fast);
   }
 
@@ -169,143 +839,351 @@
     color: white;
   }
 
+  .btn-danger:hover {
+    opacity: 0.85;
+  }
+
   .btn-row {
     margin-top: var(--space-md);
     display: flex;
     gap: var(--space-sm);
   }
 
-  .map-placeholder {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 400px;
-    background: var(--color-bg-dark);
-    border-radius: var(--radius-lg);
-    border: 2px dashed var(--color-bg-light);
-    color: var(--color-text-muted);
+  /* ===== Computer Panel Specific ===== */
+  .computer-info {
+    text-align: center;
   }
 
-  .map-placeholder .chapter-title {
-    font-size: var(--font-xl);
-    color: var(--color-accent);
+  .computer-info .status-icon {
+    font-size: 48px;
     margin-bottom: var(--space-sm);
   }
 
-  .map-placeholder .chapter-goal {
-    font-size: var(--font-sm);
-  }
-
-  .map-status {
-    margin-top: 24px;
-    opacity: 0.5;
-  }
-
-  .map-progress {
-    margin-top: 16px;
-    width: 120px;
-    height: 4px;
-    background: var(--color-bg-light);
-    border-radius: 2px;
-  }
-
-  .map-progress-bar {
-    height: 100%;
-    background: var(--color-primary);
-    border-radius: 2px;
-  }
-
-  .char-lore {
-    font-size: var(--font-sm);
+  .computer-info .status-text {
     color: var(--color-text-secondary);
-    line-height: 1.6;
+    font-size: var(--font-sm);
   }
 
-  .char-lore h3 {
-    color: var(--color-accent);
-    margin: var(--space-md) 0 var(--space-sm);
-  }
-
-  .timeline-item {
+  .computer-info .session-stats {
     display: flex;
-    gap: var(--space-sm);
-    padding: var(--space-sm) 0;
-    border-bottom: 1px solid var(--color-bg-light);
-    font-size: var(--font-sm);
+    gap: var(--space-md);
+    justify-content: center;
+    margin-top: var(--space-md);
   }
 
-  .timeline-date {
+  .computer-info .stat-item {
+    background: var(--color-bg-medium);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    text-align: center;
+    min-width: 100px;
+  }
+
+  .computer-info .stat-value {
+    font-size: var(--font-2xl);
+    color: var(--color-accent);
+    font-family: var(--font-mono);
+  }
+
+  .computer-info .stat-label {
+    font-size: var(--font-xs);
     color: var(--color-text-muted);
-    flex-shrink: 0;
-    width: 100px;
+    margin-top: var(--space-xs);
   }
 
-  .timeline-text {
+  /* ===== Settings Panel ===== */
+  .settings-section {
+    margin-bottom: var(--space-lg);
+  }
+
+  .settings-section h3 {
+    font-size: var(--font-base);
+    color: var(--color-text-primary);
+    margin-bottom: var(--space-sm);
+    padding-bottom: var(--space-xs);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-sm) 0;
+  }
+
+  .settings-row label {
+    font-size: var(--font-sm);
     color: var(--color-text-secondary);
+  }
+
+  .theme-btn-group {
+    display: flex;
+    gap: var(--space-xs);
+  }
+
+  .theme-btn {
+    padding: 4px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.05);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    font-size: var(--font-xs);
+    font-family: var(--font-main);
+    transition: all var(--transition-fast);
+  }
+
+  .theme-btn:hover {
+    border-color: var(--color-accent);
+    color: var(--color-text-primary);
+  }
+
+  .theme-btn.active {
+    background: var(--color-accent);
+    color: #fff;
+    border-color: var(--color-accent);
+  }
+
+  /* ===== Animations ===== */
+  @keyframes panelSlideIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px) scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes starTwinkle {
+    0%, 100% { opacity: 0.4; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.2); }
+  }
+
+  @keyframes deskGlow {
+    0%, 100% { box-shadow: 0 0 8px rgba(255,200,130,0.1); }
+    50% { box-shadow: 0 0 16px rgba(255,200,130,0.2); }
+  }
+
+  /* ===== Yuzu char display in room ===== */
+  .room-yuzu #charDisplay {
+    width: 160px;
+    height: 160px;
+  }
+
+  .room-yuzu .soft-char-name {
+    font-size: var(--font-lg);
+    color: var(--color-text-primary);
+    margin-top: var(--space-sm);
   }
 </style>
 </head>
 <body>
 
-<div class="soft-titlebar">
-  <h1>⚔️ 埃瑟利亚大陆 — 冒险笔记</h1>
-</div>
-
-<div class="soft-main">
-  <div class="soft-sidebar glass-panel">
-    <button class="soft-sidebar-btn active" data-tab="tasks" title="任务">📋</button>
-    <button class="soft-sidebar-btn" data-tab="map" title="地图">🗺️</button>
-    <button class="soft-sidebar-btn" data-tab="character" title="角色">👤</button>
-    <div class="sidebar-spacer"></div>
-    <button class="soft-sidebar-btn" id="btnPetMode" title="返回桌宠">🐱</button>
+<!-- ===== Room Scene ===== -->
+<div class="room-scene" id="roomScene">
+  <!-- Top Info Bar -->
+  <div class="top-info-bar">
+    <span class="time-display" id="timeDisplay">--:--</span>
+    <span class="room-title">柚子の部屋</span>
+    <span></span>
   </div>
 
-  <div class="soft-content" id="mainContent">
-    <!-- Tasks tab -->
-    <div class="tab-content active" id="tabTasks">
+  <!-- Wall -->
+  <div class="room-wall"></div>
+
+  <!-- Baseboard -->
+  <div class="room-baseboard"></div>
+
+  <!-- Floor -->
+  <div class="room-floor"></div>
+
+  <!-- Window -->
+  <div class="room-window" data-panel="computer" title="工作模式">
+    <div class="room-window-sky">
+      <div class="room-window-moon"></div>
+      <div class="room-window-stars"></div>
+      <div class="room-window-twinkle" style="top:45px;left:65px;"></div>
+      <div class="room-window-twinkle" style="top:95px;left:130px;"></div>
+      <div class="room-window-twinkle" style="top:160px;left:40px;"></div>
+      <div class="room-window-shine"></div>
+    </div>
+    <div class="room-window-frame"></div>
+    <div class="room-window-sill"></div>
+  </div>
+
+  <!-- Photo Frame -->
+  <div class="room-photo" data-panel="settings" title="设置与进度">
+    <div class="room-photo-frame">
+      <div class="room-photo-inner">⭐</div>
+    </div>
+  </div>
+
+  <!-- Bookshelf -->
+  <div class="room-bookshelf" data-panel="tasks" title="任务书架">
+    <div class="bookshelf-body">
+      <div class="bookshelf-shelf">
+        <div class="book book-red"></div>
+        <div class="book book-blue"></div>
+        <div class="book book-green"></div>
+        <div class="book book-yellow"></div>
+        <div class="book book-purple"></div>
+      </div>
+      <div class="bookshelf-shelf">
+        <div class="book book-teal"></div>
+        <div class="book book-orange"></div>
+        <div class="book book-pink"></div>
+        <div class="book book-red" style="height:36px;"></div>
+        <div class="book book-blue book-leaning"></div>
+        <div class="book book-green" style="height:30px;"></div>
+      </div>
+      <div class="bookshelf-shelf">
+        <div class="book book-purple" style="height:32px;"></div>
+        <div class="book book-yellow"></div>
+        <div class="book book-red" style="height:40px;"></div>
+        <div class="book book-teal"></div>
+        <div class="book book-orange" style="height:34px;"></div>
+        <div class="book book-blue" style="height:44px;"></div>
+      </div>
+      <div class="bookshelf-shelf">
+        <div class="book book-green"></div>
+        <div class="book book-pink" style="height:30px;"></div>
+        <div class="book book-yellow book-leaning"></div>
+        <div class="book book-red"></div>
+        <div class="book book-purple" style="height:36px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Yuzu Area -->
+  <div class="room-yuzu" data-panel="chat" title="和柚子对话">
+    <div class="room-yuzu-glow"></div>
+    <div id="charDisplay"></div>
+    <div class="soft-char-name">露娜·月语</div>
+    <div class="yuzu-relation" id="charStage">关系：熟人</div>
+  </div>
+
+  <!-- Desk -->
+  <div class="room-desk">
+    <div class="desk-surface"></div>
+
+    <!-- Plant -->
+    <div class="desk-item desk-plant" data-panel="settings" title="设置">
+      <div class="desk-item-icon">🪴</div>
+      <div class="desk-item-label">设置</div>
+    </div>
+
+    <!-- Mug -->
+    <div class="desk-item desk-mug" data-panel="chat" title="和柚子聊天">
+      <div class="desk-item-icon">☕</div>
+      <div class="desk-item-label">对话</div>
+    </div>
+
+    <!-- Laptop -->
+    <div class="desk-item desk-laptop" data-panel="computer" title="电脑 - 工作模式">
+      <div class="laptop-screen">> work.log</div>
+      <div class="laptop-base"></div>
+      <div class="desk-item-label">电脑</div>
+    </div>
+
+    <!-- Notebook -->
+    <div class="desk-item desk-notebook" data-panel="tasks" title="任务笔记本">
+      <div class="notebook-visual"></div>
+      <div class="desk-item-label">任务</div>
+    </div>
+
+    <!-- Clock -->
+    <div class="desk-item desk-clock" data-panel="pomodoro" title="番茄钟">
+      <div class="clock-visual">
+        <div class="clock-dot"></div>
+      </div>
+      <div class="desk-item-label">番茄钟</div>
+    </div>
+  </div>
+
+  <!-- Bottom Navigation -->
+  <div class="bottom-nav">
+    <button class="bottom-nav-btn" data-nav="computer">💻 电脑</button>
+    <button class="bottom-nav-btn" data-nav="tasks">📖 任务</button>
+    <button class="bottom-nav-btn room-btn active" data-nav="room">🏠 房间</button>
+    <button class="bottom-nav-btn" data-nav="chat">💬 对话</button>
+    <button class="bottom-nav-btn" data-nav="settings">⚙️ 设置</button>
+  </div>
+</div>
+
+<!-- ===== Panel Overlay ===== -->
+<div class="panel-overlay" id="panelOverlay">
+  <!-- Computer Panel -->
+  <div class="panel-card glass-panel" id="panelComputer">
+    <div class="panel-header">
+      <h2>💻 工作模式</h2>
+      <button class="panel-close" data-close="computer">&times;</button>
+    </div>
+    <div class="panel-body">
+      <div class="computer-info">
+        <div class="status-icon">🖥️</div>
+        <p class="status-text">柚子伴你专注工作</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tasks Panel -->
+  <div class="panel-card glass-panel" id="panelTasks">
+    <div class="panel-header">
+      <h2>📖 任务列表</h2>
+      <button class="panel-close" data-close="tasks">&times;</button>
+    </div>
+    <div class="panel-body">
       <div id="taskList"></div>
       <div class="task-detail glass-panel hidden" id="taskDetail"></div>
     </div>
+  </div>
 
-    <!-- Map tab -->
-    <div class="tab-content" id="tabMap">
-      <div class="map-placeholder glass-panel">
-        <div class="chapter-title" id="chapterTitle">第一章 · 觉醒的星辰</div>
-        <div class="chapter-goal" id="chapterGoal">目标：修复破碎的引导之星</div>
-        <p class="map-status">🗺️ 埃瑟利亚大陆地图（开发中）</p>
-        <div class="map-progress">
-          <div id="chapterProgress" class="map-progress-bar" style="width:0%"></div>
-        </div>
-      </div>
+  <!-- Pomodoro Panel -->
+  <div class="panel-card glass-panel" id="panelPomodoro">
+    <div class="panel-header">
+      <h2>⏰ 番茄钟</h2>
+      <button class="panel-close" data-close="pomodoro">&times;</button>
     </div>
-
-    <!-- Character tab -->
-    <div class="tab-content" id="tabCharacter">
-      <div class="char-lore">
-        <h3>角色背景</h3>
-        <p>露娜·月语是最后一支星语者部族的幸存者。星语者能通过星辰的排列预言未来，引导他人修复破碎的世界。她温柔而坚强，虽然偶尔有些迷糊，但始终坚定不移地陪伴在你身边。</p>
-        <h3>共同记忆</h3>
-        <div id="timeline">
-          <div class="timeline-item">
-            <span class="timeline-date">今天</span>
-            <span class="timeline-text">你们的旅程刚刚开始…</span>
-          </div>
-        </div>
-      </div>
+    <div class="panel-body">
+      <div id="pomodoroContainer"></div>
     </div>
   </div>
 
-  <div class="soft-right-panel glass-panel">
-    <div class="soft-char-display">
-      <div class="char-img" id="charDisplay"></div>
-      <div class="soft-char-name">露娜·月语</div>
-      <div class="soft-char-stage" id="charStage">关系：熟人</div>
+  <!-- Chat Panel -->
+  <div class="panel-card glass-panel" id="panelChat">
+    <div class="panel-header">
+      <h2>💬 对话</h2>
+      <button class="panel-close" data-close="chat">&times;</button>
     </div>
-    <div class="soft-conv-panel" id="convPanel"></div>
+    <div class="panel-body" id="convPanel"></div>
+  </div>
+
+  <!-- Settings Panel -->
+  <div class="panel-card glass-panel" id="panelSettings">
+    <div class="panel-header">
+      <h2>⚙️ 设置</h2>
+      <button class="panel-close" data-close="settings">&times;</button>
+    </div>
+    <div class="panel-body">
+      <div class="settings-section">
+        <h3>主题</h3>
+        <div class="theme-btn-group" id="themeBtns">
+          <button class="theme-btn active" data-theme="starry">🌙 星空</button>
+          <button class="theme-btn" data-theme="forest">🌿 森林</button>
+          <button class="theme-btn" data-theme="ocean">🌊 海洋</button>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3>模式</h3>
+        <button class="btn btn-primary" id="btnPetMode">🐱 返回桌宠模式</button>
+      </div>
+    </div>
   </div>
 </div>
 
+<!-- ===== Scripts ===== -->
 <script src="../../shared/constants.js"></script>
 <script src="../shared/ipc-client.js"></script>
 <script src="../shared/theme-manager.js"></script>
@@ -313,9 +1191,12 @@
 <script src="../shared/character-renderer.js"></script>
 <script src="../shared/conversation-panel.js"></script>
 <script src="../shared/task-panel.js"></script>
+<script src="../shared/pomodoro-timer.js"></script>
+<script src="../shared/typewriter-controller.js"></script>
+<script src="../shared/white-noise-control.js"></script>
 <script>
 (() => {
-  const { IpcClient, CharacterRenderer, ConversationPanel, TaskPanel, ThemeManager } = window;
+  const { IpcClient, CharacterRenderer, ConversationPanel, TaskPanel, ThemeManager, PomodoroTimer } = window;
   const { INTENT, MODE } = window;
   const ipc = new IpcClient();
   const themeManager = new ThemeManager();
@@ -326,7 +1207,7 @@
     if (settings.theme) themeManager.setTheme(settings.theme);
   });
 
-  // Character display
+  // ── Character display (Yuzu in room) ──────────────────────
   const charRenderer = new CharacterRenderer(document.getElementById("charDisplay"), { mode: "software", size: 160 });
   charRenderer.mount();
 
@@ -343,12 +1224,86 @@
     }
   });
 
-  // Conversation panel (right sidebar)
+  // ── Clock update ──────────────────────────────────────────
+  function updateClock() {
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, "0");
+    const mm = String(now.getMinutes()).padStart(2, "0");
+    document.getElementById("timeDisplay").textContent = `${hh}:${mm}`;
+  }
+  updateClock();
+  setInterval(updateClock, 30000);
+
+  // ── Panel management ──────────────────────────────────────
+  const overlay = document.getElementById("panelOverlay");
+  const panelCards = document.querySelectorAll(".panel-card");
+  const navBtns = document.querySelectorAll(".bottom-nav-btn");
+  let currentPanel = null;
+
+  function openPanel(name) {
+    // Close current if any
+    if (currentPanel) closePanel();
+
+    const panel = document.getElementById(`panel${name.charAt(0).toUpperCase()}${name.slice(1)}`);
+    if (!panel) return;
+
+    currentPanel = name;
+    overlay.classList.add("open");
+    panel.classList.add("open");
+
+    // Update nav buttons
+    navBtns.forEach(b => b.classList.remove("active"));
+    const navBtn = document.querySelector(`.bottom-nav-btn[data-nav="${name}"]`);
+    if (navBtn) {
+      navBtn.classList.add("active");
+      document.querySelector(".bottom-nav-btn.room-btn")?.classList.remove("active");
+    }
+
+    // Mark interaction for proactive system
+    ipc.markInteraction();
+
+    // Panel-specific loading
+    if (name === "tasks") {
+      loadTasks();
+    }
+  }
+
+  function closePanel() {
+    if (!currentPanel) return;
+    overlay.classList.remove("open");
+    panelCards.forEach(c => c.classList.remove("open"));
+
+    // Reset nav to room
+    navBtns.forEach(b => b.classList.remove("active"));
+    document.querySelector(".bottom-nav-btn.room-btn")?.classList.add("active");
+
+    currentPanel = null;
+  }
+
+  // ESC closes panels
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && currentPanel) {
+      closePanel();
+    }
+  });
+
+  // Click overlay background to close
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) closePanel();
+  });
+
+  // Panel close buttons
+  document.querySelectorAll(".panel-close").forEach(btn => {
+    btn.addEventListener("click", () => closePanel());
+  });
+
+  // ── Conversation panel ────────────────────────────────────
   const convPanelEl = document.getElementById("convPanel");
   const convPanel = new ConversationPanel(convPanelEl, {
     position: "side",
     onSend: async (text) => {
       convPanel.showTyping();
+      ipc.markInteraction();
       let started = false;
       const unsubChunk = ipc.onChunk((chunk) => {
         if (!started) { started = true; convPanel.addMessage("assistant", ""); }
@@ -374,7 +1329,7 @@
   });
   convPanel.mount();
 
-  // Task panel (main content area)
+  // ── Task panel ────────────────────────────────────────────
   let selectedTaskId = null;
   const taskPanel = new TaskPanel(document.getElementById("taskList"), {
     compact: false,
@@ -452,23 +1407,111 @@
     detail.appendChild(btnRow);
   }
 
-  // Tab switching
-  document.querySelectorAll(".soft-sidebar-btn[data-tab]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".soft-sidebar-btn").forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
+  // ── Pomodoro timer ────────────────────────────────────────
+  let pomodoroInterval = null;
+  let pomodoroSeconds = 0;
 
-      document.querySelectorAll(".tab-content").forEach((tab) => tab.classList.remove("active"));
-      const tabId = `tab${btn.dataset.tab.charAt(0).toUpperCase()}${btn.dataset.tab.slice(1)}`;
-      document.getElementById(tabId).classList.add("active");
+  const pomodoroTimer = new PomodoroTimer(document.getElementById("pomodoroContainer"), {
+    onStart: () => {
+      ipc.markInteraction();
+      const minutes = pomodoroTimer.getCurrentMinutes();
+      pomodoroSeconds = minutes * 60;
+      pomodoroTimer.start(pomodoroSeconds);
+      pomodoroInterval = setInterval(() => {
+        pomodoroSeconds--;
+        pomodoroTimer.update(pomodoroSeconds);
+        if (pomodoroSeconds <= 0) {
+          clearInterval(pomodoroInterval);
+          pomodoroInterval = null;
+          pomodoroTimer.stop();
+          if (convPanel) {
+            convPanel.addMessage("assistant", "⏰ 番茄钟时间到！休息一下吧~");
+          }
+        }
+      }, 1000);
+    },
+    onPause: () => {
+      if (pomodoroInterval) {
+        clearInterval(pomodoroInterval);
+        pomodoroInterval = null;
+      }
+    },
+    onResume: () => {
+      pomodoroInterval = setInterval(() => {
+        pomodoroSeconds--;
+        pomodoroTimer.update(pomodoroSeconds);
+        if (pomodoroSeconds <= 0) {
+          clearInterval(pomodoroInterval);
+          pomodoroInterval = null;
+          pomodoroTimer.stop();
+          if (convPanel) {
+            convPanel.addMessage("assistant", "⏰ 番茄钟时间到！休息一下吧~");
+          }
+        }
+      }, 1000);
+    },
+    onStop: () => {
+      if (pomodoroInterval) {
+        clearInterval(pomodoroInterval);
+        pomodoroInterval = null;
+      }
+      pomodoroTimer.stop();
+    },
+  });
+  pomodoroTimer.mount();
 
-      if (btn.dataset.tab === "tasks") loadTasks();
+  // ── Room item click handlers ──────────────────────────────
+  document.querySelectorAll("[data-panel]").forEach(el => {
+    el.addEventListener("click", (e) => {
+      // Prevent triggering parent handlers
+      e.stopPropagation();
+      const panelName = el.dataset.panel;
+      if (panelName) openPanel(panelName);
     });
   });
 
-  // Pet mode button
-  document.getElementById("btnPetMode").addEventListener("click", () => ipc.switchMode(MODE.PET));
+  // ── Bottom nav button handlers ────────────────────────────
+  document.querySelectorAll(".bottom-nav-btn[data-nav]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const nav = btn.dataset.nav;
+      if (nav === "room") {
+        closePanel();
+      } else {
+        openPanel(nav);
+      }
+    });
+  });
 
+  // ── Pet mode button ───────────────────────────────────────
+  document.getElementById("btnPetMode").addEventListener("click", () => {
+    ipc.switchMode(MODE.PET);
+  });
+
+  // ── Theme buttons in settings ─────────────────────────────
+  document.querySelectorAll(".theme-btn[data-theme]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const theme = btn.dataset.theme;
+      themeManager.setTheme(theme);
+      ipc.setTheme(theme);
+      document.querySelectorAll(".theme-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      ipc.markInteraction();
+    });
+  });
+
+  // ── Proactive listener ────────────────────────────────────
+  ipc.onProactiveTrigger((data) => {
+    if (data && data.message) {
+      convPanel.addMessage("assistant", data.message);
+    }
+  });
+
+  // ── Mark interaction on any room click ────────────────────
+  document.querySelector(".room-scene").addEventListener("click", () => {
+    ipc.markInteraction();
+  });
+
+  // ── Initial load ──────────────────────────────────────────
   loadTasks();
 })();
 </script>
