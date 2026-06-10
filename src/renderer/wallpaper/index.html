@@ -555,6 +555,11 @@
     const mode = (modeRes.ok && modeRes.data) ? modeRes.data : 'rest';
     setModeLabel(mode);
 
+    // Suggest per-subtask duration (editable before starting)
+    const incompleteCount = (task.subtasks || []).filter(s => !s.completed).length || 1;
+    const perSubMin = Math.round((task.estimatedMinutes || 25) / incompleteCount);
+    pomodoroTimer.setEditableDuration(perSubMin);
+
     renderTaskSelectList();
   }
 
@@ -564,6 +569,7 @@
     expandedTaskId = null;
     selectedTaskBadge.style.display = 'none';
     setModeLabel('rest');
+    pomodoroTimer.stop();
     renderTaskSelectList();
   }
 
@@ -588,6 +594,7 @@
     pomodoroTimer.start(durationSeconds);
     currentPomodoroTaskId = taskId || null;
     isPomodoroRunning = true;
+    document.getElementById("changeTaskBtn").style.display = "none";
     // Set mode to task's mode (or rest if no task)
     if (taskId && selectedTaskMode !== 'rest') {
       setModeLabel(selectedTaskMode);
@@ -599,6 +606,7 @@
       clearPomodoroListeners();
       pomodoroTimer.stop();
       isPomodoroRunning = false;
+      document.getElementById("changeTaskBtn").style.display = "";
       setModeLabel('rest');
     });
   }
@@ -606,18 +614,13 @@
   // Pomodoro timer
   const pomodoroTimer = new PomodoroTimer(document.getElementById("pomodoroArea"), {
     onStart: () => {
-      const task = selectedTaskId ? activeTasks.find(t => t.id === selectedTaskId) : null;
-      let durationMin = 25;
-      if (task) {
-        const incompleteCount = (task.subtasks || []).filter(s => !s.completed).length || 1;
-        durationMin = Math.round((task.estimatedMinutes || 25) / incompleteCount);
-      }
-      startPomodoroFlow(durationMin * 60, selectedTaskId);
+      startPomodoroFlow(pomodoroTimer.getCurrentMinutes() * 60, selectedTaskId);
     },
     onPause: async () => {
       await ipc.stopPomodoro();
       clearPomodoroListeners();
       isPomodoroRunning = false;
+      document.getElementById("changeTaskBtn").style.display = "";
       // Switch to rest mode when paused
       setModeLabel('rest');
     },
@@ -629,9 +632,10 @@
       await ipc.stopPomodoro();
       clearPomodoroListeners();
       isPomodoroRunning = false;
-      currentPomodoroTaskId = null;
       setModeLabel('rest');
-      pomodoroTimer.stop();
+      if (currentPomodoroTaskId) {
+        showExitPanel(currentPomodoroTaskId);
+      }
     },
   });
   pomodoroTimer.mount();
@@ -850,9 +854,12 @@
 
   async function hideExitPanelAndRefresh(toMode) {
     isExitingWithTask = false;
+    isPomodoroRunning = false;
+    clearPomodoroListeners();
     exitOverlay.classList.remove("open");
     exitPanel.classList.remove("open");
     setModeLabel('rest');
+    pomodoroTimer.stop();
 
     // Reload tasks to reflect completed subtasks / tasks
     const tasksRes = await ipc.getTasks("active");
@@ -909,7 +916,13 @@
     if (taskId) {
       const res = await ipc.getTaskById(taskId);
       if (res.ok && res.data) {
-        const prev = res.data.cumulativeProgress || 0;
+        let prev = 0;
+        if (selectedSubtaskId) {
+          const sub = (res.data.subtasks || []).find(s => s.id === selectedSubtaskId);
+          prev = sub ? (sub.cumulativeProgress || 0) : 0;
+        } else {
+          prev = res.data.cumulativeProgress || 0;
+        }
         exitProgressPercentInput.min = prev;
         exitProgressPercentInput.value = prev;
       }
@@ -933,7 +946,7 @@
     const clampedPercent = Math.min(100, Math.max(0, percent));
     const taskId = window._exitTaskId;
     if (taskId) {
-      await ipc.updateTaskProgress(taskId, clampedPercent, null);
+      await ipc.updateTaskProgress(taskId, clampedPercent, null, selectedSubtaskId);
     }
     await hideExitPanelAndRefresh(MODE.PET);
   });
@@ -951,9 +964,8 @@
         sidebar.classList.remove("open");
         return;
       }
-      const statusRes = await ipc.getPomodoroStatus();
-      if (statusRes.ok && statusRes.data.taskId) {
-        showExitPanel(statusRes.data.taskId);
+      if (currentPomodoroTaskId) {
+        showExitPanel(currentPomodoroTaskId);
       } else {
         await ipc.switchMode(MODE.PET);
       }

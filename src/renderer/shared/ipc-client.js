@@ -78,8 +78,8 @@ class IpcClient {
 	async completeTask(taskId) {
 		return this._call("task.complete", taskId);
 	}
-	async updateTaskProgress(taskId, percent, note) {
-		return this._call("task.updateProgress", taskId, percent, note);
+	async updateTaskProgress(taskId, percent, note, subtaskId) {
+		return this._call("task.updateProgress", taskId, percent, note, subtaskId);
 	}
 	async deleteTask(taskId) {
 		return this._call("task.delete", taskId);

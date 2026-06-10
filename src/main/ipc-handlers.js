@@ -96,8 +96,8 @@ function registerIpcHandlers(services, deps) {
 		return taskService.classifier.getMode(taskId);
 	}));
 
-	ipcMain.handle(IPC.TASK_UPDATE_PROGRESS, (_event, { taskId, percent, note }) => runTask(() => {
-		return taskService.updateProgress(taskId, percent, note);
+	ipcMain.handle(IPC.TASK_UPDATE_PROGRESS, (_event, { taskId, percent, note, subtaskId }) => runTask(() => {
+		return taskService.updateProgress(taskId, percent, note, subtaskId);
 	}));
 
 	ipcMain.handle(IPC.TASK_DELETE, (_event, { taskId }) => runSafe(() => { taskService.deleteTask(taskId); return null; }));

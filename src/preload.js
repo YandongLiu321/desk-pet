@@ -56,8 +56,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		complete(taskId) {
 			return ipcRenderer.invoke(IPC.TASK_COMPLETE, { taskId });
 		},
-		updateProgress(taskId, percent, note) {
-			return ipcRenderer.invoke(IPC.TASK_UPDATE_PROGRESS, { taskId, percent, note });
+		updateProgress(taskId, percent, note, subtaskId) {
+			return ipcRenderer.invoke(IPC.TASK_UPDATE_PROGRESS, { taskId, percent, note, subtaskId });
 		},
 		delete(taskId) {
 			return ipcRenderer.invoke(IPC.TASK_DELETE, { taskId });
