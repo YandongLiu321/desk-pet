@@ -9,8 +9,8 @@
   });
 
   // Tab switching
-  const tabs = document.querySelectorAll('.settings-tab');
-  const pages = document.querySelectorAll('.settings-page');
+  const tabs = document.querySelectorAll('.bookmark');
+  const pages = document.querySelectorAll('.page');
 
   tabs.forEach((tab) => {
     tab.addEventListener('click', () => {
@@ -86,19 +86,14 @@
     document.getElementById('proactiveScreenAnalysis').checked = s.proactiveScreenAnalysis === true;
   }
 
-  // Toast
-  function showToast(msg) {
-    let toast = document.getElementById('saveToast');
-    if (!toast) {
-      toast = document.createElement('div');
-      toast.id = 'saveToast';
-      toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--color-accent);color:#fff;padding:10px 24px;border-radius:20px;font-size:14px;z-index:999;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:nowrap;';
-      document.body.appendChild(toast);
-    }
-    toast.textContent = msg;
-    toast.style.opacity = '1';
-    clearTimeout(toast._timer);
-    toast._timer = setTimeout(() => { toast.style.opacity = '0'; }, 2000);
+  // Stamp animation
+  function showSavedStamp() {
+    var stamp = document.getElementById('saveStamp');
+    if (!stamp) return;
+    stamp.classList.remove('show');
+    void stamp.offsetWidth; // trigger reflow
+    stamp.classList.add('show');
+    setTimeout(function () { stamp.classList.remove('show'); }, 2000);
   }
 
   // Save
@@ -123,7 +118,7 @@
     if (apiKey) await ipc.setApiKey(apiKey);
 
     await ipc.updateSettings(partial);
-    showToast('已保存');
+    showSavedStamp();
   });
 
   // Cancel
@@ -216,7 +211,7 @@
   document.getElementById('clearMemoriesBtn').addEventListener('click', async function() {
     await ipc.clearMemories();
     refreshMemories();
-    showToast('记忆已清空');
+    showSavedStamp();
   });
 
   // Load memories when switching to memory tab

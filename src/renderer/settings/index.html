@@ -3,366 +3,821 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>设置 — Desk Pet</title>
+<title>柚子日记 — 设置</title>
 <link rel="stylesheet" href="../shared/styles/base.css">
 <style>
+  /* ================================================================
+     Yuzu's Diary — Settings Window
+     柚子日记本 — 皮革书签导航 + 横线纸内容
+     ================================================================ */
+
+  /* ---- Override base.css scroll lock ---- */
+  html, body {
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+  }
+
   body {
     display: flex;
-    height: 100vh;
-    background: var(--color-bg-primary);
-    color: var(--color-text-primary);
-    font-family: var(--font-main);
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(60,45,30,0.85), rgba(40,30,20,0.9));
+    font-family: Georgia, 'Times New Roman', 'Noto Serif SC', serif;
+    color: #3d2b1f;
     margin: 0;
+    user-select: none;
+  }
+
+  /* ---- Wood grain texture overlay ---- */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      repeating-linear-gradient(
+        2deg,
+        transparent,
+        transparent 3px,
+        rgba(0,0,0,0.03) 3px,
+        rgba(0,0,0,0.03) 4px
+      ),
+      repeating-linear-gradient(
+        92deg,
+        transparent,
+        transparent 40px,
+        rgba(255,255,255,0.02) 40px,
+        rgba(255,255,255,0.02) 41px
+      );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ---- Diary container ---- */
+  .diary-container {
+    position: relative;
+    z-index: 1;
+    width: calc(100% - 32px);
+    max-width: 680px;
+    height: calc(100vh - 32px);
+    max-height: 540px;
+    perspective: 1800px;
+    perspective-origin: center center;
+  }
+
+  /* ---- Two-page spread ---- */
+  .diary-spread {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    box-shadow:
+      0 12px 40px rgba(0,0,0,0.5),
+      0 2px 8px rgba(0,0,0,0.3);
+    border-radius: 4px 8px 8px 4px;
     overflow: hidden;
   }
 
-  .settings-sidebar {
-    width: 180px;
-    background: var(--color-bg-secondary);
-    border-right: 1px solid var(--color-border);
+  /* ================================================================
+     LEFT PAGE — Leather bookmark navigation (160px)
+     ================================================================ */
+  .left-page {
+    width: 160px;
+    min-width: 160px;
+    flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    padding: var(--space-md) 0;
+    background:
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(160,130,100,0.06) 2px,
+        rgba(160,130,100,0.06) 3px
+      ),
+      linear-gradient(135deg, rgba(245,235,220,0.92), rgba(235,220,205,0.88));
+    box-shadow: inset -6px 0 14px -4px rgba(0,0,0,0.22);
+    transform: rotateY(3deg);
+    transform-origin: right center;
+    position: relative;
+    z-index: 2;
+    padding: 20px 0;
+    border-right: 1px solid rgba(160,140,120,0.2);
+  }
+
+  /* ---- Leather stitching along left page top/bottom ---- */
+  .left-page::before {
+    content: '';
+    position: absolute;
+    top: 14px;
+    left: 8px;
+    right: 8px;
+    height: 0;
+    border-top: 1px dashed rgba(160,130,100,0.25);
+    pointer-events: none;
+  }
+
+  .left-page::after {
+    content: '';
+    position: absolute;
+    bottom: 14px;
+    left: 8px;
+    right: 8px;
+    height: 0;
+    border-top: 1px dashed rgba(160,130,100,0.25);
+    pointer-events: none;
+  }
+
+  /* ---- Diary title on left page ---- */
+  .diary-title {
+    font-family: Georgia, 'Times New Roman', 'Noto Serif SC', serif;
+    font-style: italic;
+    font-size: 20px;
+    font-weight: normal;
+    color: #5c4030;
+    text-align: center;
+    line-height: 1.35;
+    margin: 12px 0 28px 0;
+    padding: 0 12px;
+    letter-spacing: 0.05em;
+  }
+
+  /* ---- Bookmark list ---- */
+  .bookmarks {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0 6px;
+  }
+
+  /* ---- Single bookmark tab ---- */
+  .bookmark {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 9px 12px;
+    background: transparent;
+    border: none;
+    border-radius: 0 6px 6px 0;
+    color: #8b7355;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    position: relative;
+    outline: none;
+    letter-spacing: 0.02em;
+  }
+
+  .bookmark:hover {
+    background: rgba(201, 168, 76, 0.12);
+    color: #6b5335;
+  }
+
+  .bookmark.active {
+    background: #c9a84c;
+    color: #fff;
+    box-shadow:
+      0 2px 8px rgba(0,0,0,0.25),
+      0 0 0 1px rgba(160,130,90,0.3);
+  }
+
+  .bookmark-icon {
+    font-size: 15px;
+    width: 22px;
+    text-align: center;
     flex-shrink: 0;
   }
 
-  .settings-sidebar-title {
-    padding: var(--space-sm) var(--space-md);
-    font-size: var(--font-lg);
-    font-weight: 700;
-    color: var(--color-text-primary);
-    margin-bottom: var(--space-md);
-  }
-
-  .settings-tab {
-    display: flex;
-    align-items: center;
-    gap: var(--space-sm);
-    padding: var(--space-sm) var(--space-md);
-    font-size: var(--font-sm);
-    color: var(--color-text-secondary);
-    cursor: pointer;
-    border: none;
-    background: none;
-    text-align: left;
-    transition: all var(--transition-fast);
-    border-left: 3px solid transparent;
-    font-family: inherit;
-  }
-
-  .settings-tab:hover {
-    background: var(--color-bg-tertiary);
-    color: var(--color-text-primary);
-  }
-
-  .settings-tab.active {
-    color: var(--color-accent);
-    background: rgba(124, 58, 237, 0.1);
-    border-left-color: var(--color-accent);
-  }
-
-  .settings-tab-icon { font-size: var(--font-lg); width: 24px; text-align: center; }
-
-  .settings-content {
+  /* ================================================================
+     RIGHT PAGE — Lined paper content (flex:1)
+     ================================================================ */
+  .right-page {
     flex: 1;
-    padding: var(--space-lg);
+    display: flex;
+    flex-direction: column;
+    background:
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 23px,
+        rgba(180,160,140,0.18) 23px,
+        rgba(180,160,140,0.18) 24px
+      ),
+      linear-gradient(135deg, rgba(250,245,235,0.9), rgba(240,232,220,0.86));
+    box-shadow: inset 6px 0 14px -4px rgba(0,0,0,0.2);
+    transform: rotateY(-3deg);
+    transform-origin: left center;
+    position: relative;
+    z-index: 1;
+    border-radius: 0 8px 8px 0;
+  }
+
+  /* ---- Red margin line (like loose-leaf paper) ---- */
+  .right-page::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 40px;
+    width: 1px;
+    background: rgba(200,140,140,0.25);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ---- Page content scroll area ---- */
+  .page-scroll {
+    flex: 1;
     overflow-y: auto;
+    padding: 24px 28px 24px 52px;
+    position: relative;
+    z-index: 1;
   }
 
-  .settings-page { display: none; }
-  .settings-page.active { display: block; }
-
-  .settings-page h2 {
-    font-size: var(--font-xl);
-    margin: 0 0 var(--space-xs) 0;
-    color: var(--color-text-primary);
+  .page-scroll::-webkit-scrollbar {
+    width: 5px;
   }
 
-  .settings-page .subtitle {
-    font-size: var(--font-sm);
-    color: var(--color-text-muted);
-    margin: 0 0 var(--space-lg) 0;
+  .page-scroll::-webkit-scrollbar-track {
+    background: transparent;
   }
 
-  .settings-field {
-    margin-bottom: var(--space-md);
+  .page-scroll::-webkit-scrollbar-thumb {
+    background: rgba(180,160,140,0.3);
+    border-radius: 3px;
   }
 
-  .settings-field label {
+  /* ---- Individual settings page ---- */
+  .page {
+    display: none;
+  }
+
+  .page.active {
     display: block;
-    font-size: var(--font-sm);
-    color: var(--color-text-secondary);
-    margin-bottom: var(--space-xs);
   }
 
-  .settings-field input[type="text"],
-  .settings-field input[type="password"],
-  .settings-field input[type="number"],
-  .settings-field select {
+  /* ---- Page heading ---- */
+  .page h2 {
+    font-family: Georgia, 'Times New Roman', 'Noto Serif SC', serif;
+    font-size: 18px;
+    font-weight: normal;
+    color: #3d2b1f;
+    margin: 0 0 2px 0;
+    letter-spacing: 0.03em;
+  }
+
+  .page .subtitle {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-style: italic;
+    font-size: 12px;
+    color: #8b7355;
+    margin: 0 0 18px 0;
+  }
+
+  /* ---- Form field ---- */
+  .field {
+    margin-bottom: 14px;
+  }
+
+  .field label {
+    display: block;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 13px;
+    color: #5c4030;
+    margin-bottom: 3px;
+  }
+
+  .field input[type="text"],
+  .field input[type="password"],
+  .field input[type="number"] {
     width: 100%;
-    max-width: 400px;
-    padding: var(--space-sm);
-    background: var(--color-bg-secondary);
-    border: 1px solid var(--color-border-light);
-    border-radius: var(--radius-sm);
-    color: var(--color-text-primary);
-    font-size: var(--font-sm);
+    max-width: 340px;
+    padding: 6px 10px;
+    background: rgba(250,245,235,0.7);
+    border: 1px solid rgba(160,140,120,0.35);
+    border-radius: 2px;
+    color: #3d2b1f;
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 12px;
     outline: none;
-    transition: border-color var(--transition-fast);
+    transition: border-color 0.2s, box-shadow 0.2s;
     box-sizing: border-box;
-    font-family: inherit;
   }
 
-  .settings-field input:focus,
-  .settings-field select:focus {
-    border-color: var(--color-accent);
-    box-shadow: 0 0 0 2px var(--color-accent-glow);
+  .field input:focus {
+    border-color: #c9a84c;
+    box-shadow: 0 0 0 2px rgba(201,168,76,0.15);
   }
 
-  .settings-field input[type="range"] {
-    width: 100%;
-    max-width: 400px;
-    accent-color: var(--color-accent);
-  }
-
-  .settings-field .range-value {
-    display: inline-block;
-    margin-left: var(--space-sm);
-    font-size: var(--font-sm);
-    color: var(--color-accent);
-    min-width: 40px;
-  }
-
-  .settings-toggle {
+  /* ---- Toggle row ---- */
+  .toggle-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    max-width: 400px;
-    padding: var(--space-sm) 0;
+    max-width: 340px;
+    padding: 5px 0;
+    margin-bottom: 6px;
   }
 
-  .settings-toggle label { cursor: pointer; }
-
-  .settings-toggle input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    accent-color: var(--color-accent);
+  .toggle-row label {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 13px;
+    color: #5c4030;
     cursor: pointer;
   }
 
+  .toggle-row input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #c9a84c;
+    cursor: pointer;
+  }
+
+  /* ---- Range slider ---- */
+  .field input[type="range"] {
+    width: 100%;
+    max-width: 340px;
+    accent-color: #c9a84c;
+    margin-top: 2px;
+  }
+
+  .range-value {
+    display: inline-block;
+    margin-left: 8px;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 12px;
+    color: #c9a84c;
+    min-width: 36px;
+  }
+
+  /* ---- Theme cards ---- */
   .theme-cards {
     display: flex;
-    gap: var(--space-md);
+    gap: 12px;
     flex-wrap: wrap;
   }
 
   .theme-card {
-    width: 140px;
-    padding: var(--space-md);
-    border-radius: var(--radius-md);
+    width: 130px;
+    padding: 12px;
+    border-radius: 4px;
     cursor: pointer;
-    border: 2px solid transparent;
+    border: 2px solid rgba(160,140,120,0.25);
     text-align: center;
-    transition: all var(--transition-fast);
-    font-size: var(--font-sm);
+    transition: all 0.25s ease;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 12px;
+    position: relative;
   }
 
-  .theme-card:hover { border-color: var(--color-border-light); }
-  .theme-card.selected { border-color: var(--color-accent); box-shadow: 0 0 12px var(--color-accent-glow); }
+  .theme-card:hover {
+    border-color: rgba(160,140,120,0.5);
+    transform: translateY(-1px);
+  }
 
-  .theme-card-starry { background: linear-gradient(135deg, #0a0e17, #1a1f2e); color: #e2e8f0; }
-  .theme-card-forest { background: linear-gradient(135deg, #0a1a0f, #162e1f); color: #e8f0e8; }
-  .theme-card-ocean { background: linear-gradient(135deg, #0a0e2e, #162048); color: #e0e8f8; }
+  .theme-card.selected {
+    border-color: #c9a84c;
+    box-shadow: 0 0 10px rgba(201,168,76,0.3);
+  }
 
   .theme-card .swatch {
-    width: 32px; height: 32px; border-radius: 50%;
-    margin: 0 auto var(--space-sm);
-  }
-  .swatch-starry { background: #7c3aed; }
-  .swatch-forest { background: #22c55e; }
-  .swatch-ocean { background: #3b82f6; }
-
-  .settings-btn-row {
-    display: flex;
-    gap: var(--space-sm);
-    margin-top: var(--space-xl);
-    padding-top: var(--space-md);
-    border-top: 1px solid var(--color-border);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    margin: 0 auto 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
   }
 
-  .btn {
-    padding: var(--space-sm) var(--space-lg);
-    border: none;
-    border-radius: var(--radius-sm);
-    font-size: var(--font-sm);
+  /* Theme card color themes */
+  .theme-card[data-theme="starry"] {
+    background: linear-gradient(135deg, #0a0e17, #1a1f2e);
+    color: #e2e8f0;
+  }
+  .theme-card[data-theme="starry"] .swatch {
+    background: #7c3aed;
+  }
+
+  .theme-card[data-theme="forest"] {
+    background: linear-gradient(135deg, #0a1a0f, #162e1f);
+    color: #e8f0e8;
+  }
+  .theme-card[data-theme="forest"] .swatch {
+    background: #22c55e;
+  }
+
+  .theme-card[data-theme="ocean"] {
+    background: linear-gradient(135deg, #0a0e2e, #162048);
+    color: #e0e8f8;
+  }
+  .theme-card[data-theme="ocean"] .swatch {
+    background: #3b82f6;
+  }
+
+  /* ---- Test connection ---- */
+  .test-btn {
+    font-family: Georgia, serif;
+    font-size: 12px;
+    padding: 5px 14px;
+    margin-top: 6px;
+    background: rgba(160,140,120,0.15);
+    border: 1px solid rgba(160,140,120,0.3);
+    border-radius: 2px;
+    color: #5c4030;
     cursor: pointer;
-    transition: all var(--transition-fast);
-    font-family: inherit;
+    transition: all 0.2s;
   }
 
-  .btn-primary { background: var(--color-accent); color: white; }
-  .btn-primary:hover { filter: brightness(1.1); }
-  .btn-secondary { background: var(--color-bg-tertiary); color: var(--color-text-primary); }
-  .btn-secondary:hover { background: var(--color-bg-secondary); }
-  .btn-danger { background: transparent; color: var(--color-text-muted); }
-  .btn-danger:hover { color: var(--color-danger); }
+  .test-btn:hover {
+    background: rgba(160,140,120,0.25);
+    border-color: rgba(160,140,120,0.5);
+  }
 
   .test-result {
-    font-size: var(--font-sm);
-    margin-top: var(--space-xs);
-    padding: var(--space-xs) var(--space-sm);
-    border-radius: var(--radius-sm);
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 11px;
+    margin-top: 6px;
+    padding: 4px 8px;
+    border-radius: 2px;
+    display: inline-block;
   }
-  .test-result.success { color: var(--color-success); background: rgba(34,197,94,0.1); }
-  .test-result.fail { color: var(--color-danger); background: rgba(239,68,68,0.1); }
+
+  .test-result.success {
+    color: #2d6a4f;
+    background: rgba(45,106,79,0.1);
+  }
+
+  .test-result.fail {
+    color: #8b3a3a;
+    background: rgba(139,58,58,0.1);
+  }
+
+  /* ---- Memory list ---- */
+  .memory-list {
+    max-height: 220px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+  }
+
+  .memory-list::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .memory-list::-webkit-scrollbar-thumb {
+    background: rgba(180,160,140,0.3);
+    border-radius: 2px;
+  }
+
+  /* ---- Right page footer (page number + buttons) ---- */
+  .right-page-footer {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 12px 28px 14px 52px;
+    border-top: 1px solid rgba(180,160,140,0.2);
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ---- Page number ---- */
+  .page-number {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-style: italic;
+    font-size: 11px;
+    color: #b0a090;
+  }
+
+  /* ---- Button row ---- */
+  .btn-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  /* ---- Leather buttons ---- */
+  .leather-btn {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 13px;
+    padding: 7px 18px;
+    border: 1px solid rgba(80,60,40,0.4);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.03em;
+    outline: none;
+    position: relative;
+    box-shadow:
+      0 2px 3px rgba(0,0,0,0.2),
+      inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+
+  .leather-btn:active {
+    transform: translateY(1px);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+
+  .leather-btn.primary {
+    background: linear-gradient(180deg, #7a6040, #5c4030);
+    color: #f0e6d0;
+  }
+
+  .leather-btn.primary:hover {
+    background: linear-gradient(180deg, #8b7050, #6b4d3a);
+  }
+
+  .leather-btn.secondary {
+    background: linear-gradient(180deg, #a89880, #8b7860);
+    color: #3d2b1f;
+  }
+
+  .leather-btn.secondary:hover {
+    background: linear-gradient(180deg, #b5a590, #988570);
+  }
+
+  .leather-btn.danger {
+    background: transparent;
+    color: #8b7355;
+    border: 1px solid rgba(160,140,120,0.3);
+    box-shadow: none;
+  }
+
+  .leather-btn.danger:hover {
+    color: #a04040;
+    border-color: rgba(160,80,80,0.4);
+    background: rgba(160,80,80,0.06);
+  }
+
+  /* ================================================================
+     STAMP ANIMATION — ✦ 已记录
+     ================================================================ */
+  .stamp {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 130px;
+    height: 130px;
+    margin-left: -65px;
+    margin-top: -65px;
+    border: 3px solid rgba(180,65,45,0.9);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    color: rgba(180,65,45,0.9);
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 15px;
+    font-weight: bold;
+    text-align: center;
+    line-height: 1.3;
+    transform: scale(0) rotate(-18deg);
+    opacity: 0;
+    transition: transform 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+                opacity 0.2s ease;
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  .stamp.show {
+    transform: scale(1.2) rotate(-15deg);
+    opacity: 0.88;
+  }
+
+  /* ---- Inner decorative ring ---- */
+  .stamp::before {
+    content: '';
+    position: absolute;
+    inset: 8px;
+    border: 1.5px solid rgba(180,65,45,0.5);
+    border-radius: 50%;
+  }
+
+  /* ---- Memory note cards ---- */
+  .memory-note {
+    background: rgba(250,245,235,0.85);
+    border: 1px solid rgba(180,160,140,0.35);
+    border-radius: 2px;
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    position: relative;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+
+  .memory-note .note-summary {
+    font-size: 13px;
+    color: #3d2b1f;
+    font-family: Georgia, serif;
+  }
+
+  .memory-note .note-meta {
+    font-size: 10px;
+    color: #8b7355;
+    margin-top: 4px;
+    font-family: 'Cascadia Code', monospace;
+  }
+
+  .memory-note .note-delete {
+    float: right;
+    background: none;
+    border: none;
+    color: #a04040;
+    cursor: pointer;
+    font-size: 11px;
+    font-family: Georgia, serif;
+    padding: 2px 6px;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+  }
+
+  .memory-note .note-delete:hover {
+    opacity: 1;
+    text-decoration: underline;
+  }
+
+  /* ---- Memory action buttons ---- */
+  .memory-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
 </style>
 </head>
 <body>
 
-<div class="settings-sidebar">
-  <div class="settings-sidebar-title">设置</div>
-  <button class="settings-tab active" data-tab="api">
-    <span class="settings-tab-icon">🔑</span> API 配置
-  </button>
-  <button class="settings-tab" data-tab="appearance">
-    <span class="settings-tab-icon">🎨</span> 外观
-  </button>
-  <button class="settings-tab" data-tab="interaction">
-    <span class="settings-tab-icon">💬</span> 交互
-  </button>
-  <button class="settings-tab" data-tab="pomodoro">
-    <span class="settings-tab-icon">🍅</span> 番茄钟
-  </button>
-  <button class="settings-tab" data-tab="proactive">
-    <span class="settings-tab-icon">🔔</span> 主动交互
-  </button>
-  <button class="settings-tab" data-tab="memory">
-    <span class="settings-tab-icon">🧠</span> 记忆
-  </button>
-</div>
+<div class="diary-container">
+  <div class="diary-spread">
 
-<div class="settings-content" id="settingsContent">
-  <div class="settings-page active" data-page="api">
-    <h2>API 配置</h2>
-    <p class="subtitle">配置 AI 服务连接参数</p>
-    <div class="settings-field">
-      <label>API Key</label>
-      <input type="password" id="apiKey" placeholder="sk-...">
-    </div>
-    <div class="settings-field">
-      <label>API Base URL</label>
-      <input type="text" id="apiBaseUrl" value="https://api.deepseek.com/v1/chat/completions">
-    </div>
-    <div class="settings-field">
-      <label>Model</label>
-      <input type="text" id="apiModel" value="deepseek-chat">
-    </div>
-    <button class="btn btn-secondary" id="testConnectionBtn" style="margin-top:var(--space-sm);">测试连接</button>
-    <div id="testResult"></div>
-  </div>
-
-  <div class="settings-page" data-page="appearance">
-    <h2>外观</h2>
-    <p class="subtitle">自定义视觉效果</p>
-    <div class="settings-field">
-      <label>主题</label>
-      <div class="theme-cards">
-        <div class="theme-card theme-card-starry" data-theme="starry">
-          <div class="swatch swatch-starry"></div>
-          星空
-        </div>
-        <div class="theme-card theme-card-forest" data-theme="forest">
-          <div class="swatch swatch-forest"></div>
-          森林
-        </div>
-        <div class="theme-card theme-card-ocean" data-theme="ocean">
-          <div class="swatch swatch-ocean"></div>
-          海洋
-        </div>
+    <!-- ========== LEFT PAGE: Bookmark navigation ========== -->
+    <div class="left-page">
+      <h1 class="diary-title">柚子<br>日记</h1>
+      <div class="bookmarks">
+        <button class="bookmark active" data-tab="api">
+          <span class="bookmark-icon">🔑</span> 连接
+        </button>
+        <button class="bookmark" data-tab="appearance">
+          <span class="bookmark-icon">🎨</span> 外观
+        </button>
+        <button class="bookmark" data-tab="interaction">
+          <span class="bookmark-icon">💬</span> 对话
+        </button>
+        <button class="bookmark" data-tab="pomodoro">
+          <span class="bookmark-icon">🍅</span> 专注
+        </button>
+        <button class="bookmark" data-tab="proactive">
+          <span class="bookmark-icon">🔔</span> 关心
+        </button>
+        <button class="bookmark" data-tab="memory">
+          <span class="bookmark-icon">🧠</span> 记忆
+        </button>
       </div>
     </div>
-  </div>
 
-  <div class="settings-page" data-page="interaction">
-    <h2>交互</h2>
-    <p class="subtitle">对话和字幕设置</p>
-    <div class="settings-toggle">
-      <label>显示字幕</label>
-      <input type="checkbox" id="subtitleEnabled" checked>
-    </div>
-    <div class="settings-field">
-      <label>打字机速度 <span class="range-value" id="typewriterSpeedVal">35ms</span></label>
-      <input type="range" id="typewriterSpeed" min="10" max="100" value="35" step="5">
-    </div>
-    <div class="settings-toggle">
-      <label>点击穿透</label>
-      <input type="checkbox" id="clickThrough" checked>
-    </div>
-    <div class="settings-toggle">
-      <label>窗口置顶</label>
-      <input type="checkbox" id="alwaysOnTop" checked>
-    </div>
-  </div>
+    <!-- ========== RIGHT PAGE: Lined paper content ========== -->
+    <div class="right-page">
+      <div class="page-scroll">
 
-  <div class="settings-page" data-page="pomodoro">
-    <h2>番茄钟</h2>
-    <p class="subtitle">专注计时参数</p>
-    <div class="settings-field">
-      <label>工作时长 (分钟)</label>
-      <input type="number" id="pomodoroWorkDuration" min="5" max="120" value="25">
-    </div>
-    <div class="settings-field">
-      <label>短休时长 (分钟)</label>
-      <input type="number" id="pomodoroShortBreak" min="1" max="30" value="5">
-    </div>
-    <div class="settings-field">
-      <label>长休时长 (分钟)</label>
-      <input type="number" id="pomodoroLongBreak" min="5" max="60" value="15">
-    </div>
-    <div class="settings-field">
-      <label>长休间隔 (几个番茄后)</label>
-      <input type="number" id="pomodoroLongBreakInterval" min="1" max="10" value="4">
-    </div>
-  </div>
+        <!-- PAGE: API -->
+        <div class="page active" data-page="api">
+          <h2>API 配置</h2>
+          <p class="subtitle">配置 AI 服务连接参数</p>
+          <div class="field">
+            <label>API Key</label>
+            <input type="password" id="apiKey" placeholder="sk-...">
+          </div>
+          <div class="field">
+            <label>API Base URL</label>
+            <input type="text" id="apiBaseUrl" value="https://api.deepseek.com/v1/chat/completions">
+          </div>
+          <div class="field">
+            <label>Model</label>
+            <input type="text" id="apiModel" value="deepseek-chat">
+          </div>
+          <button class="test-btn" id="testConnectionBtn">测试连接</button>
+          <div id="testResult"></div>
+        </div>
 
-  <div class="settings-page" data-page="proactive">
-    <h2>主动交互</h2>
-    <p class="subtitle">宠物主动问候和提醒设置</p>
-    <div class="settings-toggle">
-      <label>启用主动交互</label>
-      <input type="checkbox" id="proactiveEnabled" checked>
-    </div>
-    <div class="settings-field">
-      <label>空闲触发阈值 (分钟)</label>
-      <input type="number" id="proactiveIdleThresholdMin" min="5" max="120" value="15">
-    </div>
-    <div class="settings-field">
-      <label>触发冷却 (分钟)</label>
-      <input type="number" id="proactiveCooldownMin" min="1" max="60" value="10">
-    </div>
-    <div class="settings-toggle">
-      <label>截图分析 (隐私敏感，默认关闭)</label>
-      <input type="checkbox" id="proactiveScreenAnalysis">
-    </div>
-  </div>
+        <!-- PAGE: Appearance -->
+        <div class="page" data-page="appearance">
+          <h2>外观</h2>
+          <p class="subtitle">自定义视觉效果</p>
+          <div class="field">
+            <label>主题</label>
+            <div class="theme-cards">
+              <div class="theme-card" data-theme="starry">
+                <div class="swatch"></div>
+                星空
+              </div>
+              <div class="theme-card" data-theme="forest">
+                <div class="swatch"></div>
+                森林
+              </div>
+              <div class="theme-card" data-theme="ocean">
+                <div class="swatch"></div>
+                海洋
+              </div>
+            </div>
+          </div>
+        </div>
 
-  <div class="settings-page" data-page="memory">
-    <h2>记忆</h2>
-    <p class="subtitle">AI 自动生成的对话摘要记忆</p>
-    <div id="memoryList" style="max-height:300px;overflow-y:auto;"></div>
-    <div style="margin-top:var(--space-md);display:flex;gap:var(--space-sm);">
-      <button class="btn btn-secondary" id="refreshMemoriesBtn">刷新</button>
-      <button class="btn btn-danger" id="clearMemoriesBtn">清空全部记忆</button>
-    </div>
-  </div>
+        <!-- PAGE: Interaction -->
+        <div class="page" data-page="interaction">
+          <h2>交互</h2>
+          <p class="subtitle">对话和字幕设置</p>
+          <div class="toggle-row">
+            <label>显示字幕</label>
+            <input type="checkbox" id="subtitleEnabled" checked>
+          </div>
+          <div class="field">
+            <label>打字机速度 <span class="range-value" id="typewriterSpeedVal">35ms</span></label>
+            <input type="range" id="typewriterSpeed" min="10" max="100" value="35" step="5">
+          </div>
+          <div class="toggle-row">
+            <label>点击穿透</label>
+            <input type="checkbox" id="clickThrough" checked>
+          </div>
+          <div class="toggle-row">
+            <label>窗口置顶</label>
+            <input type="checkbox" id="alwaysOnTop" checked>
+          </div>
+        </div>
 
-  <div class="settings-btn-row">
-    <button class="btn btn-primary" id="saveBtn">保存</button>
-    <button class="btn btn-secondary" id="cancelBtn">取消</button>
-    <button class="btn btn-danger" id="resetBtn">恢复默认</button>
-  </div>
-</div>
+        <!-- PAGE: Pomodoro -->
+        <div class="page" data-page="pomodoro">
+          <h2>番茄钟</h2>
+          <p class="subtitle">专注计时参数</p>
+          <div class="field">
+            <label>工作时长 (分钟)</label>
+            <input type="number" id="pomodoroWorkDuration" min="5" max="120" value="25">
+          </div>
+          <div class="field">
+            <label>短休时长 (分钟)</label>
+            <input type="number" id="pomodoroShortBreak" min="1" max="30" value="5">
+          </div>
+          <div class="field">
+            <label>长休时长 (分钟)</label>
+            <input type="number" id="pomodoroLongBreak" min="5" max="60" value="15">
+          </div>
+          <div class="field">
+            <label>长休间隔 (几个番茄后)</label>
+            <input type="number" id="pomodoroLongBreakInterval" min="1" max="10" value="4">
+          </div>
+        </div>
 
+        <!-- PAGE: Proactive -->
+        <div class="page" data-page="proactive">
+          <h2>主动交互</h2>
+          <p class="subtitle">宠物主动问候和提醒设置</p>
+          <div class="toggle-row">
+            <label>启用主动交互</label>
+            <input type="checkbox" id="proactiveEnabled" checked>
+          </div>
+          <div class="field">
+            <label>空闲触发阈值 (分钟)</label>
+            <input type="number" id="proactiveIdleThresholdMin" min="5" max="120" value="15">
+          </div>
+          <div class="field">
+            <label>触发冷却 (分钟)</label>
+            <input type="number" id="proactiveCooldownMin" min="1" max="60" value="10">
+          </div>
+          <div class="toggle-row">
+            <label>截图分析 (隐私敏感，默认关闭)</label>
+            <input type="checkbox" id="proactiveScreenAnalysis">
+          </div>
+        </div>
+
+        <!-- PAGE: Memory -->
+        <div class="page" data-page="memory">
+          <h2>记忆</h2>
+          <p class="subtitle">AI 自动生成的对话摘要记忆</p>
+          <div id="memoryList" class="memory-list"></div>
+          <div class="memory-actions">
+            <button class="leather-btn secondary" id="refreshMemoriesBtn">刷新</button>
+            <button class="leather-btn danger" id="clearMemoriesBtn">清空全部记忆</button>
+          </div>
+        </div>
+
+      </div><!-- /page-scroll -->
+
+      <!-- Right page footer -->
+      <div class="right-page-footer">
+        <span class="page-number">p. 01</span>
+        <div class="btn-row">
+          <button class="leather-btn primary" id="saveBtn">保存</button>
+          <button class="leather-btn secondary" id="cancelBtn">取消</button>
+          <button class="leather-btn danger" id="resetBtn">恢复默认</button>
+        </div>
+      </div>
+    </div><!-- /right-page -->
+
+  </div><!-- /diary-spread -->
+</div><!-- /diary-container -->
+
+<!-- Save stamp overlay -->
+<div id="saveStamp" class="stamp">✦ 已记录</div>
+
+<!-- Scripts (same as before) -->
 <script src="../../shared/constants.js"></script>
 <script src="../shared/ipc-client.js"></script>
 <script src="../shared/theme-manager.js"></script>
