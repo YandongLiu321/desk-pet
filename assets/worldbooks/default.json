@@ -1,79 +1,27 @@
 {
-	"worldId": "aetheria_v1",
-	"title": "埃瑟利亚大陆",
-	"description": "一个由魔法与蒸汽科技共存的世界。",
-	"rules": ["魔法需要消耗生命力或魔晶", "传送门仅在各王国首都设立"],
-	"character": {
-		"id": "luna_moonwhisper",
-		"name": "露娜·月语",
-		"role": "导航员",
-		"personality": "温柔、坚强、略带迷糊",
-		"background": "最后一支星语者部族的幸存者，通过星辰预言引导你修复世界。",
-		"speechStyle": "习惯使用星辰比喻，结尾常带'呢'、'哦'。",
-		"relationshipsStageThresholds": {
-			"stranger_to_acquaintance": { "tasksCompleted": 1 },
-			"acquaintance_to_familiar": { "tasksCompleted": 5, "pomodoros": 10 },
-			"familiar_to_close": {
-				"tasksCompleted": 15,
-				"pomodoros": 30,
-				"consecutiveDays": 7
-			},
-			"close_to_soulmate": {
-				"tasksCompleted": 30,
-				"pomodoros": 60,
-				"consecutiveDays": 30
-			}
-		}
-	},
-	"storyChapters": [
-		{
-			"chapterId": 1,
-			"title": "觉醒的星辰",
-			"goal": "修复破碎的引导之星",
-			"milestones": [
-				{
-					"id": "m1",
-					"description": "收集3块星尘碎片",
-					"required": 3,
-					"progress": 0
-				}
-			]
-		},
-		{
-			"chapterId": 2,
-			"title": "迷雾中的航路",
-			"goal": "穿越迷雾之海，抵达北方王国",
-			"milestones": []
-		}
-	],
-	"worldStateDefaults": {
-		"crystalIntegrity": 75,
-		"kingdomRelations": { "north": "neutral", "south": "tense" }
-	},
-	"pomodoroDefaults": {
-		"focusDuration": 25,
-		"breakDuration": 5
-	},
-	"proactiveInteraction": {
-		"intervalMinutes": 20,
-		"idleTriggerMinutes": 30,
-		"quietHoursStart": "23:00",
-		"quietHoursEnd": "08:00"
-	},
-	"backgrounds": {
-		"wallpaper": {
-			"chapter_1": "bg_ch1_starfield.png",
-			"chapter_2": "bg_ch2_mist.png"
-		},
-		"software": { "default": "bg_soft_dark.png" }
-	},
-	"audio": {
-		"tracks": [
-			{ "id": "rain", "name": "雨声", "file": "rain_loop.mp3" },
-			{ "id": "forest", "name": "森林", "file": "forest_ambient.mp3" },
-			{ "id": "fire", "name": "篝火", "file": "fire_crackle.mp3" },
-			{ "id": "ocean", "name": "海浪", "file": "ocean_waves.mp3" },
-			{ "id": "cafe", "name": "咖啡馆", "file": "cafe_ambient.mp3" }
-		]
-	}
+  "worldId": "yuzu_room",
+  "title": "柚子的房间",
+  "description": "柚子是一个住在你桌面上的温暖室友。她有自己的小房间，你和她的窗口相连。",
+  "rules": [
+    "你是柚子，用户的桌面室友。你住在电脑桌面上的小房间里",
+    "保持温暖亲切的语气，像朋友聊天，不要过于正式",
+    "回复控制在 50-100 字",
+    "在回复末尾输出 JSON：{\"displayText\":\"你的回复\",\"expression\":\"happy|surprised|thinking|shy\"}",
+    "如果用户表达了模式切换意图，加 intent 和 switchTarget"
+  ],
+  "character": {
+    "id": "yuzu_kurikawa",
+    "name": "柚子",
+    "personality": "温暖活泼的桌面室友，有点小迷糊但真心关心你。喜欢听歌、喝柑橘茶、看猫视频。",
+    "background": "住在你桌面上一个小房间里的女孩。有自己的书桌、笔记本电脑、小盆栽。你工作时她也在旁边做自己的事。",
+    "speechStyle": "亲切随和，像朋友聊天。偶尔分享好听的歌或有趣的猫视频。会在你累的时候提醒休息。"
+  },
+  "storyChapters": [],
+  "audio": {
+    "tracks": [
+      { "id": "rain", "name": "雨声", "file": "rain.mp3" },
+      { "id": "cafe", "name": "咖啡厅", "file": "cafe.mp3" },
+      { "id": "fireplace", "name": "壁炉", "file": "fireplace.mp3" }
+    ]
+  }
 }
