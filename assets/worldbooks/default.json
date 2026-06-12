@@ -19,9 +19,10 @@
   "storyChapters": [],
   "audio": {
     "tracks": [
-      { "id": "rain", "name": "雨声", "file": "rain.mp3" },
-      { "id": "cafe", "name": "咖啡厅", "file": "cafe.mp3" },
-      { "id": "fireplace", "name": "壁炉", "file": "fireplace.mp3" }
+      { "id": "rain", "name": "雨声", "file": "雨声.flac" },
+      { "id": "Lilac", "name": "紫丁香", "file": "Lilac.flac" },
+      { "id": "moon_world", "name": "月世界", "file": "月世界.flac" },
+      { "id": "Eden", "name": "伊甸园", "file": "伊甸园的少女.mp3" }
     ]
   }
 }

@@ -191,6 +191,10 @@
     border-color: var(--color-primary);
     color: white;
   }
+
+  body { pointer-events: none; }
+  body.interactive { pointer-events: auto; }
+  body.clickthrough-off { pointer-events: auto; }
 </style>
 </head>
 <body class="pet-mode">
@@ -233,9 +237,22 @@
   const themeManager = new ThemeManager();
   themeManager.init(ipc);
 
-  // Listen for settings changes to sync theme across windows
+  // Load initial settings
+  ipc.getSettings().then((res) => {
+    if (res.ok && res.data) {
+      if (res.data.theme) themeManager.setTheme(res.data.theme);
+      if (typeof res.data.clickThrough === "boolean") {
+        document.body.classList.toggle("clickthrough-off", !res.data.clickThrough);
+      }
+    }
+  });
+
+  // Listen for settings changes
   ipc.onSettingsChanged((settings) => {
     if (settings.theme) themeManager.setTheme(settings.theme);
+    if (typeof settings.clickThrough === "boolean") {
+      document.body.classList.toggle("clickthrough-off", !settings.clickThrough);
+    }
   });
 
   // Proactive trigger listener
@@ -351,8 +368,9 @@
         unsubChunk();
         unsubDone();
         if (convTypewriter) {
-          convTypewriter.finalize();
+          convTypewriter.finishNow();
           if (data.displayText) {
+            msgEl.textContent = data.displayText;
             showBubble(data.displayText);
           }
         } else if (data.displayText) {

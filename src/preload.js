@@ -82,6 +82,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
 			ipcRenderer.on(IPC.MODE_ACTIVATED, handler);
 			return () => ipcRenderer.removeListener(IPC.MODE_ACTIVATED, handler);
 		},
+		onModeDeactivated(cb) {
+			const handler = (_event, mode) => cb(mode);
+			ipcRenderer.on(IPC.MODE_DEACTIVATED, handler);
+			return () => ipcRenderer.removeListener(IPC.MODE_DEACTIVATED, handler);
+		},
 	},
 
 	pomodoro: {

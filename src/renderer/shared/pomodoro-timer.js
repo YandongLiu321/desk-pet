@@ -21,6 +21,10 @@ class PomodoroTimer {
 		this.container.style.cssText =
 			"display:flex;flex-direction:column;align-items:center;gap:var(--space-md);";
 
+		// Ring wrapper — lets us center the time inside the SVG ring
+		const ringWrapper = document.createElement("div");
+		ringWrapper.style.cssText = "position:relative;width:120px;height:120px;";
+
 		// SVG ring
 		this._svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
 		this._svg.setAttribute("viewBox", "0 0 120 120");
@@ -48,11 +52,14 @@ class PomodoroTimer {
 		this._ring.setAttribute("stroke-dashoffset", "0");
 		this._svg.appendChild(this._ring);
 
-		// Time display
+		ringWrapper.appendChild(this._svg);
+
+		// Time display — centered inside the SVG ring
 		this._timeDisplay = document.createElement("div");
 		this._timeDisplay.style.cssText =
-			"font-size:var(--font-2xl);color:var(--color-text-primary);font-family:var(--font-mono);";
+			"position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:var(--font-xl);color:var(--color-text-primary);font-family:var(--font-mono);";
 		this._timeDisplay.textContent = "25:00";
+		ringWrapper.appendChild(this._timeDisplay);
 
 		// Time editor (shown after task selection, hidden during countdown)
 		this._timeEditor = document.createElement("div");
@@ -145,8 +152,7 @@ class PomodoroTimer {
 		row2.appendChild(this._stopBtn);
 		controls.appendChild(row2);
 
-		this.container.appendChild(this._svg);
-		this.container.appendChild(this._timeDisplay);
+		this.container.appendChild(ringWrapper);
 		this.container.appendChild(this._timeEditor);
 		this.container.appendChild(controls);
 	}
@@ -164,7 +170,7 @@ class PomodoroTimer {
 	}
 
 	_hideEditor() {
-		this._timeDisplay.style.display = "";
+		this._timeDisplay.style.display = "flex";
 		this._timeEditor.style.display = "none";
 	}
 

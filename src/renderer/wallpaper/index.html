@@ -17,18 +17,6 @@
     position: relative;
   }
 
-  .we-layers {
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-  }
-  .we-layer {
-    position: absolute;
-    inset: 0;
-    background-repeat: no-repeat;
-  }
-
   .wallpaper-bg-layer {
     position: absolute;
     inset: 0;
@@ -65,12 +53,21 @@
     cursor: pointer;
   }
 
+  .wallpaper-top-left-group {
+    position: absolute;
+    top: var(--space-lg);
+    left: var(--space-lg);
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-xl);
+    z-index: 10;
+  }
+
   .wallpaper-pomodoro-area {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: var(--space-md);
-    margin-bottom: var(--space-lg);
+    align-items: flex-start;
+    gap: var(--space-sm);
   }
 
   /* ── Task selection ── */
@@ -211,33 +208,6 @@
     overflow: hidden;
   }
 
-
-  .wallpaper-we-selector {
-    display: none;
-    margin-top: var(--space-sm);
-    gap: var(--space-sm);
-    align-items: center;
-  }
-  .wallpaper-we-selector.visible {
-    display: flex;
-  }
-  .wallpaper-we-selector label {
-    font-size: var(--font-xs);
-    color: var(--color-text-muted);
-    white-space: nowrap;
-  }
-  .wallpaper-we-selector select {
-    background: var(--color-bg-medium);
-    color: var(--color-text-primary);
-    border: 1px solid var(--color-bg-light);
-    border-radius: var(--radius-sm);
-    padding: var(--space-xs) var(--space-sm);
-    font-size: var(--font-sm);
-    cursor: pointer;
-    outline: none;
-    max-width: 160px;
-  }
-
   .wallpaper-esc-hint {
     position: fixed;
     bottom: var(--space-md);
@@ -342,7 +312,6 @@
   <span class="wallpaper-mode-label-text mode--rest" id="modeLabelText">休息模式</span>
 </div>
 
-<div class="we-layers" id="weLayers"></div>
 <div class="wallpaper-char-area" id="charArea" title="点击露娜打开对话"></div>
 
 <!-- Task selection area -->
@@ -357,17 +326,9 @@
   <button class="wallpaper-change-task-btn" id="changeTaskBtn">更换</button>
 </div>
 
-<div class="wallpaper-pomodoro-area" id="pomodoroArea"></div>
-
-<div id="audioArea"></div>
-
-<div class="wallpaper-editor-btn" id="editorBtnArea" style="display:none;margin-top:var(--space-sm);gap:var(--space-sm);align-items:center;">
-  <button id="openEditorBtn" style="background:var(--color-primary);color:#fff;border:none;border-radius:var(--radius-sm);padding:var(--space-xs) var(--space-sm);font-size:var(--font-sm);cursor:pointer;">Open Editor</button>
-</div>
-
-<div class="wallpaper-we-selector" id="weSelector">
-  <label>壁纸</label>
-  <select id="weSelect"></select>
+<div class="wallpaper-top-left-group" id="topLeftGroup" style="display:none;">
+  <div class="wallpaper-pomodoro-area" id="pomodoroArea"></div>
+  <div id="audioArea"></div>
 </div>
 
 <div class="wallpaper-chat-sidebar glass-panel" id="chatSidebar">
@@ -544,6 +505,8 @@
     selectedSubtaskId = subtask ? subtask.id : null;
     expandedTaskId = null;
 
+    document.getElementById("topLeftGroup").style.display = "";
+
     const displayName = subtask
       ? (task.rpgTitle || task.realTitle) + ' › ' + (subtask.rpgDesc || subtask.realDesc)
       : (task.rpgTitle || task.realTitle);
@@ -568,6 +531,7 @@
     selectedSubtaskId = null;
     expandedTaskId = null;
     selectedTaskBadge.style.display = 'none';
+    document.getElementById("topLeftGroup").style.display = "none";
     setModeLabel('rest');
     pomodoroTimer.stop();
     renderTaskSelectList();
@@ -639,6 +603,7 @@
     },
   });
   pomodoroTimer.mount();
+  document.getElementById("topLeftGroup").style.display = "none";
 
   // Conversation sidebar
   const sidebar = document.getElementById("chatSidebar");
@@ -695,130 +660,6 @@
       whiteNoise.mount();
     }
   });
-
-  // ── Wallpaper Engine integration ──
-  const weSelector = document.getElementById("weSelector");
-  const weSelect = document.getElementById("weSelect");
-  let currentWeDir = null;
-
-  async function loadWeWallpapers() {
-    const listRes = await ipc.listWeWallpapers();
-    if (!listRes.ok || !listRes.data.length) return;
-
-    // Populate dropdown
-    weSelect.innerHTML = '<option value="">默认背景</option>';
-    for (const wp of listRes.data) {
-      const opt = document.createElement("option");
-      opt.value = wp.dirName;
-      opt.textContent = wp.title || wp.dirName;
-      weSelect.appendChild(opt);
-    }
-    weSelector.classList.add("visible");
-
-    // Load saved choice
-    const settingsRes = await ipc.getWallpaper();
-    const savedWe = settingsRes.ok ? settingsRes.data?.weWallpaperDir : null;
-    if (savedWe) {
-      weSelect.value = savedWe;
-      applyWeWallpaper(savedWe);
-    }
-  }
-
-      // Render WE wallpaper via WebGL with CSS fallback
-  async function applyWeWallpaper(dirName) {
-    currentWeDir = dirName;
-    var layersContainer = document.getElementById("weLayers");
-    if (layersContainer) layersContainer.innerHTML = "";
-    document.body.style.backgroundImage = "";
-
-    if (!dirName) {
-      if (window._webglApplyWeWallpaper) await window._webglApplyWeWallpaper(null);
-      return;
-    }
-
-    // Try WebGL renderer first
-    if (window._webglApplyWeWallpaper) {
-      try {
-        await window._webglApplyWeWallpaper(dirName);
-        return; // WebGL succeeded
-      } catch (e) {
-        console.warn("WebGL wallpaper render failed, falling back to CSS:", e);
-      }
-    }
-
-    // CSS fallback — load WE data and render as positioned divs
-    try {
-      var res = await ipc.loadWeWallpaper(dirName);
-      if (!res.ok || !res.data || !res.data.layers) return;
-      var layers = res.data.layers;
-      // Ensure weLayers is visible for CSS fallback
-      if (layersContainer) layersContainer.style.display = "";
-      document.body.style.backgroundImage = "";
-
-      var sorted = layers.slice().sort(function(a, b) {
-        var aIsBg = !a.name, bIsBg = !b.name;
-        if (aIsBg && !bIsBg) return -1;
-        if (!aIsBg && bIsBg) return 1;
-        if (aIsBg) return (b.width * b.height) - (a.width * a.height);
-        return a.y - b.y;
-      });
-
-      var z = 1;
-      for (var i = 0; i < sorted.length; i++) {
-        var layer = sorted[i];
-        var div = document.createElement("div");
-        div.className = "we-layer";
-        if (!layer.name) {
-          div.style.cssText = "background-image:url('" + layer.url + "');background-size:cover;background-position:center;z-index:" + z + ";";
-        } else {
-          var leftPct = (layer.x / 3840) * 100;
-          var topPct = (layer.y / 2160) * 100;
-          var wPct = (layer.width / 3840) * 100;
-          var hPct = (layer.height / 2160) * 100;
-          div.style.cssText = [
-            "background-image:url('" + layer.url + "')",
-            "background-size:100% 100%",
-            "background-repeat:no-repeat",
-            "position:absolute",
-            "left:" + leftPct.toFixed(2) + "%",
-            "top:" + topPct.toFixed(2) + "%",
-            "transform:translate(-50%,-50%)",
-            "width:" + wPct.toFixed(2) + "vw",
-            "height:" + hPct.toFixed(2) + "vh",
-            "opacity:" + layer.alpha,
-            "z-index:" + z,
-          ].join(";");
-        }
-        layersContainer.appendChild(div);
-        z++;
-      }
-    } catch (e) {
-      console.error("CSS wallpaper fallback also failed:", e);
-    }
-  }
-
-  weSelect.addEventListener("change", function() {
-    var dirName = weSelect.value;
-    applyWeWallpaper(dirName || null);
-    ipc.updateWallpaper({ weWallpaperDir: dirName || null });
-  });
-
-  loadWeWallpapers();
-  // Open editor button
-  var editorBtnArea = document.getElementById("editorBtnArea");
-  var openEditorBtn = document.getElementById("openEditorBtn");
-  if (openEditorBtn) {
-    openEditorBtn.addEventListener("click", function() {
-      ipc.openEditor().catch(function(e) { console.warn("Failed to open editor:", e); });
-    });
-  }
-
-  // Show editor button when WE wallpapers are available
-  var showEditorBtn = function() {
-    if (editorBtnArea) editorBtnArea.style.display = "flex";
-  };
-  // Show it once we know WE wallpapers exist
-  if (currentWeDir) showEditorBtn();
 
   // ── Change task button ──
   document.getElementById("changeTaskBtn").addEventListener("click", () => {
@@ -998,6 +839,14 @@
     }
   });
 
+  // Stop audio when leaving wallpaper mode
+  ipc.onModeDeactivated(() => {
+    if (whiteNoise) {
+      whiteNoise.destroy();
+      whiteNoise = null;
+    }
+  });
+
   initWallpaper();
 })();
 </script>
@@ -1121,26 +970,12 @@ void main() {
         await renderer.loadScene(sceneData);
     }
 
-    // Wire up the delegation
     document.addEventListener("DOMContentLoaded", async function () {
         await initWebGL();
-
-        // Wire delegation so the dropdown triggers WebGL rendering
-        var ipc = new window.IpcClient();
-        var state = await ipc.getAppState();
-        if (state.ok && state.data && state.data.wallpaperSettings && state.data.wallpaperSettings.weWallpaperDir) {
-            applyWeWallpaperWebGL(state.data.wallpaperSettings.weWallpaperDir);
-        }
     });
 
-    // Expose the WebGL apply function globally for the main IIFE to delegate to
     window._webglApplyWeWallpaper = applyWeWallpaperWebGL;
-    // Listen for scene updates from the editor
-    if (window.electronAPI && window.electronAPI.editor) {
-        // The editor forwards via main process which sends IPC.EDITOR_APPLY
-        // We need to listen on ipcRenderer — but with contextIsolation,
-        // we need a preload API for this. Use the IpcClient polling approach instead.
-    }
+
     window._onEditorSceneApplied = function(sceneData) {
         if (renderer && sceneData) {
             applyWeWallpaperWebGL(sceneData);

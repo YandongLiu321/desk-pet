@@ -27,6 +27,7 @@ const IPC = {
 	APP_GET_CHARACTER: "app:get-character",
 	APP_GET_RELATIONSHIP: "app:get-relationship",
 	MODE_ACTIVATED: "mode:activated",
+	MODE_DEACTIVATED: "mode:deactivated",
 
 	// Pomodoro
 	POMODORO_START: "pomodoro:start",

@@ -1,6 +1,6 @@
 const { BrowserWindow } = require("electron");
 const path = require("node:path");
-const { MODE } = require("../shared/constants.js");
+const { MODE, IPC } = require("../shared/constants.js");
 
 /** @type {Record<string, Electron.BrowserWindowConstructorOptions>} */
 const WINDOW_CONFIG = {
@@ -106,7 +106,11 @@ class WindowManager {
 		const current = this._currentMode;
 		if (current && current !== targetMode && this._windows.has(current)) {
 			this._switching = true;
-			this._windows.get(current).hide();
+			const oldWin = this._windows.get(current);
+			if (oldWin && !oldWin.isDestroyed()) {
+				oldWin.webContents.send(IPC.MODE_DEACTIVATED, { mode: current });
+			}
+			oldWin.hide();
 			this._switching = false;
 		}
 

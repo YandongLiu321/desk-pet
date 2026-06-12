@@ -101,6 +101,9 @@ class IpcClient {
 	onModeActivated(cb) {
 		return this.api?.app.onModeActivated?.(cb);
 	}
+	onModeDeactivated(cb) {
+		return this.api?.app.onModeDeactivated?.(cb);
+	}
 
 	// Pomodoro
 	async startPomodoro(duration, taskId) {

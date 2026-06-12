@@ -44,10 +44,6 @@ function switchModeWithCleanup(mode) {
 	const win = windowManager.getCurrentWindow();
 	if (win && !win.isDestroyed()) {
 		win.webContents.send(IPC.MODE_ACTIVATED, { mode });
-			if (mode === MODE.PET) {
-				const settings = db.getSettings();
-				win.setIgnoreMouseEvents(settings.clickThrough, { forward: true });
-			}
 	}
 }
 
@@ -130,10 +126,6 @@ function createTray(editorWindowManager, settingsWindow) {
 				checked: settings.clickThrough,
 				click: (mi) => {
 					db.updateSettings({ clickThrough: mi.checked });
-					const petWin = windowManager.getWindow("pet");
-					if (petWin && !petWin.isDestroyed()) {
-						petWin.setIgnoreMouseEvents(mi.checked, { forward: true });
-					}
 					broadcastSettings();
 				},
 			},
