@@ -1311,6 +1311,7 @@
       });
       const unsubDone = ipc.onDone((data) => {
         convPanel.hideTyping();
+        charRenderer.playMotion('talking');
         unsubChunk();
         unsubDone();
         if (data.intent === INTENT.CREATE_TASK) {
@@ -1382,6 +1383,7 @@
       btnComplete.addEventListener("click", async () => {
         const compRes = await ipc.completeTask(taskId);
         if (compRes.ok) {
+          charRenderer.playMotion('combat');
           if (compRes.data.relationshipUpgrade?.upgraded) {
             const from = compRes.data.relationshipUpgrade.from;
             const to = compRes.data.relationshipUpgrade.to;
@@ -1414,6 +1416,7 @@
   const pomodoroTimer = new PomodoroTimer(document.getElementById("pomodoroContainer"), {
     onStart: () => {
       ipc.markInteraction();
+      charRenderer.playMotion('combat');
       const minutes = pomodoroTimer.getCurrentMinutes();
       pomodoroSeconds = minutes * 60;
       pomodoroTimer.start(pomodoroSeconds);
@@ -1463,10 +1466,17 @@
   // ── Room item click handlers ──────────────────────────────
   document.querySelectorAll("[data-panel]").forEach(el => {
     el.addEventListener("click", (e) => {
-      // Prevent triggering parent handlers
       e.stopPropagation();
       const panelName = el.dataset.panel;
-      if (panelName) openPanel(panelName);
+      if (!panelName) return;
+
+      if (panelName === 'chat') {
+        ipc.markInteraction();
+        charRenderer.playMotion('smile');
+        setTimeout(() => openPanel(panelName), 300);
+      } else {
+        openPanel(panelName);
+      }
     });
   });
 
