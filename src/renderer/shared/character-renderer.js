@@ -20,6 +20,7 @@ class CharacterRenderer {
 		this._live2dModel = null;
 		this._live2dCanvas = null;
 		this._videoEl = null;
+		this._animFrameId = null;
 	}
 
 	mount() {
@@ -141,39 +142,84 @@ class CharacterRenderer {
 			return;
 		}
 
-		// Stop any currently playing video
 		if (this._videoEl) {
 			this._videoEl.pause();
 			this._videoEl.remove();
 			this._videoEl = null;
 		}
+		if (this._animFrameId) {
+			cancelAnimationFrame(this._animFrameId);
+			this._animFrameId = null;
+		}
 
-		// Hide static character during playback
 		const existingContent = this.container.querySelector('.character-wrapper, img, canvas');
 		if (existingContent) {
 			existingContent.style.display = 'none';
 		}
 
-		// Ensure container is positioned
 		const cs = window.getComputedStyle(this.container);
 		if (cs.position === 'static') {
 			this.container.style.position = 'relative';
 		}
 
-		// Create video overlay
 		const video = document.createElement('video');
 		video.src = videoPath;
 		video.muted = true;
 		video.autoplay = true;
 		video.playsInline = true;
-		video.style.cssText =
-			'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;z-index:10;';
-
+		video.style.display = 'none';
 		this._videoEl = video;
 		this.container.appendChild(video);
 
+		const canvas = document.createElement('canvas');
+		canvas.className = 'motion-canvas';
+		canvas.style.cssText =
+			'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;z-index:10;';
+		const ctx = canvas.getContext('2d');
+		let canvasSizeSet = false;
+
+		const CHROMA_THRESHOLD = 25;
+
+		const drawFrame = () => {
+			if (video.readyState < 2) {
+				this._animFrameId = requestAnimationFrame(drawFrame);
+				return;
+			}
+
+			if (!canvasSizeSet) {
+				canvas.width = video.videoWidth;
+				canvas.height = video.videoHeight;
+				canvasSizeSet = true;
+			}
+
+			ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+			const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+			const data = imageData.data;
+			for (let i = 0; i < data.length; i += 4) {
+				if (data[i] < CHROMA_THRESHOLD && data[i + 1] < CHROMA_THRESHOLD && data[i + 2] < CHROMA_THRESHOLD) {
+					data[i + 3] = 0;
+				}
+			}
+			ctx.putImageData(imageData, 0, 0);
+
+			if (!video.paused && !video.ended) {
+				this._animFrameId = requestAnimationFrame(drawFrame);
+			}
+		};
+
+		video.addEventListener('playing', () => {
+			this.container.appendChild(canvas);
+			this._animFrameId = requestAnimationFrame(drawFrame);
+		}, { once: true });
+
 		const restore = () => {
+			if (this._animFrameId) {
+				cancelAnimationFrame(this._animFrameId);
+				this._animFrameId = null;
+			}
 			video.remove();
+			canvas.remove();
 			this._videoEl = null;
 			if (existingContent) {
 				existingContent.style.display = '';
@@ -188,6 +234,15 @@ class CharacterRenderer {
 	}
 
 	destroy() {
+		if (this._videoEl) {
+			this._videoEl.pause();
+			this._videoEl.remove();
+			this._videoEl = null;
+		}
+		if (this._animFrameId) {
+			cancelAnimationFrame(this._animFrameId);
+			this._animFrameId = null;
+		}
 		if (this._live2dModel) {
 			this._live2dModel = null;
 		}

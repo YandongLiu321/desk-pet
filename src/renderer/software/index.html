@@ -1208,7 +1208,7 @@
   });
 
   // ── Character display (Yuzu in room) ──────────────────────
-  const charRenderer = new CharacterRenderer(document.getElementById("charDisplay"), { mode: "software", size: 160 });
+  const charRenderer = new CharacterRenderer(document.getElementById("charDisplay"), { mode: "software", size: 160, assetType: "live2d" });
   charRenderer.mount();
 
   // Load character info
@@ -1241,6 +1241,13 @@
   let currentPanel = null;
 
   function openPanel(name) {
+    // Settings → open Yuzu's Diary window
+    if (name === "settings") {
+      ipc.openSettings();
+      ipc.markInteraction();
+      return;
+    }
+
     // Close current if any
     if (currentPanel) closePanel();
 
@@ -1376,6 +1383,20 @@
     const btnRow = document.createElement("div");
     btnRow.className = "btn-row";
 
+    // "开始专注" button — links pomodoro to this task
+    const btnFocus = document.createElement("button");
+    btnFocus.className = "btn btn-primary";
+    btnFocus.textContent = "▶ 开始专注此任务";
+    btnFocus.addEventListener("click", async () => {
+      currentPomodoroTaskId = taskId;
+      currentPomodoroTaskTitle = task.rpgTitle;
+      const minutes = task.estimatedPomodoros ? task.estimatedPomodoros * 25 : 25;
+      pomodoroTimer.setEditableDuration(minutes);
+      openPanel("pomodoro");
+      pomodoroTimer.onStart();
+    });
+    btnRow.appendChild(btnFocus);
+
     if (task.status !== "completed") {
       const btnComplete = document.createElement("button");
       btnComplete.className = "btn btn-primary";
@@ -1412,6 +1433,23 @@
   // ── Pomodoro timer ────────────────────────────────────────
   let pomodoroInterval = null;
   let pomodoroSeconds = 0;
+  let currentPomodoroTaskId = null;
+  let currentPomodoroTaskTitle = null;
+
+  function onPomodoroEnd() {
+    clearInterval(pomodoroInterval);
+    pomodoroInterval = null;
+    pomodoroTimer.stop();
+    pomodoroTimer.setTaskLabel(null);
+    if (convPanel) {
+      const taskMsg = currentPomodoroTaskTitle
+        ? `⏰ 「${currentPomodoroTaskTitle}」番茄钟时间到！休息一下吧~`
+        : "⏰ 番茄钟时间到！休息一下吧~";
+      convPanel.addMessage("assistant", taskMsg);
+    }
+    currentPomodoroTaskId = null;
+    currentPomodoroTaskTitle = null;
+  }
 
   const pomodoroTimer = new PomodoroTimer(document.getElementById("pomodoroContainer"), {
     onStart: () => {
@@ -1420,16 +1458,18 @@
       const minutes = pomodoroTimer.getCurrentMinutes();
       pomodoroSeconds = minutes * 60;
       pomodoroTimer.start(pomodoroSeconds);
+
+      // Start pomodoro in main process for persistence and relationship tracking
+      ipc.startPomodoro(minutes, currentPomodoroTaskId);
+
+      // Show task label
+      pomodoroTimer.setTaskLabel(currentPomodoroTaskTitle);
+
       pomodoroInterval = setInterval(() => {
         pomodoroSeconds--;
         pomodoroTimer.update(pomodoroSeconds);
         if (pomodoroSeconds <= 0) {
-          clearInterval(pomodoroInterval);
-          pomodoroInterval = null;
-          pomodoroTimer.stop();
-          if (convPanel) {
-            convPanel.addMessage("assistant", "⏰ 番茄钟时间到！休息一下吧~");
-          }
+          onPomodoroEnd();
         }
       }, 1000);
     },
@@ -1444,12 +1484,7 @@
         pomodoroSeconds--;
         pomodoroTimer.update(pomodoroSeconds);
         if (pomodoroSeconds <= 0) {
-          clearInterval(pomodoroInterval);
-          pomodoroInterval = null;
-          pomodoroTimer.stop();
-          if (convPanel) {
-            convPanel.addMessage("assistant", "⏰ 番茄钟时间到！休息一下吧~");
-          }
+          onPomodoroEnd();
         }
       }, 1000);
     },
@@ -1458,7 +1493,11 @@
         clearInterval(pomodoroInterval);
         pomodoroInterval = null;
       }
+      ipc.stopPomodoro();
       pomodoroTimer.stop();
+      pomodoroTimer.setTaskLabel(null);
+      currentPomodoroTaskId = null;
+      currentPomodoroTaskTitle = null;
     },
   });
   pomodoroTimer.mount();
