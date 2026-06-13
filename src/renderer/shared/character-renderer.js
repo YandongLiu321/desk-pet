@@ -1,3 +1,10 @@
+/** Motion name → MP4 video path */
+const MOTION_VIDEOS = {
+  smile: '../../../assets/characters/default/motions/微笑.mp4',
+  talking: '../../../assets/characters/default/motions/说话.mp4',
+  combat: '../../../assets/characters/default/motions/战力.mp4',
+};
+
 class CharacterRenderer {
 	/**
 	 * @param {HTMLElement} container
@@ -12,6 +19,7 @@ class CharacterRenderer {
 		this._mounted = false;
 		this._live2dModel = null;
 		this._live2dCanvas = null;
+		this._videoEl = null;
 	}
 
 	mount() {
@@ -123,6 +131,60 @@ class CharacterRenderer {
 					? "bounce 0.3s ease-out"
 					: "breathe 3s ease-in-out infinite";
 		}
+	}
+
+	/** @param {string} name */
+	playMotion(name) {
+		const videoPath = MOTION_VIDEOS[name];
+		if (!videoPath) {
+			this.setMotion(name);
+			return;
+		}
+
+		// Stop any currently playing video
+		if (this._videoEl) {
+			this._videoEl.pause();
+			this._videoEl.remove();
+			this._videoEl = null;
+		}
+
+		// Hide static character during playback
+		const existingContent = this.container.querySelector('.character-wrapper, img, canvas');
+		if (existingContent) {
+			existingContent.style.display = 'none';
+		}
+
+		// Ensure container is positioned
+		const cs = window.getComputedStyle(this.container);
+		if (cs.position === 'static') {
+			this.container.style.position = 'relative';
+		}
+
+		// Create video overlay
+		const video = document.createElement('video');
+		video.src = videoPath;
+		video.muted = true;
+		video.autoplay = true;
+		video.playsInline = true;
+		video.style.cssText =
+			'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;z-index:10;';
+
+		this._videoEl = video;
+		this.container.appendChild(video);
+
+		const restore = () => {
+			video.remove();
+			this._videoEl = null;
+			if (existingContent) {
+				existingContent.style.display = '';
+			}
+		};
+
+		video.addEventListener('ended', restore, { once: true });
+		video.addEventListener('error', () => {
+			restore();
+			this.setMotion(name);
+		}, { once: true });
 	}
 
 	destroy() {
