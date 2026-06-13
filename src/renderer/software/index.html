@@ -418,12 +418,6 @@
     border-radius: 10px;
   }
 
-  .yuzu-relation {
-    font-size: var(--font-xs);
-    color: var(--color-gold, #c9a84c);
-    margin-top: 2px;
-  }
-
   /* ===== Desk ===== */
   .room-desk {
     position: absolute;
@@ -1060,8 +1054,7 @@
   <div class="room-yuzu" data-panel="chat" title="和柚子对话">
     <div class="room-yuzu-glow"></div>
     <div id="charDisplay"></div>
-    <div class="soft-char-name">露娜·月语</div>
-    <div class="yuzu-relation" id="charStage">关系：熟人</div>
+    <div class="soft-char-name">柚子</div>
   </div>
 
   <!-- Desk -->
@@ -1213,18 +1206,6 @@
   const charRenderer = new CharacterRenderer(document.getElementById("charDisplay"), { mode: "software", size: 160, assetType: "live2d" });
   charRenderer.mount();
 
-  // Load character info
-  ipc.getCharacter().then((res) => {
-    if (res.ok && res.data) {
-      document.querySelector(".soft-char-name").textContent = res.data.id === "luna_moonwhisper" ? "露娜·月语" : res.data.id;
-    }
-  });
-  ipc.getRelationship().then((res) => {
-    if (res.ok && res.data) {
-      const stageNames = { stranger: "陌生人", acquaintance: "熟人", familiar: "朋友", close: "挚友", soulmate: "灵魂伴侣" };
-      document.getElementById("charStage").textContent = `关系：${stageNames[res.data.stage] || res.data.stage}`;
-    }
-  });
 
   // ── Clock update ──────────────────────────────────────────
   function updateClock() {
