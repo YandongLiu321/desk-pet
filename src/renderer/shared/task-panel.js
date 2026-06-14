@@ -36,7 +36,7 @@ class TaskPanel {
 			const empty = document.createElement("div");
 			empty.style.cssText =
 				"color:var(--color-text-muted);font-size:var(--font-sm);text-align:center;padding:var(--space-md);";
-			empty.textContent = "暂无任务，和露娜说说你想做什么吧~";
+			empty.textContent = "暂无任务，和柚子说说你想做什么吧~";
 			this._listEl.appendChild(empty);
 			return;
 		}

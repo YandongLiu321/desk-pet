@@ -50,9 +50,30 @@ class LLMService {
 			`[当前上下文]`,
 			`当前模式：${context.currentMode}`,
 			`活跃任务：${context.activeTask?.realTitle || "无"}`,
-			"",
-			`[行为指令]`,
-			];
+		];
+
+		// Software mode: inject recently completed tasks for natural follow-up
+		if (context.currentMode === "software") {
+			const now = Date.now();
+			const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
+			const recentCompleted = (this.db.getTasks({ status: "completed" }) || [])
+				.filter(function (t) {
+					return t.completedAt && (now - new Date(t.completedAt).getTime()) < threeDaysMs;
+				})
+				.slice(0, 5);
+			if (recentCompleted.length > 0) {
+				const taskLines = recentCompleted.map(function (t) {
+					return "「" + (t.rpgTitle || t.realTitle) + "」（" + t.realTitle + "）";
+				});
+				sections.push("");
+				sections.push("[近期完成的任务]");
+				sections.push("以下是用户最近几天完成的事情，你可以在对话中自然地提起它们——比如关心后续进展、分享你的感受、或者把话题自然地引向它们。不必刻意，但要随时准备接过用户提起的话头：");
+				sections.push(taskLines.join("；"));
+			}
+		}
+
+		sections.push("");
+		sections.push(`[行为指令]`)
 
 			if (enableTaskCreation) {
 				sections.push(

@@ -44,7 +44,7 @@ class CharacterRenderer {
 
 		const svg = document.createElement("img");
 		svg.src = "../../../pet_temp.png";
-		svg.alt = "露娜";
+		svg.alt = "柚子";
 		svg.style.cssText = "width:100%;height:100%;object-fit:contain;";
 
 		// eye blink overlay

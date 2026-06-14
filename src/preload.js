@@ -132,8 +132,14 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		},
 	},
 
-	memory: {
-		list() {
+	world: {
+			getYuzuActivities() {
+				return ipcRenderer.invoke(IPC.WORLD_GET_YUZU_ACTIVITIES);
+			},
+		},
+
+		memory: {
+			list() {
 			return ipcRenderer.invoke(IPC.MEMORY_LIST);
 		},
 		search(query, limit) {
@@ -148,6 +154,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	},
 
 	settings: {
+		open() {
+			return ipcRenderer.invoke(IPC.SETTINGS_OPEN);
+		},
 		getApiKey() {
 			return ipcRenderer.invoke(IPC.SETTINGS_GET_API_KEY);
 		},

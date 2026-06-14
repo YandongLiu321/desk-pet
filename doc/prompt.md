@@ -912,7 +912,7 @@ POST https://api.deepseek.com/v1/chat/completions
   ],
   "character": {
     "id": "luna_moonwhisper",
-    "name": "露娜·月语",
+    "name": "柚子·月语",
     "role": "导航员",
     "personality": "温柔、坚强、略带迷糊",
     "background": "最后一支星语者部族的幸存者，通过星辰预言引导你修复世界。",

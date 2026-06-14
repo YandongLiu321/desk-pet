@@ -152,7 +152,12 @@ class PomodoroTimer {
 		row2.appendChild(this._stopBtn);
 		controls.appendChild(row2);
 
+		// Task label (hidden by default, shown when pomodoro is linked to a task)
+		this._taskLabel = document.createElement("div");
+		this._taskLabel.style.cssText = "font-size:var(--font-sm);color:var(--color-accent);text-align:center;display:none;";
+
 		this.container.appendChild(ringWrapper);
+		this.container.appendChild(this._taskLabel);
 		this.container.appendChild(this._timeEditor);
 		this.container.appendChild(controls);
 	}
@@ -221,6 +226,17 @@ class PomodoroTimer {
 		this._timeDisplay.textContent = "25:00";
 		this._ring.setAttribute("stroke-dashoffset", "0");
 		this.showControls("idle");
+	}
+
+	/** @param {string|null} title — task title to show, or null to hide */
+	setTaskLabel(title) {
+		if (!this._taskLabel) return;
+		if (title) {
+			this._taskLabel.textContent = `📋 ${title}`;
+			this._taskLabel.style.display = "";
+		} else {
+			this._taskLabel.style.display = "none";
+		}
 	}
 
 	/** @returns {number} seconds remaining */

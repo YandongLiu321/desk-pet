@@ -71,7 +71,7 @@ function createTray(editorWindowManager, settingsWindow) {
 	}
 
 	tray = new Tray(icon);
-	tray.setToolTip("Desk Pet — 露娜·月语");
+	tray.setToolTip("Desk Pet — 柚子·月语");
 
 	const buildMenu = () => {
 		const settings = db.getSettings();
@@ -282,6 +282,7 @@ app.whenReady().then(() => {
 			worldBook,
 			switchModeWithCleanup,
 			editorWindowManager,
+			settingsWindowManager,
 			proactiveService,
 			memoryService,
 		},

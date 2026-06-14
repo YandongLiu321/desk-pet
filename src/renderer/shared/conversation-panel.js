@@ -34,7 +34,7 @@ class ConversationPanel {
 		this._typingIndicator.className = "conv-typing";
 		this._typingIndicator.style.cssText =
 			"padding:var(--space-xs) var(--space-sm);color:var(--color-text-muted);font-size:var(--font-sm);display:none;";
-		this._typingIndicator.textContent = "露娜正在回应星辰...";
+		this._typingIndicator.textContent = "柚子正在回应星辰...";
 
 		const inputRow = document.createElement("div");
 		inputRow.className = "conv-input-row";
@@ -44,7 +44,7 @@ class ConversationPanel {
 		this._input = document.createElement("input");
 		this._input.className = "conv-input glass-input";
 		this._input.type = "text";
-		this._input.placeholder = "和露娜说点什么吧...";
+		this._input.placeholder = "和柚子说点什么吧...";
 		this._input.style.cssText = `flex:1;background:var(--color-bg-medium);border:none;color:var(--color-text-primary);padding:var(--space-sm);border-radius:var(--radius-sm);font-size:var(--font-sm);outline:none;`;
 		this._input.addEventListener("keydown", (e) => {
 			if (e.key === "Enter" && this._input.value.trim()) {

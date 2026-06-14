@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>壁纸模式 — 露娜·月语</title>
+<title>壁纸模式 — 柚子·月语</title>
 <link rel="stylesheet" href="../shared/styles/base.css">
 <style>
   body {
@@ -17,34 +17,23 @@
     position: relative;
   }
 
+  .wallpaper-video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0;
+  }
+
   .wallpaper-bg-layer {
     position: absolute;
     inset: 0;
     background: radial-gradient(ellipse at center, rgba(107,92,231,0.15) 0%, transparent 70%);
     pointer-events: none;
   }
-
-  /* ── Mode label ── */
-  .wallpaper-mode-label {
-    position: absolute;
-    top: 8%;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 10;
-    pointer-events: none;
-  }
-  .wallpaper-mode-label-text {
-    font-size: 48px;
-    font-weight: 700;
-    color: rgba(255,255,255,0.85);
-    text-shadow: 0 0 40px rgba(107,92,231,0.6), 0 4px 12px rgba(0,0,0,0.5);
-    letter-spacing: 8px;
-    transition: all 0.6s ease;
-  }
-  .wallpaper-mode-label-text.mode--rest { color: rgba(180,200,220,0.85); text-shadow: 0 0 30px rgba(100,140,180,0.4), 0 4px 12px rgba(0,0,0,0.5); }
-  .wallpaper-mode-label-text.mode--computer { color: rgba(120,200,255,0.9); text-shadow: 0 0 40px rgba(70,130,255,0.6), 0 4px 12px rgba(0,0,0,0.5); }
-  .wallpaper-mode-label-text.mode--reading { color: rgba(160,230,160,0.9); text-shadow: 0 0 40px rgba(80,180,80,0.6), 0 4px 12px rgba(0,0,0,0.5); }
-  .wallpaper-mode-label-text.mode--writing { color: rgba(255,200,130,0.9); text-shadow: 0 0 40px rgba(220,150,50,0.6), 0 4px 12px rgba(0,0,0,0.5); }
 
   .wallpaper-char-area {
     width: var(--char-wallpaper-size);
@@ -148,6 +137,27 @@
     font-size: var(--font-sm);
     color: var(--color-text-primary);
     margin-bottom: var(--space-sm);
+  }
+  .wallpaper-yuzu-activity {
+    display: none;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-xs) var(--space-md);
+    background: rgba(240,192,96,0.12);
+    border: 1px solid rgba(240,192,96,0.25);
+    border-radius: var(--radius-full, 20px);
+    font-size: var(--font-sm);
+    color: var(--color-accent);
+    margin-bottom: var(--space-sm);
+    animation: yuzuActivityFadeIn 0.5s ease;
+    max-width: 320px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  @keyframes yuzuActivityFadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
   }
   .wallpaper-change-task-btn {
     background: rgba(255,255,255,0.1);
@@ -299,20 +309,96 @@
     font-size: var(--font-sm);
     color: var(--color-text-secondary);
   }
+
+  /* ── Departure overlay ── */
+  .wallpaper-departure-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10,10,30,0.7);
+    z-index: 40;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  .wallpaper-departure-overlay.show {
+    display: flex;
+    animation: departureFadeIn 0.4s ease;
+  }
+  .wallpaper-departure-overlay.fadeout {
+    animation: departureFadeOut 0.6s ease forwards;
+  }
+
+  .wallpaper-departure-card {
+    background: var(--color-bg-dark);
+    border: 1px solid rgba(107,92,231,0.3);
+    border-radius: var(--radius-lg);
+    padding: var(--space-xl) var(--space-xl);
+    text-align: center;
+    box-shadow: 0 0 60px rgba(107,92,231,0.15);
+    max-width: 420px;
+    width: 90%;
+  }
+  .wallpaper-departure-card .departure-user-line {
+    font-size: var(--font-lg);
+    color: var(--color-text-primary);
+    margin-bottom: var(--space-sm);
+    line-height: 1.6;
+  }
+  .wallpaper-departure-card .departure-user-title {
+    color: var(--color-primary-light);
+    font-weight: 600;
+  }
+  .wallpaper-departure-card .departure-divider {
+    width: 40px;
+    height: 1px;
+    background: rgba(255,255,255,0.15);
+    margin: var(--space-md) auto;
+  }
+  .wallpaper-departure-card .departure-yuzu-line {
+    font-size: var(--font-base);
+    color: var(--color-accent);
+    margin-bottom: var(--space-sm);
+    line-height: 1.6;
+  }
+  .wallpaper-departure-card .departure-countdown {
+    font-size: var(--font-sm);
+    color: var(--color-text-muted);
+    margin-top: var(--space-md);
+    letter-spacing: 2px;
+  }
+
+  @keyframes departureFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes departureFadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+
+  /* ── Yuzu halfway bubble ── */
+  .wallpaper-yuzu-activity.pulse {
+    animation: yuzuPulse 0.5s ease;
+    background: rgba(240,192,96,0.22);
+    border-color: rgba(240,192,96,0.5);
+  }
+  @keyframes yuzuPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.04); }
+    100% { transform: scale(1); }
+  }
 </style>
 </head>
 <body>
 
+<video id="wallpaperVideoA" class="wallpaper-video" muted loop playsinline></video>
+<video id="wallpaperVideoB" class="wallpaper-video" muted loop playsinline></video>
 <canvas id="webglCanvas" style="position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;"></canvas>
 
 <div class="wallpaper-bg-layer"></div>
 
-<!-- Mode label -->
-<div class="wallpaper-mode-label" id="modeLabel">
-  <span class="wallpaper-mode-label-text mode--rest" id="modeLabelText">休息模式</span>
-</div>
-
-<div class="wallpaper-char-area" id="charArea" title="点击露娜打开对话"></div>
+<div class="wallpaper-char-area" id="charArea" title="点击柚子打开对话"></div>
 
 <!-- Task selection area -->
 <div class="wallpaper-task-select glass-panel" id="taskSelectArea" style="display:none;">
@@ -321,6 +407,9 @@
 </div>
 
 <!-- Selected task badge -->
+<div class="wallpaper-yuzu-activity" id="yuzuActivityLabel">
+  <span id="yuzuActivityText"></span>
+</div>
 <div class="wallpaper-selected-task" id="selectedTaskBadge" style="display:none;">
   <span id="selectedTaskName"></span>
   <button class="wallpaper-change-task-btn" id="changeTaskBtn">更换</button>
@@ -333,10 +422,20 @@
 
 <div class="wallpaper-chat-sidebar glass-panel" id="chatSidebar">
   <div class="wallpaper-chat-header">
-    <span>露娜·月语</span>
+    <span>柚子·月语</span>
     <button class="wallpaper-chat-close" id="chatCloseBtn">×</button>
   </div>
   <div class="wallpaper-chat-content" id="chatContent"></div>
+</div>
+
+<!-- Departure overlay: shows when pomodoro starts -->
+<div class="wallpaper-departure-overlay" id="departureOverlay">
+  <div class="wallpaper-departure-card">
+    <div class="departure-user-line" id="departureUserLine"></div>
+    <div class="departure-divider"></div>
+    <div class="departure-yuzu-line" id="departureYuzuLine"></div>
+    <div class="departure-countdown" id="departureCountdown"></div>
+  </div>
 </div>
 
 <div class="wallpaper-esc-hint">按 ESC 退出壁纸模式</div>
@@ -399,38 +498,257 @@
     }
   });
 
-  // Mode label constants
-  const MODE_LABELS = {
-    rest: '休息模式',
-    computer: '电脑模式',
-    reading: '看书模式',
-    writing: '写字模式',
-  };
-  const MODE_CSS_CLASS = {
-    rest: 'mode--rest',
-    computer: 'mode--computer',
-    reading: 'mode--reading',
-    writing: 'mode--writing',
-  };
-
   // ── State ──
+  // ── Wallpaper video ──
+  const videoA = document.getElementById("wallpaperVideoA");
+  const videoB = document.getElementById("wallpaperVideoB");
+  // Both videos always display:block so they render frames; only opacity differs.
+  // activeVideo is at opacity 1, loadingVideo at opacity 0.
+  let activeVideo = videoA;
+  let loadingVideo = videoB;
+  const MODE_VIDEO = {
+    rest:     { day: '../../../assets/wallpapers/rest/休息-日.mp4',     night: '../../../assets/wallpapers/rest/休息-夜.mp4' },
+    computer: { day: '../../../assets/wallpapers/computer/电脑.mp4',   night: '../../../assets/wallpapers/computer/电脑.mp4' },
+    reading:  { day: '../../../assets/wallpapers/reading/看书-日.mp4',  night: '../../../assets/wallpapers/reading/看书-日.mp4' },
+    writing:  { day: '../../../assets/wallpapers/writing/写字-日.mp4',  night: '../../../assets/wallpapers/writing/写字-日.mp4' },
+  };
+  let currentVideoSrc = null;
+  let dayPeriodTimer = null;
+
+  function getDayPeriod() {
+    const hour = new Date().getHours();
+    return (hour >= 6 && hour < 18) ? 'day' : 'night';
+  }
+
+  function getVideoSrc(mode) {
+    const variants = MODE_VIDEO[mode];
+    if (!variants) return null;
+    const period = getDayPeriod();
+    return variants[period] || variants.day || variants.night || null;
+  }
+
+  // Hide the CSS starry background when a video will cover it, so it doesn't
+  // flash through while the video is loading (both elements start at opacity 0).
+  var _bodyBgImage = '';
+  function _hideBodyBackground() {
+    if (!_bodyBgImage) {
+      _bodyBgImage = window.getComputedStyle(document.body).backgroundImage;
+    }
+    document.body.style.backgroundImage = 'none';
+  }
+  function _showBodyBackground() {
+    if (_bodyBgImage) {
+      document.body.style.backgroundImage = _bodyBgImage;
+    }
+  }
+
+  videoA.addEventListener('error', function () {
+    videoA.style.opacity = '0';
+    // If both videos ended up invisible, restore the CSS background
+    if (videoA.style.opacity === '0' && videoB.style.opacity === '0') {
+      _showBodyBackground();
+    }
+  });
+  videoB.addEventListener('error', function () {
+    videoB.style.opacity = '0';
+    if (videoA.style.opacity === '0' && videoB.style.opacity === '0') {
+      _showBodyBackground();
+    }
+  });
+
+  function swapVideos() {
+    var temp = activeVideo;
+    activeVideo = loadingVideo;
+    loadingVideo = temp;
+  }
+
+  function finishVideoSwitch() {
+    var oldActive = activeVideo;
+    activeVideo.style.opacity = '0';
+    activeVideo.pause();
+    activeVideo.style.zIndex = '0';
+    loadingVideo.style.opacity = '1';
+    loadingVideo.style.zIndex = '1';
+    swapVideos();
+    // Defer clearing old video src by one rAF so the compositor doesn't
+    // tear down its surface before loadingVideo's first frame is shown.
+    requestAnimationFrame(function () { oldActive.src = ''; });
+  }
+
+  function switchWallpaperVideo(mode) {
+    var src = getVideoSrc(mode);
+    if (src === currentVideoSrc) return;
+    currentVideoSrc = src;
+
+    // Cancel in-flight preload
+    loadingVideo.oncanplay = null;
+    loadingVideo.onplaying = null;
+
+    if (!src) {
+      activeVideo.pause();
+      activeVideo.style.opacity = '0';
+      activeVideo.src = '';
+      loadingVideo.pause();
+      loadingVideo.style.opacity = '0';
+      loadingVideo.src = '';
+      _showBodyBackground();
+      return;
+    }
+
+    _hideBodyBackground();
+
+    loadingVideo.oncanplay = function () {
+      loadingVideo.oncanplay = null;
+      loadingVideo.onplaying = function () {
+        loadingVideo.onplaying = null;
+        // Wait for the first video frame to actually reach the compositor
+        // before swapping opacity. rAF runs before compositing, so it can't
+        // guarantee the decoded frame is ready. requestVideoFrameCallback
+        // fires when a frame is presented to the compositor — the correct signal.
+        if (loadingVideo.requestVideoFrameCallback) {
+          loadingVideo.requestVideoFrameCallback(function () {
+            finishVideoSwitch();
+          });
+        } else {
+          // Fallback: wait 2 frames then swap
+          requestAnimationFrame(function () {
+            requestAnimationFrame(function () { finishVideoSwitch(); });
+          });
+        }
+      };
+      var p = loadingVideo.play();
+      if (p) p.catch(function () {});
+    };
+    loadingVideo.src = src;
+    loadingVideo.load();
+  }
+
+  function scheduleDayPeriodCheck() {
+    if (dayPeriodTimer) clearTimeout(dayPeriodTimer);
+    const now = new Date();
+    const next = new Date(now);
+    const hour = now.getHours();
+    if (hour < 6) {
+      next.setHours(6, 0, 0, 0);
+    } else if (hour < 18) {
+      next.setHours(18, 0, 0, 0);
+    } else {
+      next.setDate(next.getDate() + 1);
+      next.setHours(6, 0, 0, 0);
+    }
+    dayPeriodTimer = setTimeout(() => {
+      switchWallpaperVideo(selectedTaskMode);
+      scheduleDayPeriodCheck();
+    }, next.getTime() - now.getTime());
+  }
+
+  function stopDayPeriodCheck() {
+    if (dayPeriodTimer) {
+      clearTimeout(dayPeriodTimer);
+      dayPeriodTimer = null;
+    }
+  }
+
   let activeTasks = [];
   let selectedTaskId = null;
   let selectedSubtaskId = null;  // null = parent task itself is the work unit
   let expandedTaskId = null;     // which parent's subtasks are expanded in the list
   let selectedTaskMode = 'rest'; // 'rest' | 'computer' | 'reading' | 'writing'
   let currentPomodoroTaskId = null;
+  let yuzuActivities = null;
+  let currentYuzuActivity = null;
   let isExitingWithTask = false;
   let isPomodoroRunning = false;
 
-  // ── Mode label ──
-  const modeLabelText = document.getElementById("modeLabelText");
   function setModeLabel(mode) {
     selectedTaskMode = mode;
-    modeLabelText.textContent = MODE_LABELS[mode] || MODE_LABELS.rest;
-    modeLabelText.className = 'wallpaper-mode-label-text ' + (MODE_CSS_CLASS[mode] || MODE_CSS_CLASS.rest);
+    switchWallpaperVideo(mode);
   }
   setModeLabel('rest');
+
+  // ── Yuzu parallel activity ──
+  const yuzuActivityLabel = document.getElementById("yuzuActivityLabel");
+  const yuzuActivityText = document.getElementById("yuzuActivityText");
+
+  function pickYuzuActivity(mode) {
+    if (!yuzuActivities) return null;
+    const pool = yuzuActivities[mode] || yuzuActivities["rest"];
+    if (!pool || pool.length === 0) return null;
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  function showYuzuActivity(activity) {
+    if (!activity) return;
+    currentYuzuActivity = activity;
+    yuzuActivityText.textContent = "🍵 柚子正在：" + activity.doing + "...";
+    yuzuActivityLabel.style.display = "";
+  }
+
+  function hideYuzuActivity() {
+    clearHalfwayTimer();
+    currentYuzuActivity = null;
+    yuzuActivityLabel.style.display = "none";
+  }
+
+  // ── Departure overlay ──
+  const departureOverlay = document.getElementById("departureOverlay");
+  const departureUserLine = document.getElementById("departureUserLine");
+  const departureYuzuLine = document.getElementById("departureYuzuLine");
+  const departureCountdown = document.getElementById("departureCountdown");
+  let departureTimer = null;
+
+  function showDeparture(taskTitle, yuzuActivity, durationMinutes) {
+    departureUserLine.textContent = "你将启程：「" + taskTitle + "」";
+    if (yuzuActivity) {
+      departureYuzuLine.textContent = "柚子要去：" + yuzuActivity.doing;
+    } else {
+      departureYuzuLine.textContent = "柚子会在旁边安静陪你。";
+    }
+    departureCountdown.textContent = durationMinutes + " 分钟后见";
+    departureOverlay.classList.add("show");
+    departureOverlay.classList.remove("fadeout");
+
+    if (departureTimer) clearTimeout(departureTimer);
+    departureTimer = setTimeout(function () {
+      departureOverlay.classList.add("fadeout");
+      departureTimer = setTimeout(function () {
+        departureOverlay.classList.remove("show", "fadeout");
+      }, 600);
+    }, 3000);
+  }
+
+  // ── Halfway bubble ──
+  let halfwayTimer = null;
+
+  function scheduleHalfwayBubble(activity, durationSeconds) {
+    if (halfwayTimer) clearTimeout(halfwayTimer);
+    if (!activity || !activity.halfway) return;
+    var halfMs = (durationSeconds * 1000) / 2;
+    if (halfMs < 60000) return; // Don't bother for sessions under 1 min
+    halfwayTimer = setTimeout(function () {
+      showHalfwayBubble(activity);
+    }, halfMs);
+  }
+
+  function showHalfwayBubble(activity) {
+    if (!activity || !activity.halfway) return;
+    yuzuActivityText.textContent = "💬 " + activity.halfway;
+    yuzuActivityLabel.classList.add("pulse");
+    setTimeout(function () {
+      yuzuActivityLabel.classList.remove("pulse");
+      if (currentYuzuActivity) {
+        yuzuActivityText.textContent = "🍵 柚子正在：" + currentYuzuActivity.doing + "...";
+      }
+    }, 5000);
+  }
+
+  function clearHalfwayTimer() {
+    if (halfwayTimer) {
+      clearTimeout(halfwayTimer);
+      halfwayTimer = null;
+    }
+    yuzuActivityLabel.classList.remove("pulse");
+  }
 
   // ── Task selection ──
   const taskSelectArea = document.getElementById("taskSelectArea");
@@ -531,6 +849,7 @@
     selectedSubtaskId = null;
     expandedTaskId = null;
     selectedTaskBadge.style.display = 'none';
+    hideYuzuActivity();
     document.getElementById("topLeftGroup").style.display = "none";
     setModeLabel('rest');
     pomodoroTimer.stop();
@@ -546,6 +865,7 @@
   let pomodoroEndUnsub = null;
 
   function clearPomodoroListeners() {
+    clearHalfwayTimer();
     if (pomodoroTickUnsub) { pomodoroTickUnsub(); pomodoroTickUnsub = null; }
     if (pomodoroEndUnsub) { pomodoroEndUnsub(); pomodoroEndUnsub = null; }
   }
@@ -559,6 +879,16 @@
     currentPomodoroTaskId = taskId || null;
     isPomodoroRunning = true;
     document.getElementById("changeTaskBtn").style.display = "none";
+    // Pick a parallel activity for Yuzu
+    if (taskId) {
+      const activity = pickYuzuActivity(selectedTaskMode);
+      showYuzuActivity(activity);
+      scheduleHalfwayBubble(activity, durationSeconds);
+      // Show departure splash
+      const task = activeTasks.find(function (t) { return t.id === taskId; });
+      const taskTitle = task ? (task.rpgTitle || task.realTitle) : "";
+      showDeparture(taskTitle, activity, durationMinutes);
+    }
     // Set mode to task's mode (or rest if no task)
     if (taskId && selectedTaskMode !== 'rest') {
       setModeLabel(selectedTaskMode);
@@ -572,6 +902,9 @@
       isPomodoroRunning = false;
       document.getElementById("changeTaskBtn").style.display = "";
       setModeLabel('rest');
+      if (currentPomodoroTaskId) {
+        showExitPanel(currentPomodoroTaskId);
+      }
     });
   }
 
@@ -585,10 +918,16 @@
       clearPomodoroListeners();
       isPomodoroRunning = false;
       document.getElementById("changeTaskBtn").style.display = "";
-      // Switch to rest mode when paused
+      // Save task mode before switching to rest, so resume can restore it
+      window._pausedTaskMode = selectedTaskMode;
       setModeLabel('rest');
     },
     onResume: () => {
+      // Restore the task's mode before resuming
+      if (window._pausedTaskMode && window._pausedTaskMode !== 'rest') {
+        setModeLabel(window._pausedTaskMode);
+      }
+      window._pausedTaskMode = null;
       const remaining = pomodoroTimer.getRemaining();
       startPomodoroFlow(remaining, currentPomodoroTaskId);
     },
@@ -647,7 +986,9 @@
 
   // White noise
   let whiteNoise = null;
-  ipc.getAudioConfig().then((res) => {
+  async function initWhiteNoise() {
+    if (whiteNoise) return;
+    const res = await ipc.getAudioConfig();
     if (res.ok && res.data.tracks.length) {
       whiteNoise = new WhiteNoiseControl(document.getElementById("audioArea"), {
         tracks: res.data.tracks,
@@ -659,7 +1000,8 @@
       });
       whiteNoise.mount();
     }
-  });
+  }
+  initWhiteNoise();
 
   // ── Change task button ──
   document.getElementById("changeTaskBtn").addEventListener("click", () => {
@@ -687,6 +1029,13 @@
   function showExitPanel(taskId, targetMode) {
     isExitingWithTask = true;
     showState("inquiry");
+    // Inject Yuzu's parallel progress into the exit panel
+    const inquiryText = document.querySelector("#exitStateInquiry p");
+    if (currentYuzuActivity && inquiryText) {
+      inquiryText.textContent = "柚子刚刚" + currentYuzuActivity.done + "。你的任务呢？";
+    } else if (inquiryText) {
+      inquiryText.textContent = "专注时间结束了~";
+    }
     exitOverlay.classList.add("open");
     exitPanel.classList.add("open");
     window._exitTaskId = taskId;
@@ -697,6 +1046,7 @@
     isExitingWithTask = false;
     isPomodoroRunning = false;
     clearPomodoroListeners();
+    hideYuzuActivity();
     exitOverlay.classList.remove("open");
     exitPanel.classList.remove("open");
     setModeLabel('rest');
@@ -815,6 +1165,10 @@
 
   // ── Init: load tasks and decide initial state ──
   async function initWallpaper() {
+    if (!yuzuActivities) {
+      const res = await ipc.getYuzuActivities();
+      if (res.ok && res.data) yuzuActivities = res.data;
+    }
     const tasksRes = await ipc.getTasks("active");
     if (tasksRes.ok && tasksRes.data.length > 0) {
       activeTasks = tasksRes.data;
@@ -836,11 +1190,14 @@
   ipc.onModeActivated((data) => {
     if (data.mode === MODE.WALLPAPER) {
       initWallpaper();
+      initWhiteNoise();
+      scheduleDayPeriodCheck();
     }
   });
 
-  // Stop audio when leaving wallpaper mode
+  // Stop audio and day-period watcher when leaving wallpaper mode
   ipc.onModeDeactivated(() => {
+    stopDayPeriodCheck();
     if (whiteNoise) {
       whiteNoise.destroy();
       whiteNoise = null;
@@ -848,6 +1205,7 @@
   });
 
   initWallpaper();
+  scheduleDayPeriodCheck();
 })();
 </script>
 

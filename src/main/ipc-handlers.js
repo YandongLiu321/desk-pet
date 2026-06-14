@@ -179,6 +179,13 @@ function registerIpcHandlers(services, deps) {
 
 
 	// ── Settings (complete) ──
+	ipcMain.handle(IPC.SETTINGS_OPEN, () => runSafe(() => {
+		if (services.settingsWindowManager) {
+			services.settingsWindowManager.open();
+		}
+		return { ok: true };
+	}));
+
 	ipcMain.handle(IPC.SETTINGS_GET, () => runSafe(() => db.getSettings()));
 
 	ipcMain.handle(IPC.SETTINGS_SET, (_event, { partial }) => runSafe(() => {
@@ -288,7 +295,12 @@ function registerIpcHandlers(services, deps) {
 		}
 	});
 
-	// ── Memory ──
+	// ── World ──
+		ipcMain.handle(IPC.WORLD_GET_YUZU_ACTIVITIES, () => runSafe(() => {
+			return services.worldBook?.yuzuActivities || null;
+		}));
+
+		// ── Memory ──
 	ipcMain.handle(IPC.MEMORY_LIST, () => runSafe(() => services.memoryService ? db.getMemories() : []));
 
 	ipcMain.handle(IPC.MEMORY_SEARCH, (_event, { query, limit }) => runSafe(() => {

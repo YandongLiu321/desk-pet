@@ -125,7 +125,12 @@ class IpcClient {
 		this.api?.pomodoro.removeAllListeners?.();
 	}
 
-	// Proactive
+	// World
+		async getYuzuActivities() {
+			return this._call("world.getYuzuActivities");
+		}
+
+		// Proactive
 	async getProactiveState() {
 		return this._call("proactive.getState");
 	}
@@ -154,6 +159,9 @@ class IpcClient {
 		}
 
 		// Settings
+	async openSettings() {
+		return this._call("settings.open");
+	}
 	async getApiKey() {
 		return this._call("settings.getApiKey");
 	}

@@ -37,6 +37,7 @@ const IPC = {
 	POMODORO_END: "pomodoro:end",
 
 	// Settings (完整)
+	SETTINGS_OPEN: "settings:open",
 	SETTINGS_GET: "settings:get",
 	SETTINGS_SET: "settings:set",
 	SETTINGS_GET_API_KEY: "settings:get-api-key",
@@ -76,6 +77,9 @@ const IPC = {
 	PROACTIVE_TRIGGER: "proactive:trigger",
 	PROACTIVE_GET_STATE: "proactive:get-state",
 	PROACTIVE_SET_CONFIG: "proactive:set-config",
+
+	// World
+	WORLD_GET_YUZU_ACTIVITIES: "world:get-yuzu-activities",
 
 	// Memory
 	MEMORY_LIST: "memory:list",
