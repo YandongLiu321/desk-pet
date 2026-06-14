@@ -130,17 +130,17 @@
       {
         "id": "rain",
         "name": "雨声",
-        "file": "雨声.flac"
+        "file": "雨声.mp3"
       },
       {
         "id": "Lilac",
         "name": "紫丁香",
-        "file": "Lilac.flac"
+        "file": "Lilac.mp3"
       },
       {
         "id": "moon_world",
         "name": "月世界",
-        "file": "月世界.flac"
+        "file": "月世界.mp3"
       },
       {
         "id": "Eden",

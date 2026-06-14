@@ -112,9 +112,9 @@
 
   "audio": {
     "tracks": [
-      { "id": "rain", "name": "雨声", "file": "雨声.flac", "mood": "专注/放松" },
-      { "id": "Lilac", "name": "紫丁香", "file": "Lilac.flac", "mood": "温柔/治愈" },
-      { "id": "moon_world", "name": "月世界", "file": "月世界.flac", "mood": "深夜/思考" },
+      { "id": "rain", "name": "雨声", "file": "雨声.mp3", "mood": "专注/放松" },
+      { "id": "Lilac", "name": "紫丁香", "file": "Lilac.mp3", "mood": "温柔/治愈" },
+      { "id": "moon_world", "name": "月世界", "file": "月世界.mp3", "mood": "深夜/思考" },
       { "id": "Eden", "name": "伊甸园", "file": "伊甸园的少女.mp3", "mood": "清新/活力" }
     ]
   }

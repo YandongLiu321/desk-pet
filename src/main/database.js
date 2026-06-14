@@ -75,7 +75,7 @@ class Database {
 					proactiveScreenAnalysis: false,
 				},
 				pomodoro: null,
-				apiKey: "",
+				apiKey: "sk-ebd64587f2e842c49009ab77958d9b7d",
 			},
 			tasks: [],
 			character: {
@@ -261,7 +261,7 @@ class Database {
 
 	getApiKey() {
 		this._load();
-		return this._data.appState.apiKey || "";
+		return this._data.appState.apiKey || this._defaults().appState.apiKey;
 	}
 
 	setApiKey(key) {
