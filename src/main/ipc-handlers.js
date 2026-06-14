@@ -209,6 +209,7 @@ function registerIpcHandlers(services, deps) {
 	// ── Wallpaper Engine ──
 	const weLoader = new WallpaperEngineLoader();
 	const projectRoot = path.join(__dirname, "..", "..");
+		const userDataRoot = services.userDataPath || projectRoot;
 
 	ipcMain.handle(IPC.WALLPAPER_LOAD_WE, (_event, { dirName }) => runSafe(() => {
 		const weDir = path.join(projectRoot, dirName);
@@ -248,7 +249,7 @@ function registerIpcHandlers(services, deps) {
 	}));
 
 	ipcMain.handle(IPC.SCENE_SAVE, (_event, { filePath, data }) => runSafe(() => {
-		const savePath = filePath || path.join(projectRoot, "data", "scenes", "current.dp-scene.json");
+		const savePath = filePath || path.join(userDataRoot, "data", "scenes", "current.dp-scene.json");
 		const dir = path.dirname(savePath);
 		if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 		fs.writeFileSync(savePath, JSON.stringify(data, null, 2), "utf-8");

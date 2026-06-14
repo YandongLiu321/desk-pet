@@ -239,13 +239,14 @@ function loadWorldBook() {
 }
 
 app.whenReady().then(() => {
-	db = new Database(path.join(__dirname, "..", "..", "data", "db.json"));
+	const userDataPath = app.getPath("userData");
+		db = new Database(path.join(userDataPath, "data", "db.json"));
 	const worldBook = loadWorldBook();
 
 	const apiKey = db.getApiKey();
 	const llmService = new LLMService({ apiKey, db, worldBook });
 	_llmService = llmService;
-	const classifier = new TaskClassifier(path.join(__dirname, "..", "..", "data"));
+	const classifier = new TaskClassifier(path.join(userDataPath, "data"));
 	const taskService = new TaskService({ db, worldBook, classifier });
 	const relationshipService = new RelationshipService(db);
 	const pomodoroService = new PomodoroService();
@@ -285,6 +286,7 @@ app.whenReady().then(() => {
 			settingsWindowManager,
 			proactiveService,
 			memoryService,
+			userDataPath,
 		},
 		{ ipcMain, BrowserWindow },
 	);
