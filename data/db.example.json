@@ -1,0 +1,11 @@
+{
+  "appState": {
+    "apiKey": "sk-请替换为你的DeepSeek-API-Key",
+    "currentMode": "pet",
+    "settings": {
+      "theme": "starry",
+      "subtitleEnabled": true,
+      "typewriterSpeed": 35
+    }
+  }
+}
